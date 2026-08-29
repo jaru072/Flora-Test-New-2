@@ -1,0 +1,38 @@
+.personnel-directory-panel{min-height:calc(100vh - 52px);padding:20px clamp(10px,2.5vw,32px) 60px;background:linear-gradient(135deg,#f4f8f6,#edf3f9)}
+.personnel-directory-shell{max-width:1500px;margin:0 auto}
+.personnel-directory-toolbar,.personnel-directory-content,.personnel-bulk-bar{background:#fff;border:1px solid #dbe5e0;border-radius:18px;box-shadow:0 12px 35px rgba(20,63,48,.08)}
+.personnel-directory-toolbar{padding:16px;margin-bottom:12px}
+.personnel-directory-content{overflow:hidden}
+.personnel-bulk-bar{display:none;padding:12px 15px;margin-bottom:12px;border-left:5px solid #176e4c}
+.personnel-bulk-bar.show{display:flex}
+.personnel-table-wrap{overflow:auto;max-height:calc(100vh - 250px)}
+.personnel-table{min-width:1050px;margin:0}
+.personnel-table thead{position:sticky;top:0;z-index:2;background:#f4f8f6}
+.personnel-table td,.personnel-table th{vertical-align:middle}
+.personnel-table-actions{display:flex;justify-content:center;align-items:center;flex-wrap:nowrap;gap:4px;white-space:nowrap}
+.personnel-avatar{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #d7e7df;background:#edf4f0}
+.personnel-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:13px;padding:16px}
+.personnel-directory-card{position:relative;border:1px solid #dce7e1;border-radius:16px;padding:14px;background:#fff;transition:.18s}
+.personnel-directory-card:hover{transform:translateY(-2px);box-shadow:0 12px 25px rgba(20,63,48,.1);border-color:#7fb29b}
+.personnel-directory-card.selected{background:#edf8f2;border-color:#176e4c;box-shadow:0 0 0 3px rgba(23,110,76,.1)}
+.personnel-directory-card .personnel-avatar{width:68px;height:68px}
+.personnel-access-banner{display:none;max-width:1500px;margin:10px auto 0;padding:9px 14px;border-radius:12px;background:#fff3cd;border:1px solid #ffe69c;color:#664d03;font-size:12px;font-weight:650}
+.personnel-access-banner.show{display:flex}
+.personnel-filter-grid{display:grid;grid-template-columns:minmax(210px,1.5fr) minmax(150px,.8fr) minmax(150px,.8fr) minmax(150px,.8fr);gap:8px}
+.personnel-tool-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
+.personnel-empty{padding:55px 20px;text-align:center;color:#7d8c85}
+.personnel-modal-paper{background:#eef2f0;padding:14px;max-height:65vh;overflow:auto}
+.personnel-badge-sheet{display:grid;gap:8px;background:#fff;padding:10px;margin:0 auto;box-shadow:0 3px 16px rgba(0,0,0,.08)}
+.personnel-id-card{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;min-height:210px;padding:9px;border:2px solid var(--badge-color,#176e4c);border-radius:12px;background:#fff;break-inside:avoid;overflow:hidden}
+.personnel-id-card-header{width:100%;padding:6px;border-radius:8px;background:var(--badge-color,#176e4c);color:#fff;font-weight:800}
+.personnel-id-card-photo{width:72px;height:72px;border-radius:10px;object-fit:cover;margin:7px 0 4px;border:2px solid var(--badge-color,#176e4c)}
+.personnel-id-card-qr{width:62px;height:62px;object-fit:contain;margin-top:4px}
+.personnel-history-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.personnel-history-summary>div{padding:10px;border-radius:12px;text-align:center;background:#f5f8f6;border:1px solid #e1e9e5}
+.personnel-scan-reader{min-height:230px;border:2px dashed #aac9ba;border-radius:14px;background:#f4f9f6;overflow:hidden}
+.personnel-import-table{max-height:330px;overflow:auto}
+.personnel-photo-status{font-size:11px;color:#176e4c;font-weight:700}
+.personnel-admin-locked{opacity:.55;pointer-events:none}
+@media(max-width:900px){.personnel-filter-grid{grid-template-columns:1fr 1fr}.personnel-history-summary{grid-template-columns:1fr 1fr}.personnel-directory-toolbar{padding:12px}}
+@media(max-width:575px){.personnel-filter-grid{grid-template-columns:1fr}.personnel-directory-panel{padding:10px 7px 40px}.personnel-tool-actions .btn{flex:1 1 calc(50% - 5px)}.personnel-card-grid{grid-template-columns:1fr;padding:9px}.personnel-bulk-bar.show{flex-direction:column}.personnel-history-summary{grid-template-columns:1fr 1fr}}
+@media print{body.personnel-badge-printing>*:not(#personnelBadgePrintRoot){display:none!important}#personnelBadgePrintRoot{display:block!important}.personnel-id-card{box-shadow:none}.personnel-badge-sheet{box-shadow:none;page-break-after:always}}

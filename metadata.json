@@ -1,0 +1,10 @@
+{
+  "name": "Remix Flora Test New 2",
+  "description": "A clean starter web application for Flora Test New 1.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
