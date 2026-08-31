@@ -1,5 +1,14 @@
 // ==================== BACKUP & RESTORE MODULE (backup_restore.js) ====================
-import { doc, setDoc, getDocs, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { 
+  doc, 
+  setDoc, 
+  getDocs, 
+  collection, 
+  deleteDoc, 
+  getDoc, 
+  onSnapshot, 
+  serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { 
   ref, 
   uploadBytes, 
@@ -168,10 +177,9 @@ window.refreshBackupModalLiveStats = function() {
 
 // 1. Open Backup/Restore Modal
 window.openBackupRestoreModal = function() {
-  const isAuthorized = (typeof window.isThammaSrithongAdminStrict === 'function' && window.isThammaSrithongAdminStrict()) ||
-                       (typeof window.canAccessDatabaseEditor === 'function' && window.canAccessDatabaseEditor());
+  const isAuthorized = isCurrentUserAdmin();
   if (!isAuthorized) {
-    getGlobalToast()("⚠️ เฉพาะผู้ดูแลระบบหลัก คุณ Thamma Srithong (jaru072@gmail.com) เท่านั้นที่มีสิทธิ์เข้าถึงส่วนสำรอง/กู้คืนข้อมูล");
+    getGlobalToast()("⚠️ เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่มีสิทธิ์เข้าถึงส่วนสำรอง/กู้คืนข้อมูล");
     return;
   }
   try {
@@ -3184,18 +3192,110 @@ window.executeGoogleDriveRotationBackup = async function(dayInfo = window.getRot
 
 window._isHybridBackupRunning = false;
 window._lastHybridBackupAttemptTimestamp = 0;
+window._cloudBackupStatus = null;
+let _hasSubscribedBackupStatus = false;
 
+// 1. Cloud Firestore Real-time Backup Status Synchronization
+window.subscribeToCloudBackupStatus = function() {
+  if (_hasSubscribedBackupStatus) return;
+  if (!window.db) return;
+  try {
+    const statusDocRef = doc(window.db, "system_settings", "backup_status");
+    _hasSubscribedBackupStatus = true;
+    onSnapshot(statusDocRef, (snap) => {
+      if (snap.exists()) {
+        window._cloudBackupStatus = snap.data();
+      } else {
+        window._cloudBackupStatus = null;
+      }
+      if (typeof window.updateHybridBackupStatusUI === 'function') {
+        window.updateHybridBackupStatusUI();
+      }
+    }, (err) => {
+      console.warn("[CloudBackupStatus] Snapshot listener notice:", err);
+    });
+  } catch (e) {
+    console.warn("[CloudBackupStatus] Subscribe notice:", e);
+  }
+};
+
+window.getBackupStatusFromFirestore = async function() {
+  if (window._cloudBackupStatus) {
+    return window._cloudBackupStatus;
+  }
+  if (window.db) {
+    try {
+      const statusDocRef = doc(window.db, "system_settings", "backup_status");
+      const snap = await getDoc(statusDocRef);
+      if (snap.exists()) {
+        window._cloudBackupStatus = snap.data();
+        return snap.data();
+      }
+    } catch (e) {
+      console.warn("[CloudBackupStatus] getDoc notice:", e);
+    }
+  }
+  return window._cloudBackupStatus || null;
+};
+
+window.setBackupStatusToFirestore = async function(statusData) {
+  if (!window.db) return;
+  try {
+    const statusDocRef = doc(window.db, "system_settings", "backup_status");
+    const payload = {
+      ...statusData,
+      updatedAt: new Date().toISOString()
+    };
+    await setDoc(statusDocRef, payload, { merge: true });
+    window._cloudBackupStatus = { ...(window._cloudBackupStatus || {}), ...payload };
+    if (typeof window.updateHybridBackupStatusUI === 'function') {
+      window.updateHybridBackupStatusUI();
+    }
+  } catch (err) {
+    console.error("[CloudBackupStatus] Error saving status to Firestore:", err);
+  }
+};
+
+// 2. Admin Check Helper
+function isCurrentUserAdmin() {
+  const currentEmail = (window.currentAuthUser && window.currentAuthUser.email) ||
+                       (window.currentUserProfile && window.currentUserProfile.email) ||
+                       (window.currentUser && window.currentUser.email) ||
+                       (window.personnelAccess && window.personnelAccess.email) ||
+                       '';
+  const currentRole = window.currentRole || (window.personnelAccess && window.personnelAccess.role) || '';
+  const isEmailAdmin = currentEmail.toLowerCase() === 'jaru072@gmail.com';
+  const isRoleAdmin = currentRole === 'ADMIN' || (window.personnelAccess && window.personnelAccess.isAdmin);
+  const isSuperAdminStrict = typeof window.isThammaSrithongAdminStrict === 'function' && window.isThammaSrithongAdminStrict();
+  const isDbEditor = typeof window.canAccessDatabaseEditor === 'function' && window.canAccessDatabaseEditor();
+  return isEmailAdmin || isRoleAdmin || isSuperAdminStrict || isDbEditor;
+}
+
+// 3. Main Hybrid Daily Backup Process
 window.runHybridDailyBackup = async function(isManual = false) {
   const dayInfo = window.getRotationDayInfo();
-  const todayStr = dayInfo.dateIso;
+  const todayStr = dayInfo.dateIso; // YYYY-MM-DD in Asia/Bangkok
 
-  // 1. Concurrency Mutex Lock: prevent multiple callers from running simultaneously
+  // 3.1 Admin Permission Check (Admin Only)
+  const isAdmin = isCurrentUserAdmin();
+  if (!isAdmin) {
+    if (isManual) {
+      alert("⚠️ เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถสั่งสำรองข้อมูลได้");
+      const toast = typeof getGlobalToast === 'function' ? getGlobalToast() : (typeof showToast === 'function' ? showToast : console.log);
+      toast("⚠️ เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถสั่งสำรองข้อมูลได้");
+    } else {
+      console.log("[HybridBackup] Active user is not Admin. Auto daily backup skipped.");
+    }
+    return { skipped: true, reason: "Not Admin user" };
+  }
+
+  // 3.2 Concurrency Mutex Lock: prevent multiple callers from running simultaneously
   if (window._isHybridBackupRunning) {
     console.log(`[HybridBackup] Backup process is currently running. Skipping concurrent trigger.`);
     return { skipped: true, reason: "Backup already running" };
   }
 
-  // 2. Debounce Lock: ignore repeated auto-triggers within 15 seconds
+  // 3.3 Debounce Lock: ignore repeated auto-triggers within 15 seconds
   const nowMs = Date.now();
   if (!isManual && (nowMs - (window._lastHybridBackupAttemptTimestamp || 0)) < 15000) {
     console.log(`[HybridBackup] Debounced: auto-backup triggered too quickly.`);
@@ -3203,101 +3303,101 @@ window.runHybridDailyBackup = async function(isManual = false) {
   }
   window._lastHybridBackupAttemptTimestamp = nowMs;
 
-  // 3. Status checks for today (Separate Local vs Google Drive)
-  const lastLocalBackupDate = localStorage.getItem('flora_last_local_backup_date');
-  const lastDriveBackupDate = localStorage.getItem('flora_last_drive_backup_date');
-  const legacyLastBackupDate = localStorage.getItem('flora_last_hybrid_backup_date');
-  const lastLocalOk = localStorage.getItem('flora_last_hybrid_backup_local_ok') === 'true';
-  const lastDriveOk = localStorage.getItem('flora_last_hybrid_backup_drive_ok') === 'true';
+  // 3.4 Check Cloud Firestore Backup Status (Real-time tracking)
+  const cloudStatus = await window.getBackupStatusFromFirestore();
+  const isDoneTodayInCloud = cloudStatus && cloudStatus.lastBackupDate === todayStr && (cloudStatus.localBackupOk || cloudStatus.driveBackupOk);
 
-  // Determine if already completed today
-  const isLocalDoneToday = (lastLocalBackupDate === todayStr) || (legacyLastBackupDate === todayStr && lastLocalOk);
-  const isDriveDoneToday = (lastDriveBackupDate === todayStr) || (legacyLastBackupDate === todayStr && lastDriveOk);
-
-  // If auto-backup (not manual) and BOTH systems are already done today, skip completely
-  if (!isManual && isLocalDoneToday && isDriveDoneToday) {
-    console.log(`[HybridBackup] Daily backup for ${dayInfo.dayOfWeekEn} (${todayStr}) in Thailand timezone has already fully run today.`);
+  // 3.5 Prevent Duplicate Daily Auto-Backup
+  if (!isManual && isDoneTodayInCloud) {
+    console.log(`[HybridBackup] Daily backup for ${dayInfo.dayOfWeekEn} (${todayStr}) in Thailand timezone has already been completed today in Cloud Firestore. Skipping auto backup.`);
     window.updateHybridBackupStatusUI();
-    return { skipped: true, reason: "Already completed today" };
+    return { skipped: true, reason: "Already completed today in Cloud Firestore" };
   }
 
-  // Admin Identity Check: Thamma Srithong (jaru072@gmail.com) or ADMIN role
-  const currentEmail = (window.currentAuthUser && window.currentAuthUser.email) ||
-                       (window.currentUserProfile && window.currentUserProfile.email) ||
-                       (window.currentUser && window.currentUser.email) ||
-                       '';
-  const currentRole = window.currentRole || '';
-  const isAdmin = currentEmail.toLowerCase() === 'jaru072@gmail.com' || currentRole === 'ADMIN';
-
-  if (!isAdmin && !isManual) {
-    console.log("[HybridBackup] Active user is not Admin. Auto daily backup skipped.");
-    return { skipped: true, reason: "Not Admin user" };
+  // 3.6 Manual Confirmation Dialog if already backed up today
+  if (isManual && isDoneTodayInCloud) {
+    let timeFormatted = '';
+    if (cloudStatus.lastBackupTime) {
+      try {
+        timeFormatted = new Date(cloudStatus.lastBackupTime).toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit' });
+      } catch (e) {
+        timeFormatted = '';
+      }
+    }
+    const confirmMessage = `ℹ️ ระบบตรวจพบว่าในวันนี้ (${dayInfo.dayOfWeekTh} ที่ ${dayInfo.dateIso}) ได้มีการสำรองข้อมูลไปแล้ว${timeFormatted ? ` เมื่อเวลา ${timeFormatted} น.` : ''}\n\nคุณต้องการสำรองข้อมูลซ้ำอีกครั้งหรือไม่?`;
+    const confirmed = confirm(confirmMessage);
+    if (!confirmed) {
+      const toast = typeof getGlobalToast === 'function' ? getGlobalToast() : (typeof showToast === 'function' ? showToast : console.log);
+      toast("ℹ️ ยกเลิกการสำรองข้อมูลซ้ำ");
+      return { cancelled: true, reason: "User cancelled manual duplicate backup" };
+    }
   }
 
-  // Acquire Mutex Lock
+  // 3.7 Acquire Mutex Lock
   window._isHybridBackupRunning = true;
 
   try {
     // Wait briefly if initial data lists are still loading
     if ((!window.equipmentList || window.equipmentList.length === 0) && (!window.employeeList || window.employeeList.length === 0)) {
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 1500));
     }
 
     console.log(`[HybridBackup] Executing Hybrid Dual Backup check for ${dayInfo.dayOfWeekEn} (${dayInfo.dayOfWeekTh}) [Asia/Bangkok]...`);
 
     // -------------------------------------------------------------
-    // Part 1: Local Download to User Machine (Max 1 auto-download per calendar day)
+    // Part 1: Local Download to User Machine
     // -------------------------------------------------------------
     let localRes = null;
-    if (isManual || !isLocalDoneToday) {
-      try {
-        localRes = window.executeLocalHybridBackup(dayInfo);
-        if (localRes && localRes.success) {
-          // Immediately mark local backup completed for today to eliminate race windows
-          localStorage.setItem('flora_last_local_backup_date', todayStr);
-          localStorage.setItem('flora_last_hybrid_backup_local_ok', 'true');
-          localStorage.setItem('flora_last_hybrid_backup_date', todayStr);
-          localStorage.setItem('flora_last_hybrid_backup_time', new Date().toISOString());
-        }
-      } catch (lErr) {
-        console.error("[HybridBackup] Local backup error:", lErr);
-      }
-    } else {
-      localRes = { success: true, reason: "Already downloaded earlier today" };
+    try {
+      localRes = window.executeLocalHybridBackup(dayInfo);
+    } catch (lErr) {
+      console.error("[HybridBackup] Local backup error:", lErr);
+      localRes = { success: false, reason: lErr.message };
     }
 
     // -------------------------------------------------------------
     // Part 2: Google Drive Day Rotation Backup (Monday-Sunday)
     // -------------------------------------------------------------
     let driveRes = null;
-    if (isManual || !isDriveDoneToday) {
-      try {
-        driveRes = await window.executeGoogleDriveRotationBackup(dayInfo, !isManual);
-        if (driveRes && driveRes.success) {
-          // Immediately mark drive backup completed for today
-          localStorage.setItem('flora_last_drive_backup_date', todayStr);
-          localStorage.setItem('flora_last_hybrid_backup_drive_ok', 'true');
-          localStorage.setItem('flora_last_hybrid_backup_date', todayStr);
-          localStorage.setItem('flora_last_hybrid_backup_time', new Date().toISOString());
-        }
-      } catch (dErr) {
-        console.warn("[HybridBackup] Drive backup warning:", dErr);
-      }
-    } else {
-      driveRes = { success: true, reason: "Already backed up to Drive earlier today" };
+    try {
+      driveRes = await window.executeGoogleDriveRotationBackup(dayInfo, !isManual);
+    } catch (dErr) {
+      console.warn("[HybridBackup] Drive backup warning:", dErr);
+      driveRes = { success: false, reason: dErr.message };
     }
 
-    // Record meta fields
-    localStorage.setItem('flora_last_hybrid_backup_day', dayInfo.dayOfWeekEn);
-    localStorage.setItem('flora_last_hybrid_backup_day_th', dayInfo.dayOfWeekTh);
+    // -------------------------------------------------------------
+    // Part 3: Record Status Directly in Cloud Firestore (No LocalStorage)
+    // -------------------------------------------------------------
+    const currentEmail = (window.currentAuthUser && window.currentAuthUser.email) ||
+                         (window.currentUserProfile && window.currentUserProfile.email) ||
+                         'jaru072@gmail.com';
+    const currentName = (window.currentAuthUser && window.currentAuthUser.displayName) ||
+                        (window.currentUserProfile && window.currentUserProfile.displayName) ||
+                        'Thamma Srithong';
+
+    await window.setBackupStatusToFirestore({
+      lastBackupDate: todayStr,
+      lastBackupTime: new Date().toISOString(),
+      lastBackupDayEn: dayInfo.dayOfWeekEn,
+      lastBackupDayTh: dayInfo.dayOfWeekTh,
+      localBackupOk: Boolean(localRes && localRes.success),
+      driveBackupOk: Boolean(driveRes && driveRes.success),
+      lastLocalFileName: localRes?.fileName || `FloraGarden_Backup_${dayInfo.dayOfWeekEn}_${todayStr}.json`,
+      lastDriveFileName: driveRes?.jsonFileName || `flora_garden_backup_${dayInfo.dayOfWeekEn}_${todayStr}.json`,
+      lastDriveFolder: dayInfo.dayOfWeekEn,
+      performedBy: currentEmail,
+      performedByName: currentName,
+      isManualTrigger: isManual
+    });
 
     window.updateHybridBackupStatusUI();
 
-    // Toast Notification (only notify if actual work was performed)
+    // Toast Notification (only notify if work was performed)
     const toast = typeof getGlobalToast === 'function' ? getGlobalToast() : (typeof showToast === 'function' ? showToast : console.log);
 
-    const didLocalWork = localRes && localRes.success && localRes.reason !== "Already downloaded earlier today";
-    const didDriveWork = driveRes && driveRes.success && driveRes.reason !== "Already backed up to Drive earlier today";
+    const didLocalWork = localRes && localRes.success;
+    const didDriveWork = driveRes && driveRes.success;
 
     if (didDriveWork && didLocalWork) {
       toast(`☁️ สำรองข้อมูลอัตโนมัติประจำ${dayInfo.dayOfWeekTh} (${dayInfo.dayOfWeekEn}) ครบทั้ง 2 ระบบ (Google Drive & ดาวน์โหลดลงเครื่อง) เรียบร้อยแล้ว!`);
@@ -3325,34 +3425,49 @@ window.updateHybridBackupStatusUI = function() {
 
   if (badgeElem) {
     const todayStr = dayInfo.dateIso;
-    const lastLocalBackupDate = localStorage.getItem('flora_last_local_backup_date');
-    const lastDriveBackupDate = localStorage.getItem('flora_last_drive_backup_date');
-    const lastDate = localStorage.getItem('flora_last_hybrid_backup_date');
-    const lastTime = localStorage.getItem('flora_last_hybrid_backup_time');
-    const lastDayTh = localStorage.getItem('flora_last_hybrid_backup_day_th') || '';
-    const lastDayEn = localStorage.getItem('flora_last_hybrid_backup_day') || '';
-    const driveOk = (lastDriveBackupDate === todayStr) || (lastDate === todayStr && localStorage.getItem('flora_last_hybrid_backup_drive_ok') === 'true');
-    const localOk = (lastLocalBackupDate === todayStr) || (lastDate === todayStr && localStorage.getItem('flora_last_hybrid_backup_local_ok') === 'true');
+    const cloud = window._cloudBackupStatus;
 
-    if ((lastDate === todayStr || localOk || driveOk) && lastTime) {
-      const timeStr = new Date(lastTime).toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit' });
-      if (driveOk && localOk) {
+    if (cloud && cloud.lastBackupDate === todayStr && cloud.lastBackupTime) {
+      let timeStr = '';
+      try {
+        const d = new Date(cloud.lastBackupTime);
+        const hours = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        timeStr = `${hours}:${mins}`;
+      } catch (e) {
+        timeStr = '';
+      }
+      if (cloud.driveBackupOk && cloud.localBackupOk) {
         badgeElem.className = 'badge bg-success text-white px-2.5 py-1';
         badgeElem.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> สำรองวันนี้แล้ว (${timeStr} น. - Google Drive & เครื่อง)`;
-      } else if (localOk) {
+      } else if (cloud.driveBackupOk) {
+        badgeElem.className = 'badge bg-success text-white px-2.5 py-1';
+        badgeElem.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> สำรองขึ้น Google Drive วันนี้แล้ว (${timeStr} น.)`;
+      } else if (cloud.localBackupOk) {
         badgeElem.className = 'badge bg-warning bg-opacity-25 text-dark border border-warning px-2.5 py-1';
         badgeElem.style.cursor = 'pointer';
         badgeElem.title = 'คลิกเพื่อสำรองขึ้น Google Drive';
         badgeElem.onclick = () => window.runHybridDailyBackup(true);
         badgeElem.innerHTML = `<i class="bi bi-exclamation-circle me-1"></i> สำรองลงเครื่องแล้ว (${timeStr} น.) [คลิกเชื่อม Google Drive]`;
-      } else if (driveOk) {
+      } else {
         badgeElem.className = 'badge bg-success text-white px-2.5 py-1';
-        badgeElem.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> สำรองขึ้น Google Drive วันนี้แล้ว (${timeStr} น.)`;
+        badgeElem.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> สำรองวันนี้แล้ว (${timeStr} น.)`;
       }
-    } else if (lastDate && lastTime) {
-      const dateFormatted = new Date(lastTime).toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok' });
+    } else if (cloud && cloud.lastBackupDate && cloud.lastBackupTime) {
+      let dateFormatted = '';
+      try {
+        const d = new Date(cloud.lastBackupTime);
+        const beYear = d.getFullYear() + 543;
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const hours = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        dateFormatted = `${day}/${month}/${beYear} ${hours}:${mins} น.`;
+      } catch (e) {
+        dateFormatted = cloud.lastBackupDate;
+      }
       badgeElem.className = 'badge bg-warning bg-opacity-25 text-dark border border-warning px-2.5 py-1';
-      badgeElem.innerHTML = `สำรองล่าสุดเมื่อ ${dateFormatted} (${lastDayTh || lastDayEn})`;
+      badgeElem.innerHTML = `สำรองล่าสุดเมื่อ ${dateFormatted} (${cloud.lastBackupDayTh || cloud.lastBackupDayEn || ''})`;
     } else {
       badgeElem.className = 'badge bg-light text-dark border px-2.5 py-1';
       badgeElem.innerHTML = `พร้อมสำรองอัตโนมัติวันนี้ (${dayInfo.dayOfWeekTh})`;
@@ -3360,8 +3475,11 @@ window.updateHybridBackupStatusUI = function() {
   }
 };
 
-// 19. Listeners for folder UI refresh & Auto-sync on startup
+// 4. Listeners for folder UI refresh & Auto-sync on startup
 function initBackupRestore() {
+  if (typeof window.subscribeToCloudBackupStatus === 'function') {
+    window.subscribeToCloudBackupStatus();
+  }
   if (typeof window.refreshFolderUIDisplay === 'function') {
     window.refreshFolderUIDisplay();
   }
@@ -3369,12 +3487,31 @@ function initBackupRestore() {
     window.updateHybridBackupStatusUI();
   }
 
+  // Listen to flora-firebase-ready to subscribe if not yet connected
+  window.addEventListener('flora-firebase-ready', () => {
+    if (typeof window.subscribeToCloudBackupStatus === 'function') {
+      window.subscribeToCloudBackupStatus();
+    }
+  });
+
   // Automatic Hybrid Daily Backup check after startup
   setTimeout(() => {
     if (typeof window.runHybridDailyBackup === 'function') {
       window.runHybridDailyBackup(false).catch(e => console.warn("[HybridBackup] Startup auto-check notice:", e));
     }
   }, 3500);
+
+  // Handle ?openBackup=true or ?backup=1 URL search param
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('openBackup') === 'true' || urlParams.get('backup') === '1') {
+      setTimeout(() => {
+        if (typeof window.openBackupRestoreModal === 'function') {
+          window.openBackupRestoreModal();
+        }
+      }, 800);
+    }
+  } catch (e) {}
 
   const modalElem = document.getElementById('backupRestoreModal');
   if (modalElem) {

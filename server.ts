@@ -7,6 +7,9 @@ import JSZip from 'jszip';
 const app = express();
 const PORT = 3000;
 
+app.use(express.json({ limit: '30mb' }));
+app.use(express.urlencoded({ extended: true, limit: '30mb' }));
+
 function getStorageBucketName(): string {
   try {
     const configPath = path.resolve(process.cwd(), 'firebase-applet-config.json');
@@ -497,6 +500,98 @@ app.get('/api/list-storage-files', async (req, res) => {
   } catch (err: any) {
     console.error('List storage files error:', err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint 7: Direct Server Proxy Upload to Firebase Storage with Timeout Protection & Token Generation
+app.post('/api/upload-image', async (req, res) => {
+  try {
+    const { folder, fileName, base64Data, contentType, customBucket } = req.body;
+    if (!base64Data || !fileName) {
+      res.status(400).json({ error: 'Missing base64Data or fileName' });
+      return;
+    }
+
+    const bucket = customBucket || getStorageBucketName();
+    const cleanFolder = (folder || 'equipment_images').replace(/^\/+|\/+$/g, '');
+    const cleanFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const fullPath = `${cleanFolder}/${cleanFileName}`;
+
+    // Extract binary buffer from Base64 Data URL or raw base64
+    let rawBase64 = base64Data;
+    let mimeType = contentType || 'image/webp';
+    if (base64Data.includes(';base64,')) {
+      const parts = base64Data.split(';base64,');
+      rawBase64 = parts[1];
+      const match = parts[0].match(/data:(.*?)$/);
+      if (match) mimeType = match[1];
+    }
+
+    const imgBuffer = Buffer.from(rawBase64, 'base64');
+    const downloadToken = (typeof crypto !== 'undefined' && crypto.randomUUID) 
+      ? crypto.randomUUID() 
+      : (Math.random().toString(36).substring(2) + Date.now().toString(36));
+
+    // Upload directly to Google Cloud / Firebase Storage REST API
+    const uploadUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o?uploadType=media&name=${encodeURIComponent(fullPath)}`;
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 7000); // 7s timeout protection
+
+    const uploadResp = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': mimeType,
+        'X-Goog-Upload-Protocol': 'raw',
+        'User-Agent': 'Flora-Server-Upload-Proxy/1.0'
+      },
+      body: imgBuffer,
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!uploadResp.ok) {
+      const errText = await uploadResp.text();
+      console.warn(`[Proxy Upload] Direct REST upload notice: ${uploadResp.status} ${errText}`);
+      throw new Error(`Firebase Storage API Error (${uploadResp.status}): ${errText}`);
+    }
+
+    const uploadJson = (await uploadResp.json()) as any;
+    let token = downloadToken;
+    if (uploadJson.downloadTokens) {
+      token = uploadJson.downloadTokens.split(',')[0];
+    } else {
+      // Patch downloadToken metadata if not returned
+      try {
+        const patchUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(fullPath)}`;
+        const patchResp = await fetch(patchUrl, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ metadata: { firebaseStorageDownloadTokens: downloadToken } })
+        });
+        if (patchResp.ok) {
+          const patchJson = (await patchResp.json()) as any;
+          if (patchJson.downloadTokens) token = patchJson.downloadTokens.split(',')[0];
+        }
+      } catch (e) {}
+    }
+
+    const publicDownloadUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(fullPath)}?alt=media&token=${token}`;
+
+    res.json({
+      success: true,
+      bucket,
+      filePath: fullPath,
+      downloadUrl: publicDownloadUrl,
+      size: imgBuffer.length
+    });
+  } catch (err: any) {
+    console.error('[Proxy Upload] Upload error:', err);
+    res.status(500).json({
+      success: false,
+      error: err.name === 'AbortError' ? 'Upload timed out after 7s' : (err.message || 'Unknown upload error')
+    });
   }
 });
 

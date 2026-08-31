@@ -4,7 +4,31 @@
 (function() {
   "use strict";
 
-  const STORAGE_KEY = "flora_global_logo";
+  function getScopedKey(baseKey) {
+    let dbId = window.firebaseConfig?.firestoreDatabaseId || window.floraFirebaseConfig?.firestoreDatabaseId || "";
+    if (!dbId) {
+      try {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', 'firebase-applet-config.json', false);
+        xhr.send(null);
+        if (xhr.status === 200 || xhr.status === 304) {
+          const parsed = JSON.parse(xhr.responseText);
+          if (parsed && (parsed.firestoreDatabaseId || parsed.projectId)) {
+            window.firebaseConfig = { ...window.firebaseConfig, ...parsed };
+            window.floraFirebaseConfig = window.firebaseConfig;
+            dbId = parsed.firestoreDatabaseId || "";
+          }
+        }
+      } catch (e) {}
+    }
+    if (dbId && dbId !== "(default)") {
+      const cleanDbId = String(dbId).replace(/[^a-zA-Z0-9_-]/g, "_");
+      return `${baseKey}_${cleanDbId}`;
+    }
+    return baseKey;
+  }
+
+  const BASE_STORAGE_KEY = "flora_global_logo";
   const LOGO_CHANGED_EVENT = "flora-global-logo-changed";
   
   let memoryLogoUrl = "";
@@ -83,7 +107,7 @@
     }
 
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(getScopedKey(BASE_STORAGE_KEY));
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed && parsed.url && parsed.isCustom && parsed.url !== "DEFAULT_SUNFLOWER") {
@@ -107,9 +131,9 @@
     updateAllRenderedLogos();
   }
 
-  const PROJECT_TITLE_KEY = "flora_global_project_title";
+  const BASE_PROJECT_TITLE_KEY = "flora_global_project_title";
   const PROJECT_TITLE_CHANGED_EVENT = "flora-project-title-changed";
-  const PROJECT_NOTE_KEY = "flora_global_project_note";
+  const BASE_PROJECT_NOTE_KEY = "flora_global_project_note";
   const PROJECT_NOTE_CHANGED_EVENT = "flora-project-note-changed";
 
   function getGlobalProjectTitle() {
@@ -120,9 +144,9 @@
       } catch (e) {}
     }
     try {
-      const stored = localStorage.getItem(PROJECT_TITLE_KEY);
+      const stored = localStorage.getItem(getScopedKey(BASE_PROJECT_TITLE_KEY));
       if (stored && stored.trim()) return stored.trim();
-      const treeStored = localStorage.getItem("flora_org_tree_v2");
+      const treeStored = localStorage.getItem(getScopedKey("flora_org_tree_v2"));
       if (treeStored) {
         const parsed = JSON.parse(treeStored);
         if (parsed && parsed.name) return String(parsed.name).trim();
@@ -139,9 +163,9 @@
       } catch (e) {}
     }
     try {
-      const stored = localStorage.getItem(PROJECT_NOTE_KEY);
+      const stored = localStorage.getItem(getScopedKey(BASE_PROJECT_NOTE_KEY));
       if (stored !== null && stored !== undefined) return stored.trim();
-      const treeStored = localStorage.getItem("flora_org_tree_v2");
+      const treeStored = localStorage.getItem(getScopedKey("flora_org_tree_v2"));
       if (treeStored) {
         const parsed = JSON.parse(treeStored);
         if (parsed && typeof parsed.note === "string") return String(parsed.note).trim();
@@ -153,7 +177,7 @@
   function setGlobalProjectTitle(title) {
     const clean = String(title || "").trim() || "โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา";
     try {
-      localStorage.setItem(PROJECT_TITLE_KEY, clean);
+      localStorage.setItem(getScopedKey(BASE_PROJECT_TITLE_KEY), clean);
     } catch (e) {}
     try {
       window.dispatchEvent(new CustomEvent(PROJECT_TITLE_CHANGED_EVENT, { detail: { title: clean } }));
@@ -164,7 +188,7 @@
   function setGlobalProjectNote(note) {
     const clean = String(note || "").trim();
     try {
-      localStorage.setItem(PROJECT_NOTE_KEY, clean);
+      localStorage.setItem(getScopedKey(BASE_PROJECT_NOTE_KEY), clean);
     } catch (e) {}
     try {
       window.dispatchEvent(new CustomEvent(PROJECT_NOTE_CHANGED_EVENT, { detail: { note: clean } }));
@@ -226,13 +250,13 @@
       if (node1Name && typeof node1Name === "string" && node1Name.trim()) {
         const cleanTitle = node1Name.trim();
         try {
-          localStorage.setItem(PROJECT_TITLE_KEY, cleanTitle);
+          localStorage.setItem(getScopedKey(BASE_PROJECT_TITLE_KEY), cleanTitle);
         } catch (e) {}
         updateAllRenderedTitles(cleanTitle);
       }
       const node1Note = (typeof tree.note === "string" ? tree.note : (tree.organizationNote || tree.projectNote || "")) || "";
       try {
-        localStorage.setItem(PROJECT_NOTE_KEY, String(node1Note).trim());
+        localStorage.setItem(getScopedKey(BASE_PROJECT_NOTE_KEY), String(node1Note).trim());
       } catch (e) {}
       updateAllRenderedNotes(node1Note);
     }
@@ -246,7 +270,7 @@
     if (rawTitle && typeof rawTitle === "string" && rawTitle.trim()) {
       const cleanTitle = rawTitle.trim();
       try {
-        localStorage.setItem(PROJECT_TITLE_KEY, cleanTitle);
+        localStorage.setItem(getScopedKey(BASE_PROJECT_TITLE_KEY), cleanTitle);
       } catch (e) {}
       updateAllRenderedTitles(cleanTitle);
     }
@@ -254,7 +278,7 @@
     if (typeof rawNote === "string") {
       const cleanNote = rawNote.trim();
       try {
-        localStorage.setItem(PROJECT_NOTE_KEY, cleanNote);
+        localStorage.setItem(getScopedKey(BASE_PROJECT_NOTE_KEY), cleanNote);
       } catch (e) {}
       updateAllRenderedNotes(cleanNote);
     }
@@ -263,7 +287,7 @@
       memoryLogoUrl = "";
       isCustomLogoActive = false;
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ url: "", isCustom: false, updatedAt: new Date().toISOString() }));
+        localStorage.setItem(getScopedKey(BASE_STORAGE_KEY), JSON.stringify({ url: "", isCustom: false, updatedAt: new Date().toISOString() }));
       } catch (e) {}
       broadcastLogoChange({ url: getSunflowerDataUrl(96), isCustom: false });
       return;
@@ -274,7 +298,7 @@
       memoryLogoUrl = targetUrl;
       isCustomLogoActive = true;
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ url: targetUrl, isCustom: true, updatedAt: data.updatedAt || new Date().toISOString() }));
+        localStorage.setItem(getScopedKey(BASE_STORAGE_KEY), JSON.stringify({ url: targetUrl, isCustom: true, updatedAt: data.updatedAt || new Date().toISOString() }));
       } catch (e) {}
       broadcastLogoChange({ url: targetUrl, isCustom: true });
     }

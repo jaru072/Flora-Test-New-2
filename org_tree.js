@@ -1,8 +1,33 @@
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "flora_org_tree_v2";
-  const PROJECT_TITLE_KEY = "flora_global_project_title";
+  function getScopedKey(baseKey) {
+    let dbId = window.firebaseConfig?.firestoreDatabaseId || window.floraFirebaseConfig?.firestoreDatabaseId || "";
+    if (!dbId) {
+      try {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', 'firebase-applet-config.json', false);
+        xhr.send(null);
+        if (xhr.status === 200 || xhr.status === 304) {
+          const parsed = JSON.parse(xhr.responseText);
+          if (parsed && (parsed.firestoreDatabaseId || parsed.projectId)) {
+            window.firebaseConfig = { ...window.firebaseConfig, ...parsed };
+            window.floraFirebaseConfig = window.firebaseConfig;
+            dbId = parsed.firestoreDatabaseId || "";
+          }
+        }
+      } catch (e) {}
+    }
+    if (dbId && dbId !== "(default)") {
+      const cleanDbId = String(dbId).replace(/[^a-zA-Z0-9_-]/g, "_");
+      return `${baseKey}_${cleanDbId}`;
+    }
+    return baseKey;
+  }
+
+  const BASE_STORAGE_KEY = "flora_org_tree_v2";
+  const BASE_PROJECT_TITLE_KEY = "flora_global_project_title";
+  const BASE_PROJECT_NOTE_KEY = "flora_global_project_note";
   const FORMAT = "flora-org-tree";
   const KIND_LABELS = {
     project: "👑 ชื่อหลักของระบบ (Master Organization Name)",
@@ -104,14 +129,12 @@
     return visit(value, 0);
   }
 
-  const PROJECT_NOTE_KEY = "flora_global_project_note";
-
   function syncMasterTitleToStorageAndDom(title, note) {
     const cleanTitle = String(title || (tree?.name) || "โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา").trim();
     const cleanNote = String(note !== undefined ? note : (tree?.note || "")).trim();
     try {
-      localStorage.setItem(PROJECT_TITLE_KEY, cleanTitle);
-      localStorage.setItem(PROJECT_NOTE_KEY, cleanNote);
+      localStorage.setItem(getScopedKey(BASE_PROJECT_TITLE_KEY), cleanTitle);
+      localStorage.setItem(getScopedKey(BASE_PROJECT_NOTE_KEY), cleanNote);
     } catch (e) {}
     try {
       window.dispatchEvent(new CustomEvent("flora-project-title-changed", { detail: { title: cleanTitle, note: cleanNote } }));
@@ -146,14 +169,16 @@
 
   function loadLocal() {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const scopedKey = getScopedKey(BASE_STORAGE_KEY);
+      let saved = localStorage.getItem(scopedKey);
+      if (!saved) saved = localStorage.getItem(BASE_STORAGE_KEY);
       if (saved) tree = validateTree(JSON.parse(saved));
     } catch (error) { console.warn("Tree local data reset:", error); tree = clone(seedTree); }
     selectedId = tree.id;
     syncMasterTitleToStorageAndDom(tree.name, tree.note);
   }
   function persistLocal() { 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tree)); 
+    localStorage.setItem(getScopedKey(BASE_STORAGE_KEY), JSON.stringify(tree)); 
     syncMasterTitleToStorageAndDom(tree.name, tree.note);
   }
   function syncDerivedLists() {

@@ -37,8 +37,8 @@
       updateProfile
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    // Firebase Config (Project: Project Flora Garden - flora-gaden)
-    const firebaseConfig = {
+    // Firebase Config Loader (Loads dynamically from firebase-applet-config.json)
+    let firebaseConfig = {
       apiKey: "AIzaSyCVFTo7glMah6eeubjCLQa6HtIrnwpmrc4",
       authDomain: "flora-gaden.firebaseapp.com",
       projectId: "flora-gaden",
@@ -48,6 +48,64 @@
       appId: "1:633519077693:web:6267796ae34a8286ff6d54",
       measurementId: "G-CTYBQCMGQG"
     };
+
+    // Attempt sync loading of firebase-applet-config.json before initializing
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', 'firebase-applet-config.json', false); // Synchronous fetch
+      xhr.send(null);
+      if (xhr.status === 200 || xhr.status === 304) {
+        const loadedCfg = JSON.parse(xhr.responseText);
+        if (loadedCfg && loadedCfg.projectId) {
+          firebaseConfig = { ...firebaseConfig, ...loadedCfg };
+        }
+      }
+    } catch (eConfig) {
+      console.warn("Dynamic firebase-applet-config.json load warning (using fallback config):", eConfig);
+    }
+
+    window.firebaseConfig = firebaseConfig;
+    window.floraFirebaseConfig = firebaseConfig;
+
+    // Scoped LocalStorage Key Generator (Scoped to active Firestore Database ID)
+    function getScopedStorageKey(baseKey) {
+      let dbId = window.firebaseConfig?.firestoreDatabaseId || window.floraFirebaseConfig?.firestoreDatabaseId || "";
+      if (!dbId) {
+        try {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', 'firebase-applet-config.json', false);
+          xhr.send(null);
+          if (xhr.status === 200 || xhr.status === 304) {
+            const parsed = JSON.parse(xhr.responseText);
+            if (parsed && (parsed.firestoreDatabaseId || parsed.projectId)) {
+              window.firebaseConfig = { ...window.firebaseConfig, ...parsed };
+              window.floraFirebaseConfig = window.firebaseConfig;
+              dbId = parsed.firestoreDatabaseId || "";
+            }
+          }
+        } catch (e) {}
+      }
+      if (dbId && dbId !== "(default)") {
+        const cleanDbId = String(dbId).replace(/[^a-zA-Z0-9_-]/g, "_");
+        return `${baseKey}_${cleanDbId}`;
+      }
+      return baseKey;
+    }
+    window.getScopedStorageKey = getScopedStorageKey;
+
+    function getScopedLocalStorageItem(baseKey) {
+      const scopedKey = getScopedStorageKey(baseKey);
+      const val = localStorage.getItem(scopedKey);
+      if (val !== null) return val;
+      return localStorage.getItem(baseKey);
+    }
+    window.getScopedLocalStorageItem = getScopedLocalStorageItem;
+
+    function setScopedLocalStorageItem(baseKey, val) {
+      const scopedKey = getScopedStorageKey(baseKey);
+      localStorage.setItem(scopedKey, val);
+    }
+    window.setScopedLocalStorageItem = setScopedLocalStorageItem;
 
     // Global state holding app status
     let currentRole = 'WORKER'; // Default: WORKER
@@ -1583,7 +1641,11 @@
     }
 
     function generateInitialAttendance() {
-      const todayStr = new Date().toLocaleDateString('th-TH');
+      const now = new Date();
+      const beYear = now.getFullYear() + 543;
+      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const todayStr = `${day}/${month}/${beYear}`;
       return [
         {
           id: 'att-01',
@@ -1620,50 +1682,50 @@
       try {
         if (Array.isArray(employeeList) && employeeList.length > 0) {
           try {
-            localStorage.setItem('flora_employees', JSON.stringify(employeeList));
+            setScopedLocalStorageItem('flora_employees', JSON.stringify(employeeList));
           } catch(eQuota) {
             // If quota exceeded due to heavy base64, save sanitized version
             const sanitized = employeeList.map(emp => ({
               ...emp,
               photoUrl: (emp.photoUrl && emp.photoUrl.length > 2000) ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' : emp.photoUrl
             }));
-            try { localStorage.setItem('flora_employees', JSON.stringify(sanitized)); } catch(e){}
+            try { setScopedLocalStorageItem('flora_employees', JSON.stringify(sanitized)); } catch(e){}
           }
         }
         if (Array.isArray(equipmentList) && equipmentList.length > 0) {
           try {
-            localStorage.setItem('flora_equipment', JSON.stringify(equipmentList));
+            setScopedLocalStorageItem('flora_equipment', JSON.stringify(equipmentList));
           } catch(eQuota) {
             const sanitized = equipmentList.map(eq => ({
               ...eq,
               imageUrl: (eq.imageUrl && eq.imageUrl.length > 2000) ? DEFAULT_EQUIPMENT_IMAGE : eq.imageUrl
             }));
-            try { localStorage.setItem('flora_equipment', JSON.stringify(sanitized)); } catch(e){}
+            try { setScopedLocalStorageItem('flora_equipment', JSON.stringify(sanitized)); } catch(e){}
           }
         }
         if (Array.isArray(transactionHistory) && transactionHistory.length > 0) {
           try {
-            localStorage.setItem('flora_transactions', JSON.stringify(transactionHistory));
+            setScopedLocalStorageItem('flora_transactions', JSON.stringify(transactionHistory));
           } catch(e){}
         }
         if (Array.isArray(attendanceLogs) && attendanceLogs.length > 0) {
           try {
-            localStorage.setItem('flora_attendance', JSON.stringify(attendanceLogs));
+            setScopedLocalStorageItem('flora_attendance', JSON.stringify(attendanceLogs));
           } catch(e){}
         }
         if (Array.isArray(categoriesList) && categoriesList.length > 0) {
           try {
-            localStorage.setItem('flora_categories', JSON.stringify(categoriesList));
+            setScopedLocalStorageItem('flora_categories', JSON.stringify(categoriesList));
           } catch(e){}
         }
         if (departmentsList && Array.isArray(departmentsList) && departmentsList.length > 0) {
-          localStorage.setItem('flora_departments', JSON.stringify(departmentsList));
+          setScopedLocalStorageItem('flora_departments', JSON.stringify(departmentsList));
         }
         if (positionsList && Array.isArray(positionsList) && positionsList.length > 0) {
-          localStorage.setItem('flora_positions', JSON.stringify(positionsList));
+          setScopedLocalStorageItem('flora_positions', JSON.stringify(positionsList));
         }
         if (locationsList && Array.isArray(locationsList) && locationsList.length > 0) {
-          localStorage.setItem('flora_locations', JSON.stringify(locationsList));
+          setScopedLocalStorageItem('flora_locations', JSON.stringify(locationsList));
         }
       } catch (e) {
         console.warn("LocalStorage save notice:", e);
@@ -1672,7 +1734,7 @@
 
     function loadFromLocalStorage() {
       try {
-        const savedEquip = localStorage.getItem('flora_equipment');
+        const savedEquip = getScopedLocalStorageItem('flora_equipment');
         if (savedEquip) {
           try {
             const parsed = JSON.parse(savedEquip);
@@ -1680,7 +1742,7 @@
           } catch(e){}
         }
 
-        const savedEmps = localStorage.getItem('flora_employees');
+        const savedEmps = getScopedLocalStorageItem('flora_employees');
         if (savedEmps) {
           try {
             const parsed = JSON.parse(savedEmps);
@@ -1688,7 +1750,7 @@
           } catch(e){}
         }
 
-        const savedTx = localStorage.getItem('flora_transactions');
+        const savedTx = getScopedLocalStorageItem('flora_transactions');
         if (savedTx) {
           try {
             const parsed = JSON.parse(savedTx);
@@ -1696,7 +1758,7 @@
           } catch(e){}
         }
 
-        const savedAtt = localStorage.getItem('flora_attendance');
+        const savedAtt = getScopedLocalStorageItem('flora_attendance');
         if (savedAtt) {
           try {
             const parsed = JSON.parse(savedAtt);
@@ -1704,7 +1766,7 @@
           } catch(e){}
         }
 
-        const savedCats = localStorage.getItem('flora_categories');
+        const savedCats = getScopedLocalStorageItem('flora_categories');
         if (savedCats) {
           try {
             const parsed = JSON.parse(savedCats);
@@ -1717,7 +1779,7 @@
           categoriesList = [...defaultCategoriesList];
         }
 
-        const savedDepts = localStorage.getItem('flora_departments');
+        const savedDepts = getScopedLocalStorageItem('flora_departments');
         if (savedDepts) {
           try {
             departmentsList = JSON.parse(savedDepts);
@@ -1728,7 +1790,7 @@
           departmentsList = [...defaultDepartmentsList];
         }
 
-        const savedPositions = localStorage.getItem('flora_positions');
+        const savedPositions = getScopedLocalStorageItem('flora_positions');
         if (savedPositions) {
           try {
             const parsed = JSON.parse(savedPositions);
@@ -1759,7 +1821,7 @@
           positionsList = [...defaultPositionsList];
         }
 
-        const savedLocs = localStorage.getItem('flora_locations');
+        const savedLocs = getScopedLocalStorageItem('flora_locations');
         if (savedLocs) {
           try {
             locationsList = JSON.parse(savedLocs);
@@ -1804,7 +1866,11 @@
 
       const dateElem = document.getElementById('todayDateSpan');
       if (dateElem) {
-        dateElem.textContent = `ประจำวันที่ ${new Date().toLocaleDateString('th-TH')}`;
+        const now = new Date();
+        const beYear = now.getFullYear() + 543;
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        dateElem.textContent = `ประจำวันที่ ${day}/${month}/${beYear}`;
       }
 
       renderCategoryDropdowns();
@@ -2572,6 +2638,8 @@
       return await autoOptimizeAndResizeImage(fileOrBlob, { presetKey, presetType });
     }
 
+    window._stagedCompressedFiles = window._stagedCompressedFiles || {};
+
     window.previewSelectedImage = async function(input, imgElementId, boxElementId, presetRadioName = null) {
       if (input.files && input.files[0]) {
         const rawFile = input.files[0];
@@ -2585,6 +2653,9 @@
         if (input.id === 'empPhotoFileInput' || input.id === 'empPhotoCameraInput') {
           const urlInput = document.getElementById('empPhotoUrlInput');
           if (urlInput) urlInput.value = '';
+        } else if (input.id === 'equipImageFileInput' || input.id === 'equipImageCameraInput') {
+          const urlInput = document.getElementById('equipManualImgUrl');
+          if (urlInput) urlInput.value = '';
         }
 
         const presetType = (presetRadioName === 'empCompressPreset' || input.id === 'empPhotoFileInput' || input.id === 'empPhotoCameraInput') ? 'EMPLOYEE' : 'EQUIPMENT';
@@ -2596,11 +2667,22 @@
         if (img) img.src = res.dataUrl;
         if (box) box.classList.remove('d-none');
 
-        // Replace input file with compressed file using DataTransfer
+        // Store compressed file directly on input and global stage
+        const finalFile = res.file || rawFile;
+        input._compressedFile = finalFile;
+        if (input.id) {
+          window._stagedCompressedFiles[input.id] = finalFile;
+        }
+
+        // Replace input file with compressed file using DataTransfer if supported
         if (res.file) {
-          const dt = new DataTransfer();
-          dt.items.add(res.file);
-          input.files = dt.files;
+          try {
+            const dt = new DataTransfer();
+            dt.items.add(res.file);
+            input.files = dt.files;
+          } catch (dtErr) {
+            console.warn("DataTransfer notice:", dtErr);
+          }
         }
 
         // Show compressed size badge inside preview box if available
@@ -2615,14 +2697,39 @@
       }
     };
 
+    window.handleEquipManualUrlInput = function(val) {
+      const img = document.getElementById('equipImgPreview');
+      const box = document.getElementById('equipImgPreviewBox');
+      const fileInput = document.getElementById('equipImageFileInput');
+      const cameraInput = document.getElementById('equipImageCameraInput');
+
+      if (fileInput) { fileInput.value = ''; fileInput._compressedFile = null; }
+      if (cameraInput) { cameraInput.value = ''; cameraInput._compressedFile = null; }
+      if (window._stagedCompressedFiles) {
+        window._stagedCompressedFiles['equipImageFileInput'] = null;
+        window._stagedCompressedFiles['equipImageCameraInput'] = null;
+      }
+
+      if (val && val.trim()) {
+        if (img) img.src = val.trim();
+        if (box) box.classList.remove('d-none');
+      } else {
+        if (box) box.classList.add('d-none');
+      }
+    };
+
     window.handleEmpPhotoUrlInput = function(val) {
       const img = document.getElementById('empPhotoPreview');
       const box = document.getElementById('empPhotoPreviewBox');
       const fileInput = document.getElementById('empPhotoFileInput');
       const cameraInput = document.getElementById('empPhotoCameraInput');
 
-      if (fileInput) fileInput.value = '';
-      if (cameraInput) cameraInput.value = '';
+      if (fileInput) { fileInput.value = ''; fileInput._compressedFile = null; }
+      if (cameraInput) { cameraInput.value = ''; cameraInput._compressedFile = null; }
+      if (window._stagedCompressedFiles) {
+        window._stagedCompressedFiles['empPhotoFileInput'] = null;
+        window._stagedCompressedFiles['empPhotoCameraInput'] = null;
+      }
 
       if (val && val.trim()) {
         if (img) img.src = val.trim();
@@ -3253,11 +3360,12 @@
       if (event.target) event.target.value = '';
     };
 
-    // Firebase Storage Upload Helpers
+    // Firebase Storage Upload Helpers (Dual-Tier: Direct Server Proxy + Client SDK Fallback with Timeout Protection)
     async function uploadFileToFirebaseStorage(file, folderName = "equipment_images", presetKey = 'MEDIUM', customFileName = null) {
-      if (!isFirebaseReady || !storage) {
-        throw new Error("Firebase Storage ยังไม่พร้อมใช้งาน");
+      if (!file) {
+        throw new Error("ไม่พบไฟล์รูปภาพที่จะอัปโหลด");
       }
+
       let targetFile = file;
       let optStats = null;
       try {
@@ -3282,53 +3390,138 @@
         fileName = `${Date.now()}_${safeName}.${ext}`;
       }
 
-      const storageRef = ref(storage, `${folderName}/${fileName}`);
-      const snapshot = await uploadBytes(storageRef, targetFile);
-      const downloadUrl = await getDownloadURL(snapshot.ref);
+      // Tier 1: Direct Server Proxy Upload (/api/upload-image) with 6s Timeout
+      try {
+        let base64Data = (optStats && optStats.dataUrl) ? optStats.dataUrl : '';
+        if (!base64Data) {
+          base64Data = await blobToBase64(targetFile);
+        }
 
-      if (optStats && optStats.savedPercent > 0) {
-        console.log(`⚡ Auto Resized & Optimized before uploading (${folderName}/${fileName}): ${optStats.originalSizeFormatted} -> ${optStats.compressedSizeFormatted} (Saved ${optStats.savedPercent}%)`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6500);
+
+        const currentBucket = (typeof window.firebaseConfig !== 'undefined' && window.firebaseConfig.storageBucket) 
+          ? window.firebaseConfig.storageBucket 
+          : 'flora-gaden.firebasestorage.app';
+
+        const serverResp = await fetch('/api/upload-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            folder: folderName,
+            fileName: fileName,
+            base64Data: base64Data,
+            contentType: (optStats && optStats.format) || targetFile.type || 'image/webp',
+            customBucket: currentBucket
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (serverResp.ok) {
+          const sJson = await serverResp.json();
+          if (sJson && sJson.success && sJson.downloadUrl) {
+            if (optStats && optStats.savedPercent > 0) {
+              console.log(`⚡ [Server Proxy Upload] (${folderName}/${fileName}): ${optStats.originalSizeFormatted} -> ${optStats.compressedSizeFormatted} (-${optStats.savedPercent}%)`);
+            }
+            return sJson.downloadUrl;
+          }
+        }
+      } catch (proxyErr) {
+        console.warn("[Server Proxy Upload] Notice, trying Client SDK:", proxyErr.message);
       }
 
-      return downloadUrl;
+      // Tier 2: Fallback to Firebase Client SDK with 6s Promise.race Timeout
+      if (isFirebaseReady && storage) {
+        const storageRef = ref(storage, `${folderName}/${fileName}`);
+        const uploadPromise = uploadBytes(storageRef, targetFile).then(snapshot => getDownloadURL(snapshot.ref));
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Client SDK Storage upload timeout")), 6500));
+        const downloadUrl = await Promise.race([uploadPromise, timeoutPromise]);
+
+        if (optStats && optStats.savedPercent > 0) {
+          console.log(`⚡ [Client SDK Upload] (${folderName}/${fileName}): ${optStats.originalSizeFormatted} -> ${optStats.compressedSizeFormatted} (-${optStats.savedPercent}%)`);
+        }
+        return downloadUrl;
+      }
+
+      throw new Error("ไม่สามารถอัปโหลดไปยัง Firebase Storage ได้ (การเชื่อมต่อขัดข้อง)");
     }
 
     async function uploadImageBlobToFirebaseStorage(imageUrl, folderName = "equipment_images", defaultName = "item.jpeg", presetKey = 'MEDIUM') {
       if (!imageUrl) return imageUrl;
       if (imageUrl.startsWith('data:image')) return imageUrl;
 
+      let targetBlob = null;
+      let optStats = null;
+      let ext = 'webp';
+
+      try {
+        const res = await fetch(imageUrl);
+        const rawBlob = await res.blob();
+        const presetType = (folderName === 'employee_photos') ? 'EMPLOYEE' : 'EQUIPMENT';
+        optStats = await autoOptimizeAndResizeImage(rawBlob, { presetKey, presetType });
+        targetBlob = (optStats && optStats.blob) ? optStats.blob : rawBlob;
+        ext = (optStats && optStats.extension) ? optStats.extension : 'webp';
+      } catch (fErr) {
+        console.warn("Fetch blob notice:", fErr);
+      }
+
+      if (!targetBlob) return imageUrl;
+
+      const cleanName = defaultName ? defaultName.replace(/[^a-zA-Z0-9._-]/g, '_') : 'item';
+      const baseName = cleanName.replace(/\.(jpeg|jpg|png|webp)$/i, '');
+      const fileName = `${baseName}.${ext}`;
+
+      // Tier 1: Try Server Proxy
+      try {
+        let base64Data = (optStats && optStats.dataUrl) ? optStats.dataUrl : await blobToBase64(targetBlob);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6500);
+
+        const currentBucket = (typeof window.firebaseConfig !== 'undefined' && window.firebaseConfig.storageBucket) 
+          ? window.firebaseConfig.storageBucket 
+          : 'flora-gaden.firebasestorage.app';
+
+        const serverResp = await fetch('/api/upload-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            folder: folderName,
+            fileName: fileName,
+            base64Data: base64Data,
+            contentType: (optStats && optStats.format) || targetBlob.type || 'image/webp',
+            customBucket: currentBucket
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (serverResp.ok) {
+          const sJson = await serverResp.json();
+          if (sJson && sJson.success && sJson.downloadUrl) {
+            return sJson.downloadUrl;
+          }
+        }
+      } catch (proxyErr) {}
+
+      // Tier 2: Try Client SDK
       if (isFirebaseReady && storage) {
         try {
-          const res = await fetch(imageUrl);
-          const rawBlob = await res.blob();
-          const presetType = (folderName === 'employee_photos') ? 'EMPLOYEE' : 'EQUIPMENT';
-          const optStats = await autoOptimizeAndResizeImage(rawBlob, { presetKey, presetType });
-          const targetBlob = (optStats && optStats.blob) ? optStats.blob : rawBlob;
-          const ext = (optStats && optStats.extension) ? optStats.extension : 'webp';
-
-          const cleanName = defaultName ? defaultName.replace(/[^a-zA-Z0-9._-]/g, '_') : 'item';
-          const baseName = cleanName.replace(/\.(jpeg|jpg|png|webp)$/i, '');
-          const fileName = `${baseName}.${ext}`;
-
           const storageRef = ref(storage, `${folderName}/${fileName}`);
-          const snapshot = await uploadBytes(storageRef, targetBlob);
-          const downloadUrl = await getDownloadURL(snapshot.ref);
-
-          if (optStats && optStats.savedPercent > 0) {
-            console.log(`⚡ Proxy Storage Upload Optimized (${folderName}/${fileName}): ${optStats.originalSizeFormatted} -> ${optStats.compressedSizeFormatted} (Saved ${optStats.savedPercent}%)`);
-          }
-          return downloadUrl;
+          const uploadPromise = uploadBytes(storageRef, targetBlob).then(snapshot => getDownloadURL(snapshot.ref));
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 6500));
+          return await Promise.race([uploadPromise, timeoutPromise]);
         } catch (err) {
-          console.warn("Proxy to Firebase Storage notice:", err.message);
+          console.warn("Client Storage notice:", err.message);
         }
       }
 
       // Fallback: If local blob URL, convert to compressed base64 so other devices can load it
       if (imageUrl.startsWith('blob:')) {
         try {
-          const res = await fetch(imageUrl);
-          const blob = await res.blob();
-          return await compressImageToBase64(blob, 800, 0.8);
+          return await compressImageToBase64(targetBlob, 800, 0.8);
         } catch (e) {
           return imageUrl;
         }
@@ -3564,20 +3757,33 @@
       const fileInput = document.getElementById('equipImageFileInput');
       const cameraInput = document.getElementById('equipImageCameraInput');
 
-      const selectedEquipFile = (fileInput && fileInput.files && fileInput.files.length > 0)
-        ? fileInput.files[0]
-        : ((cameraInput && cameraInput.files && cameraInput.files.length > 0) ? cameraInput.files[0] : null);
+      const selectedEquipFile = (fileInput && fileInput._compressedFile)
+        ? fileInput._compressedFile
+        : ((fileInput && fileInput.files && fileInput.files.length > 0)
+            ? fileInput.files[0]
+            : ((window._stagedCompressedFiles && window._stagedCompressedFiles['equipImageFileInput'])
+                ? window._stagedCompressedFiles['equipImageFileInput']
+                : ((cameraInput && cameraInput._compressedFile)
+                    ? cameraInput._compressedFile
+                    : ((cameraInput && cameraInput.files && cameraInput.files.length > 0)
+                        ? cameraInput.files[0]
+                        : ((window._stagedCompressedFiles && window._stagedCompressedFiles['equipImageCameraInput'])
+                            ? window._stagedCompressedFiles['equipImageCameraInput']
+                            : null)))));
 
       const overlay = document.getElementById('autoSearchLoadingOverlay');
       const stepTitle = document.getElementById('loadingStepTitle');
       const stepDetail = document.getElementById('loadingStepDetail');
 
-      overlay.classList.remove('d-none');
+      if (overlay) overlay.classList.remove('d-none');
 
       try {
         let finalImageUrl = '';
         const safeEquipCode = (code || 'equipment').replace(/[^a-zA-Z0-9_-]/g, '_');
-        const equipFileName = `${safeEquipCode}.jpeg`;
+        const equipFileName = `${safeEquipCode}_${Date.now()}.webp`;
+
+        const existingItem = editId ? equipmentList.find(x => x.id === editId || x.code === editId) : null;
+        const oldImageUrl = existingItem ? existingItem.imageUrl : null;
 
         if (selectedEquipFile) {
           const presetKey = document.querySelector('input[name="equipCompressPreset"]:checked')?.value || 'MEDIUM';
@@ -3592,13 +3798,29 @@
         } else if (manualUrl) {
           if (stepTitle) stepTitle.textContent = "กำลังบันทึกข้อมูลอุปกรณ์...";
           if (stepDetail) stepDetail.textContent = "ระบบกำลังประมวลผลข้อมูลและรูปภาพ...";
-          finalImageUrl = await uploadImageBlobToFirebaseStorage(manualUrl, "equipment_images", equipFileName);
+          if (manualUrl.startsWith('data:') || manualUrl.startsWith('http://') || manualUrl.startsWith('https://')) {
+            finalImageUrl = manualUrl;
+          } else if (manualUrl.startsWith('blob:')) {
+            finalImageUrl = await uploadImageBlobToFirebaseStorage(manualUrl, "equipment_images", equipFileName);
+          } else {
+            finalImageUrl = manualUrl;
+          }
         } else {
-          if (editId) {
-            const existing = equipmentList.find(x => x.id === editId);
-            finalImageUrl = existing && existing.imageUrl ? existing.imageUrl : DEFAULT_EQUIPMENT_IMAGE;
+          if (existingItem && existingItem.imageUrl) {
+            finalImageUrl = existingItem.imageUrl;
           } else {
             finalImageUrl = DEFAULT_EQUIPMENT_IMAGE;
+          }
+        }
+
+        // Delete old photo from Firebase Storage if replaced by a new photo
+        if (oldImageUrl && oldImageUrl !== finalImageUrl && typeof window.deleteImageFromFirebaseStorage === 'function') {
+          if (oldImageUrl.includes('firebasestorage') || oldImageUrl.includes('storage.googleapis.com') || oldImageUrl.startsWith('gs://')) {
+            try {
+              window.deleteImageFromFirebaseStorage(oldImageUrl);
+            } catch (delErr) {
+              console.warn("Delete old storage image notice:", delErr);
+            }
           }
         }
 
@@ -6422,11 +6644,8 @@
         }
       });
 
-      const thaiDateStr = now.toLocaleDateString('th-TH', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
+      const thaiDateInfo = typeof formatThaiBuddhistDateAndTime === 'function' ? formatThaiBuddhistDateAndTime(now) : null;
+      const thaiDateStr = thaiDateInfo ? thaiDateInfo.dateBE : `${now.getDate()} ${['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][now.getMonth()]} ${now.getFullYear() + 543}`;
 
       container.innerHTML = `
         <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 bg-white border-start border-4 border-primary">
@@ -6628,10 +6847,19 @@
           itemsDisplay = `<span class="fw-bold text-success">${tx.equipmentName || '-'}</span>`;
         }
 
+        let displayTimestamp = tx.timestamp || '-';
+        if (tx.timestamp) {
+          const ms = typeof window.getRecordTimestampMs === 'function' ? window.getRecordTimestampMs(tx) : 0;
+          if (ms > 0 && typeof formatThaiBuddhistDateAndTime === 'function') {
+            const f = formatThaiBuddhistDateAndTime(ms);
+            displayTimestamp = `${f.dateBE} ${f.time24}`;
+          }
+        }
+
         html += `
           <tr>
             <td class="ps-3 fs-7 text-secondary">
-              <div>${tx.timestamp}</div>
+              <div>${displayTimestamp}</div>
               <small class="text-muted font-monospace fs-8"><i class="bi bi-receipt me-1"></i>${tx.docNo || tx.id}</small>
             </td>
             <td>${typeBadge}</td>
@@ -6750,9 +6978,8 @@
         const userName = currentAuthUser?.displayName || currentUserProfile?.displayName || userEmail.split('@')[0] || 'เจ้าหน้าที่';
         
         const now = new Date();
-        const dateStr = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
-        const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
-        const fullTimestamp = `${dateStr} ${timeStr}`;
+        const formatted = formatThaiBuddhistDateAndTime(now);
+        const fullTimestamp = `${formatted.dateBE} ${formatted.time24}`;
         const logId = 'audit-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
 
         const logEntry = {
@@ -9134,9 +9361,9 @@
         return;
       }
 
-      const todayThai = new Date().toLocaleDateString('th-TH', {
-        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-      });
+      const now = new Date();
+      const thaiFmt = typeof formatThaiBuddhistDateAndTime === 'function' ? formatThaiBuddhistDateAndTime(now) : null;
+      const todayThai = thaiFmt ? `${thaiFmt.dateBE} เวลา ${thaiFmt.time24}` : `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()+543}`;
 
       const dateRangeDisplay = (startDate && endDate)
         ? `${formattedStart} ถึง ${formattedEnd}`
@@ -9796,9 +10023,9 @@
         return;
       }
 
-      const todayThai = new Date().toLocaleDateString('th-TH', {
-        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-      });
+      const now = new Date();
+      const thaiFmt = typeof formatThaiBuddhistDateAndTime === 'function' ? formatThaiBuddhistDateAndTime(now) : null;
+      const todayThai = thaiFmt ? `${thaiFmt.dateBE} เวลา ${thaiFmt.time24}` : `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()+543}`;
 
       const dateRangeDisplay = (startDate && endDate)
         ? `${formattedStart} ถึง ${formattedEnd}`
@@ -10486,10 +10713,19 @@
 
         const qtyDisplay = `<strong class="text-dark fs-7">${tx.itemSpecificQty || tx.quantity || 1}</strong> <span class="text-muted fs-9">${tx.itemSpecificUnit || tx.unit || 'ชิ้น'}</span>`;
 
+        let modalTxTime = tx.timestamp || '-';
+        if (tx.timestamp) {
+          const ms = typeof window.getRecordTimestampMs === 'function' ? window.getRecordTimestampMs(tx) : 0;
+          if (ms > 0 && typeof formatThaiBuddhistDateAndTime === 'function') {
+            const f = formatThaiBuddhistDateAndTime(ms);
+            modalTxTime = `${f.dateBE} ${f.time24}`;
+          }
+        }
+
         html += `
           <tr>
             <td class="ps-3 text-nowrap">
-              <div class="fw-bold text-dark fs-8">${tx.timestamp || '-'}</div>
+              <div class="fw-bold text-dark fs-8">${modalTxTime}</div>
               <small class="text-muted font-monospace fs-9">#${tx.docNo || (tx.id ? tx.id.substring(0, 8) : '-')}</small>
             </td>
             <td>${typeBadge}</td>
@@ -11209,12 +11445,14 @@
         return;
       }
 
-      const todayThai = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
-      const timeThai = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+      const now = new Date();
+      const thaiFmt = typeof formatThaiBuddhistDateAndTime === 'function' ? formatThaiBuddhistDateAndTime(now) : null;
+      const todayThai = thaiFmt ? thaiFmt.dateBE : `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()+543}`;
+      const timeThai = thaiFmt ? thaiFmt.time24 : `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} น.`;
 
       let msg = `📲 [แจ้งเตือนรายการยืมอุปกรณ์เกินกำหนดคืนทาง LINE]\n`;
       msg += `🌿 บริษัท โฟลร่า การ์เด้น จำกัด\n`;
-      msg += `📅 ข้อมูล ณ วันที่ ${todayThai} เวลา ${timeThai} น.\n`;
+      msg += `📅 ข้อมูล ณ วันที่ ${todayThai} เวลา ${timeThai}\n`;
       msg += `----------------------------------------\n`;
 
       const groupedByEmp = {};
@@ -11311,8 +11549,13 @@
         return;
       }
 
+      const now = new Date();
+      const thaiFmt = typeof formatThaiBuddhistDateAndTime === 'function' ? formatThaiBuddhistDateAndTime(now) : null;
+      const todayThai = thaiFmt ? thaiFmt.dateBE : `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()+543}`;
+      const timeThai = thaiFmt ? thaiFmt.time24 : `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} น.`;
+
       let text = `📢 **แจ้งเตือนรายการยืมอุปกรณ์การเกษตรเกินกำหนดคืน**\n`;
-      text += `📅 ข้อมูล ณ วันที่ ${new Date().toLocaleDateString('th-TH')} เวลา ${new Date().toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'})} น.\n`;
+      text += `📅 ข้อมูล ณ วันที่ ${todayThai} เวลา ${timeThai}\n`;
       text += `----------------------------------------\n`;
 
       const groupedByEmp = {};
@@ -11719,8 +11962,14 @@
         showToast("การลงเวลาถูกย้ายไปที่ศูนย์ผังโครงสร้างและจัดการบุคลากร");
         return;
       }
-      const timeStr = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
-      const todayStr = new Date().toLocaleDateString('th-TH');
+      const now = new Date();
+      const beYear = now.getFullYear() + 543;
+      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      const timeStr = `${hours}:${mins} น.`;
+      const todayStr = `${day}/${month}/${beYear}`;
 
       const log = {
         id: 'att-' + Date.now(),
@@ -13109,8 +13358,14 @@
       const emp = employeeList.find(x => x.id === activeScannedEmpId);
       if (!emp) return;
 
-      const timeStr = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
-      const todayStr = new Date().toLocaleDateString('th-TH');
+      const now = new Date();
+      const beYear = now.getFullYear() + 543;
+      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      const timeStr = `${hours}:${mins} น.`;
+      const todayStr = `${day}/${month}/${beYear}`;
 
       const log = {
         id: 'att-' + Date.now(),
@@ -14350,6 +14605,15 @@
       const item = equipmentList.find(x => x.id === id);
       if (!item) return;
 
+      const fileInput = document.getElementById('equipImageFileInput');
+      const cameraInput = document.getElementById('equipImageCameraInput');
+      if (fileInput) { fileInput.value = ''; fileInput._compressedFile = null; }
+      if (cameraInput) { cameraInput.value = ''; cameraInput._compressedFile = null; }
+      if (window._stagedCompressedFiles) {
+        window._stagedCompressedFiles['equipImageFileInput'] = null;
+        window._stagedCompressedFiles['equipImageCameraInput'] = null;
+      }
+
       document.getElementById('editEquipId').value = item.id;
       document.getElementById('equipModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>แก้ไขรายการอุปกรณ์การเกษตร';
       document.getElementById('equipNameThai').value = item.name;
@@ -14360,14 +14624,18 @@
       document.getElementById('equipUnitInput').value = item.unit;
       populateLocationDropdowns(item.location || '');
       document.getElementById('equipLocationInput').value = item.location || '';
-      document.getElementById('equipManualImgUrl').value = item.imageUrl;
-      document.getElementById('equipDescInput').value = item.description;
+      document.getElementById('equipManualImgUrl').value = item.imageUrl || '';
+      document.getElementById('equipDescInput').value = item.description || '';
 
       const img = document.getElementById('equipImgPreview');
       const box = document.getElementById('equipImgPreviewBox');
-      if (img && box && item.imageUrl) {
-        img.src = item.imageUrl;
-        box.classList.remove('d-none');
+      if (img && box) {
+        if (item.imageUrl) {
+          img.src = item.imageUrl;
+          box.classList.remove('d-none');
+        } else {
+          box.classList.add('d-none');
+        }
       }
 
       const modal = new bootstrap.Modal(document.getElementById('addEquipmentModal'));
@@ -14383,6 +14651,15 @@
 
     window.resetAddModal = function() {
       document.getElementById('addEquipmentForm').reset();
+      const fileInput = document.getElementById('equipImageFileInput');
+      const cameraInput = document.getElementById('equipImageCameraInput');
+      if (fileInput) { fileInput.value = ''; fileInput._compressedFile = null; }
+      if (cameraInput) { cameraInput.value = ''; cameraInput._compressedFile = null; }
+      if (window._stagedCompressedFiles) {
+        window._stagedCompressedFiles['equipImageFileInput'] = null;
+        window._stagedCompressedFiles['equipImageCameraInput'] = null;
+      }
+
       document.getElementById('editEquipId').value = '';
       document.getElementById('equipCodeInput').value = '';
       if (document.getElementById('equipMinQtyInput')) document.getElementById('equipMinQtyInput').value = 3;
@@ -14551,10 +14828,43 @@
       };
     };
 
+    // Dynamic detail preview based on selected purge scope
+    window.updatePurgeScopeSummary = function() {
+      const purgeScope = document.querySelector('input[name="purgeScopeOption"]:checked')?.value || 'BOTH';
+      const listEl = document.getElementById('purgeScopeDetailList');
+      if (!listEl) return;
+
+      if (purgeScope === 'EQUIPMENT') {
+        listEl.innerHTML = `
+          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> รายการอุปกรณ์และจำนวนสต๊อกทั้งหมด</li>
+          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> หมวดหมู่อุปกรณ์ และสถานที่จัดเก็บทั้งหมด</li>
+          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> ประวัติการทำรายการเบิก-ยืม-คืน อุปกรณ์ทั้งหมด</li>
+          <li class="mb-1 text-success"><i class="bi bi-shield-check text-success me-1.5"></i> <strong>คงอยู่ปลอดภัย:</strong> ข้อมูลบุคลากร แผนก ตำแหน่ง และเวลาเข้างาน</li>
+        `;
+      } else if (purgeScope === 'PERSONNEL') {
+        listEl.innerHTML = `
+          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> รายชื่อบุคลากรและเจ้าหน้าที่ทั้งหมด</li>
+          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> แผนก และตำแหน่งงานทั้งหมด</li>
+          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> บันทึกเวลาเข้า-ออกงาน (Attendance Logs) ทั้งหมด</li>
+          <li class="mb-1 text-success"><i class="bi bi-shield-check text-success me-1.5"></i> <strong>คงอยู่ปลอดภัย:</strong> รายการอุปกรณ์ สต๊อก หมวดหมู่ สถานที่ และประวัติเบิกจ่าย</li>
+        `;
+      } else {
+        listEl.innerHTML = `
+          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> รายการอุปกรณ์และจำนวนสต๊อกทั้งหมด</li>
+          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> รายชื่อบุคลากรและเจ้าหน้าที่ทั้งหมด</li>
+          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> ประวัติการเบิก-ยืม-คืน อุปกรณ์ทั้งหมด</li>
+          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> บันทึกเวลาเข้า-ออกงานทั้งหมด</li>
+          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> หมวดหมู่ แผนก ตำแหน่ง และสถานที่จัดเก็บ</li>
+        `;
+      }
+    };
+
     // Function to show the custom confirmation modal for database purge (PRESERVING Firebase Storage images)
     window.purgeEntireDatabaseAndStorage = function() {
-      if (MAIN_PERSONNEL_READ_ONLY) {
-        if (typeof showToast === 'function') showToast('⛔ ปิดการลบฐานข้อมูลทั้งหมดจากหน้าหลัก เพื่อป้องกันข้อมูลบุคลากรและโครงสร้าง');
+      if (!window.isThammaSrithongAdminStrict()) {
+        const msg = '⛔ สงวนสิทธิ์การล้างข้อมูลระบบเฉพาะ Admin (jaru072@gmail.com) เท่านั้น';
+        if (typeof showToast === 'function') showToast(msg);
+        else alert(msg);
         return;
       }
       const modalEl = document.getElementById('confirmPurgeDbModal');
@@ -14565,6 +14875,10 @@
       if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="bi bi-trash3-fill me-1.5"></i> ยืนยันลบฐานข้อมูลทันที';
+      }
+
+      if (typeof window.updatePurgeScopeSummary === 'function') {
+        window.updatePurgeScopeSummary();
       }
 
       // Populate dynamic Database ID and Project Name in the confirmation modal
@@ -14588,7 +14902,7 @@
         modal.show();
       } else {
         // Fallback confirmation with project and database ID details
-        const c1 = confirm(`⚠️ คำเตือน: คุณแน่ใจหรือไม่ว่าต้องการ 'ลบฐานข้อมูลทั้งหมด' ?\n\n📌 โปรเจ็กต์: ${info.projectName}\n📌 Database ID: ${info.databaseId}\n📌 Firebase Project: ${info.projectId}\n\n*หมายเหตุ: จะไม่ลบไฟล์รูปภาพใน Firebase Storage (รูปภาพจะยังคงอยู่ใน Storage ปลอดภัย)*`);
+        const c1 = confirm(`⚠️ คำเตือน: คุณแน่ใจหรือไม่ว่าต้องการ 'ล้างข้อมูลระบบ' ?\n\n📌 โปรเจ็กต์: ${info.projectName}\n📌 Database ID: ${info.databaseId}\n📌 Firebase Project: ${info.projectId}\n\n*หมายเหตุ: จะไม่ลบไฟล์รูปภาพใน Firebase Storage (รูปภาพจะยังคงอยู่ใน Storage ปลอดภัย 100%)*`);
         if (c1) {
           window.executeConfirmedPurgeDatabase();
         }
@@ -14597,30 +14911,43 @@
 
     // Execute the confirmed database purge
     window.executeConfirmedPurgeDatabase = async function() {
-      if (MAIN_PERSONNEL_READ_ONLY) {
-        if (typeof showToast === 'function') showToast('⛔ ยกเลิกการลบฐานข้อมูลทั้งหมดจากหน้าหลัก');
+      if (!window.isThammaSrithongAdminStrict()) {
+        const msg = '⛔ สงวนสิทธิ์การล้างข้อมูลระบบเฉพาะ Admin (jaru072@gmail.com) เท่านั้น';
+        if (typeof showToast === 'function') showToast(msg);
+        else alert(msg);
         return;
       }
+
+      const purgeScope = document.querySelector('input[name="purgeScopeOption"]:checked')?.value || 'BOTH';
       const modalEl = document.getElementById('confirmPurgeDbModal');
       const btn = document.getElementById('btnConfirmPurgeDbAction');
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span> กำลังลบฐานข้อมูล...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span> กำลังลบข้อมูล...';
       }
 
+      const scopeText = purgeScope === 'EQUIPMENT' 
+        ? 'ข้อมูลระบบพัสดุ-อุปกรณ์' 
+        : (purgeScope === 'PERSONNEL' ? 'ข้อมูลระบบบุคลากร' : 'ข้อมูลทั้งหมดทั้ง 2 ระบบ');
+
       if (typeof showToast === 'function') {
-        showToast("⏳ กำลังเริ่มประมวลผลลบเอกสารฐานข้อมูลใน Firestore (คงรูปภาพใน Storage)...");
+        showToast(`⏳ กำลังเริ่มประมวลผลลบ${scopeText} ใน Firestore (คงรูปภาพใน Storage)...`);
       }
 
       let deletedDocsCount = 0;
 
       try {
-        // NOTE: We DO NOT delete images from Firebase Storage here as requested.
-        // Storage images remain intact and preserved in Firebase Storage.
+        let collectionsToPurge = [];
+        if (purgeScope === 'BOTH') {
+          collectionsToPurge = ["equipment", "employees", "transactions", "attendance", "categories", "departments", "locations", "system_metadata", "audit_logs", "user_login_logs"];
+        } else if (purgeScope === 'EQUIPMENT') {
+          collectionsToPurge = ["equipment", "transactions", "categories", "locations"];
+        } else if (purgeScope === 'PERSONNEL') {
+          collectionsToPurge = ["employees", "attendance", "departments"];
+        }
 
-        // 1. Delete all documents in Firestore collections if Firestore ready
+        // 1. Delete Firestore docs
         if (isFirebaseReady && db) {
-          const collectionsToPurge = ["equipment", "employees", "transactions", "attendance", "categories", "departments", "locations", "system_metadata", "audit_logs"];
           for (const colName of collectionsToPurge) {
             try {
               const colRef = collection(db, colName);
@@ -14635,54 +14962,75 @@
           }
         }
 
-        // 2. Clear local memory arrays
-        equipmentList = [];
-        employeeList = [];
-        transactionHistory = [];
-        attendanceLogs = [];
-        auditLogs = [];
-        categoriesList = [];
-        departmentsList = [];
-        locationsList = [];
-        window.departmentsList = [];
-        window.locationsList = [];
+        // 2. Clear local memory & LocalStorage based on scope
+        if (purgeScope === 'BOTH' || purgeScope === 'EQUIPMENT') {
+          equipmentList = [];
+          transactionHistory = [];
+          categoriesList = [];
+          locationsList = [];
+          window.locationsList = [];
+          
+          localStorage.removeItem('flora_equipment');
+          localStorage.removeItem('flora_transactions');
+          localStorage.removeItem('flora_categories');
+          localStorage.removeItem('flora_locations');
+          localStorage.removeItem('flora_fs_seeded_equipment');
+          localStorage.removeItem('flora_fs_seeded_categories');
+          localStorage.removeItem('flora_fs_seeded_locations');
+        }
 
-        // 3. Clear LocalStorage keys
-        localStorage.removeItem('flora_employees');
-        localStorage.removeItem('flora_equipment');
-        localStorage.removeItem('flora_transactions');
-        localStorage.removeItem('flora_attendance');
-        localStorage.removeItem('flora_audit_logs');
-        localStorage.removeItem('flora_categories');
-        localStorage.removeItem('flora_departments');
-        localStorage.removeItem('flora_locations');
-        localStorage.removeItem('flora_db_initialized');
-        localStorage.removeItem('flora_fs_seeded_employees');
-        localStorage.removeItem('flora_fs_seeded_attendance');
-        localStorage.removeItem('flora_fs_seeded_categories');
-        localStorage.removeItem('flora_fs_seeded_equipment');
-        localStorage.removeItem('flora_fs_seeded_locations');
+        if (purgeScope === 'BOTH' || purgeScope === 'PERSONNEL') {
+          employeeList = [];
+          attendanceLogs = [];
+          departmentsList = [];
+          window.departmentsList = [];
+          window.positionsList = [];
+
+          localStorage.removeItem('flora_employees');
+          localStorage.removeItem('flora_attendance');
+          localStorage.removeItem('flora_departments');
+          localStorage.removeItem('flora_positions');
+          localStorage.removeItem('flora_fs_seeded_employees');
+          localStorage.removeItem('flora_fs_seeded_attendance');
+        }
+
+        if (purgeScope === 'BOTH') {
+          auditLogs = [];
+          userLoginLogs = [];
+          localStorage.removeItem('flora_audit_logs');
+          localStorage.removeItem('flora_user_login_logs');
+          localStorage.removeItem('flora_db_initialized');
+        }
 
         saveToLocalStorage();
 
-        // 4. Refresh UI components
-        renderCatalogGrid();
-        renderStaffTable();
-        renderHistoryTable();
-        renderEmployeeDirectory();
-        renderAttendanceTable();
-        populateEmployeeDropdowns();
-        populateEquipmentDropdown();
-        populateQuickScanDropdown();
-        populateLocationDropdowns();
-        populateDepartmentDropdowns();
-        if (typeof renderLocationsListModal === 'function') renderLocationsListModal();
-        if (typeof renderDepartmentsListModal === 'function') renderDepartmentsListModal();
-        if (typeof renderCategoryManagementList === 'function') renderCategoryManagementList();
+        // 3. Refresh UI components
+        if (purgeScope === 'BOTH' || purgeScope === 'EQUIPMENT') {
+          renderCatalogGrid();
+          renderStaffTable();
+          renderHistoryTable();
+          populateEquipmentDropdown();
+          populateQuickScanDropdown();
+          populateLocationDropdowns();
+          if (typeof renderLocationsListModal === 'function') renderLocationsListModal();
+          if (typeof renderCategoryManagementList === 'function') renderCategoryManagementList();
+        }
+
+        if (purgeScope === 'BOTH' || purgeScope === 'PERSONNEL') {
+          renderEmployeeDirectory();
+          renderAttendanceTable();
+          populateEmployeeDropdowns();
+          populateDepartmentDropdowns();
+          if (typeof renderDepartmentsListModal === 'function') renderDepartmentsListModal();
+          if (typeof renderPositionsListModal === 'function') renderPositionsListModal();
+        }
+
         if (typeof renderAuditLogsTable === 'function') renderAuditLogsTable();
+        if (typeof renderUserLoginLogsTable === 'function') renderUserLoginLogsTable();
         updateStats();
 
         if (typeof renderDbEditorTable === 'function') renderDbEditorTable();
+        if (typeof updateDbBadges === 'function') updateDbBadges();
 
         // Hide confirmation modal
         if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
@@ -14690,13 +15038,13 @@
           if (modalInstance) modalInstance.hide();
         }
 
-        showToast(`🗑️ ลบฐานข้อมูลสำเร็จแล้ว (${deletedDocsCount} รายการ) รวมถึง locations ใน Firestore เรียบร้อยแล้ว`);
+        showToast(`🗑️ ลบ${scopeText}สำเร็จแล้ว (${deletedDocsCount} รายการ) รูปภาพใน Storage ปลอดภัย 100%`);
       } catch (err) {
         console.error("Purge error:", err);
         if (typeof showToast === 'function') {
-          showToast("❌ เกิดข้อผิดพลาดขณะลบฐานข้อมูล: " + err.message);
+          showToast("❌ เกิดข้อผิดพลาดขณะลบข้อมูล: " + err.message);
         } else {
-          alert("เกิดข้อผิดพลาดขณะลบฐานข้อมูล: " + err.message);
+          alert("เกิดข้อผิดพลาดขณะลบข้อมูล: " + err.message);
         }
       } finally {
         if (btn) {
@@ -16805,12 +17153,12 @@
 
     window.isThammaSrithongAdminStrict = function() {
       const email = ((typeof currentAuthUser !== 'undefined' && currentAuthUser?.email) || (typeof currentUserProfile !== 'undefined' && currentUserProfile?.email) || '').trim().toLowerCase();
-      return email === 'jaru072@gmail.com';
-    };
+      const displayName = ((typeof currentAuthUser !== 'undefined' && currentAuthUser?.displayName) || (typeof currentUserProfile !== 'undefined' && currentUserProfile?.displayName) || '').trim().toLowerCase();
+      
+      const isEmailMatch = email === 'jaru072@gmail.com';
+      const isNameMatch = displayName.includes('thamma') || displayName.includes('srithong') || displayName.includes('ธรรมะ') || displayName.includes('ศรีทอง');
 
-    window.isJaruAdminStrict = function() {
-      const email = ((typeof currentAuthUser !== 'undefined' && currentAuthUser?.email) || (typeof currentUserProfile !== 'undefined' && currentUserProfile?.email) || '').trim().toLowerCase();
-      return email === 'jaru072@gmail.com';
+      return isEmailMatch || (isNameMatch && (typeof currentRole !== 'undefined' && currentRole === 'ADMIN'));
     };
 
     window.copyDataFromOldDatabases = async function(showFeedback = true, customSourceDbId = null) {

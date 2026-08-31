@@ -1,6 +1,6 @@
 {
-  "name": "Remix Flora Test New 2",
-  "description": "A clean starter web application for Flora Test New 1.",
+  "name": "Flora Garden Test",
+  "description": "*** Flora Garden Test ***",
   "requestFramePermissions": [
     "camera"
   ],
