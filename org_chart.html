@@ -1173,13 +1173,13 @@
 
       <!-- Undo / Redo Buttons (เลิกทำ / ทำซ้ำ) -->
       <div class="btn-group btn-group-sm shadow-sm" role="group" aria-label="เลิกทำและทำซ้ำ">
-        <button type="button" class="btn btn-outline-secondary btn-sm rounded-start-pill px-2.5 py-1 fw-semibold d-flex align-items-center gap-1 text-nowrap opacity-50" id="btnToolbarUndo" onclick="window.undoFloraAction()" title="เลิกทำ (Undo) [Ctrl+Z]" disabled>
-          <i class="bi bi-arrow-counterclockwise fs-6"></i>
-          <span>เลิกทำ</span>
+        <button type="button" class="btn btn-outline-success btn-sm rounded-start-pill px-2.5 py-1 fw-semibold d-flex align-items-center gap-1 text-nowrap opacity-50 text-success" id="btnToolbarUndo" onclick="window.undoFloraAction()" title="เลิกทำ (Undo) [Ctrl+Z]" disabled>
+          <i class="bi bi-arrow-counterclockwise fs-6 text-success"></i>
+          <span class="text-success">เลิกทำ</span>
         </button>
-        <button type="button" class="btn btn-outline-secondary btn-sm rounded-end-pill px-2.5 py-1 fw-semibold d-flex align-items-center gap-1 text-nowrap opacity-50" id="btnToolbarRedo" onclick="window.redoFloraAction()" title="ทำซ้ำ (Redo) [Ctrl+Y]" disabled>
-          <i class="bi bi-arrow-clockwise fs-6"></i>
-          <span>ทำซ้ำ</span>
+        <button type="button" class="btn btn-outline-success btn-sm rounded-end-pill px-2.5 py-1 fw-semibold d-flex align-items-center gap-1 text-nowrap opacity-50 text-success" id="btnToolbarRedo" onclick="window.redoFloraAction()" title="ทำซ้ำ (Redo) [Ctrl+Y]" disabled>
+          <i class="bi bi-arrow-clockwise fs-6 text-success"></i>
+          <span class="text-success">ทำซ้ำ</span>
         </button>
       </div>
 
@@ -1352,8 +1352,8 @@
 
   <!-- ==================== FLOATING ZOOM CONTROLS ==================== -->
   <div class="zoom-controls no-print" id="zoomControls">
-    <button class="btn-zoom text-secondary" id="btnFloatingUndo" onclick="window.undoFloraAction()" title="เลิกทำ (Undo) [Ctrl+Z]" disabled><i class="bi bi-arrow-counterclockwise"></i></button>
-    <button class="btn-zoom text-secondary" id="btnFloatingRedo" onclick="window.redoFloraAction()" title="ทำซ้ำ (Redo) [Ctrl+Y]" disabled><i class="bi bi-arrow-clockwise"></i></button>
+    <button class="btn-zoom text-success" id="btnFloatingUndo" onclick="window.undoFloraAction()" title="เลิกทำ (Undo) [Ctrl+Z]" disabled><i class="bi bi-arrow-counterclockwise text-success"></i></button>
+    <button class="btn-zoom text-success" id="btnFloatingRedo" onclick="window.redoFloraAction()" title="ทำซ้ำ (Redo) [Ctrl+Y]" disabled><i class="bi bi-arrow-clockwise text-success"></i></button>
     <div style="width: 1px; height: 20px; background: #e2e8f0; margin: 0 2px;"></div>
     <button class="btn-zoom" onclick="zoomOut()" title="ย่อผัง (-)"><i class="bi bi-dash-lg"></i></button>
     <span class="zoom-percent-text" id="zoomPercentText">100%</span>
