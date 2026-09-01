@@ -489,17 +489,52 @@
       event.currentTarget?.classList?.remove("drop-target-active");
     }
     if(window.requirePersonnelAdmin&&!window.requirePersonnelAdmin("ย้ายบุคลากรในผัง"))return;
-    const empId=(event?.dataTransfer?.getData&&event.dataTransfer.getData("text/plain"))||window.draggedEmpId;
+    const rawId=(event?.dataTransfer?.getData&&event.dataTransfer.getData("text/plain"))||window.draggedEmpId||window.lastDraggedEmpId;
     window.draggedEmpId = null;
-    const emp=(window.employees||[]).find(e=>(e.id||e.code)===empId), a=assignmentFor(nodeId); 
+    if (!rawId) return;
+
+    const empIdStr = String(rawId);
+    const emp=(window.employees||[]).find(e=>String(e.id||e.code)===empIdStr), a=assignmentFor(nodeId); 
     if (!emp||!a) return;
-    if (typeof window.ensureFloraLeadershipPositionAvailable === "function" && !window.ensureFloraLeadershipPositionAvailable(empId,a.positionNodeId||"",true)) return;
+    if (typeof window.ensureFloraLeadershipPositionAvailable === "function" && !window.ensureFloraLeadershipPositionAvailable(empIdStr,a.positionNodeId||"",true)) return;
+
+    // Capture snapshot before move
+    const prevSnapshot = {
+      id: String(emp.id || emp.code),
+      code: emp.code,
+      name: emp.name,
+      department: emp.department || '',
+      departmentNodeId: emp.departmentNodeId || '',
+      position: emp.position || 'พนักงาน',
+      positionNodeId: emp.positionNodeId || '',
+      role: emp.role || 'WORKER'
+    };
+
     emp.department=a.department; 
     emp.departmentNodeId=a.departmentNodeId; 
     emp.position=a.position; 
     emp.positionNodeId=a.positionNodeId;
     if (typeof window.getFloraRoleForPositionNode === "function") emp.role=window.getFloraRoleForPositionNode(emp.positionNodeId,emp.positionNodeId?emp.role:"WORKER");
     emp.updatedAt=new Date().toISOString();
+
+    // Capture snapshot after move
+    const nextSnapshot = {
+      id: String(emp.id || emp.code),
+      code: emp.code,
+      name: emp.name,
+      department: emp.department,
+      departmentNodeId: emp.departmentNodeId,
+      position: emp.position,
+      positionNodeId: emp.positionNodeId,
+      role: emp.role
+    };
+
+    // Push to Universal Undo/Redo Engine
+    if (typeof window.createPersonnelMoveAction === 'function' && typeof window.pushFloraUndoAction === 'function') {
+      const desc = `ย้าย [${emp.name}] ไปยัง "${a.department}"`;
+      const action = window.createPersonnelMoveAction(empIdStr, prevSnapshot, nextSnapshot, desc);
+      window.pushFloraUndoAction(action);
+    }
     
     // Instant UI refresh
     window.orgChartDirty = true;

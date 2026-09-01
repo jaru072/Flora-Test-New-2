@@ -187,16 +187,6 @@
     </div>
 
     <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-      <!-- Back / Forward Navigation Buttons (◀ ย้อนกลับ  ▶ ถัดไป) -->
-      <div class="btn-group shadow-sm me-1" role="group" aria-label="นำทางย้อนกลับและถัดไป">
-        <button type="button" class="btn btn-outline-light btn-sm rounded-start-pill px-2.5 py-1 fw-bold d-flex align-items-center gap-1" id="navBtnBack" onclick="window.history.back()" title="ย้อนกลับ">
-          <span class="fs-8">◀ ย้อนกลับ</span>
-        </button>
-        <button type="button" class="btn btn-outline-light btn-sm rounded-end-pill px-2.5 py-1 fw-bold d-flex align-items-center gap-1" id="navBtnForward" onclick="window.history.forward()" title="ถัดไป">
-          <span class="fs-8">▶ ถัดไป</span>
-        </button>
-      </div>
-
       <!-- Compact Profile & Settings Dropdown Button -->
       <div class="dropdown" id="topNavSettingsDropdown">
         <button class="btn btn-outline-light btn-sm rounded-pill px-2.5 py-1 fw-semibold d-flex align-items-center gap-1.5 shadow-sm dropdown-toggle" type="button" id="settingsAccountDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="บัญชีผู้ใช้และการตั้งค่า">
@@ -213,9 +203,9 @@
             </button>
           </li>
 
-          <!-- 2. สำรอง / กู้คืนข้อมูล (ระบบรวม: พัสดุ-อุปกรณ์ และ งานบุคคล) -->
+          <!-- 2. สำรอง / กู้คืนข้อมูล (ระบบพัสดุ-อุปกรณ์ สำหรับ Admin) -->
           <li class="admin-only-element d-none">
-            <button type="button" class="dropdown-item py-2 px-3 d-flex align-items-center gap-2.5 fw-semibold text-primary" onclick="openBackupRestoreModal()">
+            <button type="button" class="dropdown-item py-2 px-3 d-flex align-items-center gap-2.5 fw-semibold text-primary" onclick="openEquipmentBackupRestoreModal()">
               <i class="bi bi-database-fill-gear text-primary fs-5"></i>
               <span class="fs-7">สำรอง / กู้คืนข้อมูล</span>
             </button>
@@ -244,17 +234,11 @@
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 px-1">
       <div class="d-flex align-items-center gap-2 flex-wrap">
         <i class="bi bi-bar-chart-line-fill text-success fs-5"></i>
-        <span class="fw-bold text-dark fs-7">สรุปข้อมูลสต๊อกคลังอุปกรณ์</span>
+        <span class="fw-bold text-dark fs-7">สรุปสต๊อกอุปกรณ์</span>
         <!-- Clear Cache Button moved here -->
         <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-2.5 py-1 fw-bold shadow-sm d-flex align-items-center gap-1.5" onclick="clearDatabaseCache()" title="ล้างแคชฐานข้อมูลท้องถิ่นเพื่อดึงข้อมูลใหม่จากเซิร์ฟเวอร์ทันที">
           <i class="bi bi-arrow-clockwise fs-7"></i>
           <span class="fs-8">ล้างแคช</span>
-        </button>
-
-        <!-- Standard Backup Button (ปุ่มสำรองไฟล์ JSON) -->
-        <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-1 fw-bold shadow-sm d-flex align-items-center gap-1.5 admin-only-element" onclick="openEquipmentBackupRestoreModal()" title="สำรองและกู้คืนข้อมูลพัสดุ-อุปกรณ์ (JSON)">
-          <i class="bi bi-file-earmark-arrow-down-fill text-success fs-7"></i>
-          <span class="fs-8">สำรอง/กู้คืนข้อมูล</span>
         </button>
       </div>
       <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -262,7 +246,7 @@
         <button id="btnHardwareScannerStatus" class="btn btn-outline-success btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="openHardwareScannerSettingsModal()" title="เปิดการตั้งค่าและทดสอบโหมดยิงสแกน QR Code / Barcode อัตโนมัติ (Scanner Auto-detect)">
           <span class="scanner-status-pulse-dot" id="scannerStatusPulseDot"></span>
           <i class="bi bi-upc-scan text-success fs-7"></i>
-          <span id="scannerStatusBtnText" class="fs-8">โหมดยิงสแกน: พร้อมทำงาน</span>
+          <span id="scannerStatusBtnText" class="fs-8">ยิงสแกน</span>
         </button>
 
         <button id="btnHeaderOverdue" class="btn btn-danger btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm d-none align-items-center gap-1.5 btn-overdue-blink" onclick="showOverdueBorrowingsModal()" title="เปิดระบบจัดการและแจ้งเตือนการยืมอุปกรณ์เกินกำหนด">
@@ -3723,7 +3707,7 @@
 
               <div class="col-12 col-md-6">
                 <label class="form-label fw-bold text-muted fs-7" for="equipManualImgUrl">หรือ ระบุ URL รูปภาพอุปกรณ์</label>
-                <input type="url" id="equipManualImgUrl" class="form-control" placeholder="วางลิงก์ URL รูปภาพอุปกรณ์ (หากเว้นว่างจะใช้รูปตามหมวดหมู่)" oninput="handleEquipManualUrlInput(this.value)" />
+                <input type="url" id="equipManualImgUrl" class="form-control" placeholder="วางลิงก์ URL รูปภาพอุปกรณ์ (หากเว้นว่างจะใช้รูปตามหมวดหมู่)" />
               </div>
 
               <div class="col-12">
@@ -4613,34 +4597,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- Card 7: Danger Zone - Purge / Clear Database (Super Admin jaru072@gmail.com Only) -->
-            <div class="col-12 mt-2 super-admin-only-element d-none" id="purgeDatabaseDangerZoneCard">
-              <div class="card border-2 shadow-sm rounded-4 p-3.5 bg-white border-danger">
-                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                  <div class="d-flex align-items-center gap-3">
-                    <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-3 d-flex align-items-center justify-content-center shadow-xs flex-shrink-0" style="width: 48px; height: 48px;">
-                      <i class="bi bi-trash3-fill fs-4"></i>
-                    </div>
-                    <div>
-                      <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <h6 class="fw-bold text-danger mb-0 fs-6">ล้างข้อมูลระบบ (Danger Zone)</h6>
-                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-pill px-2 py-0.5 fs-9 fw-semibold">
-                          <i class="bi bi-shield-lock-fill me-1"></i>เฉพาะ Admin jaru072@gmail.com
-                        </span>
-                      </div>
-                      <p class="text-muted fs-8 mb-0 mt-0.5">เลือกล้างเฉพาะข้อมูลพัสดุ-อุปกรณ์ หรือข้อมูลบุคลากร หรือล้างข้อมูลทั้งหมด (คงไฟล์รูปภาพใน Storage ปลอดภัย 100%)</p>
-                    </div>
-                  </div>
-                  <div>
-                    <button type="button" class="btn btn-outline-danger fw-bold rounded-pill px-3.5 py-2 d-flex align-items-center gap-1.5 shadow-sm text-nowrap" onclick="purgeEntireDatabaseAndStorage()">
-                      <i class="bi bi-trash3-fill"></i>
-                      <span>ล้างข้อมูลระบบ...</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           <!-- Restore Inspection & Execution Card (shown when restore file selected) -->
@@ -4947,49 +4903,19 @@
             </div>
           </div>
 
-          <!-- Purge Scope Selection -->
-          <div class="mb-3">
-            <label class="form-label fw-bold fs-7 text-dark mb-2"><i class="bi bi-ui-radios-grid text-danger me-1"></i> เลือกขอบเขตข้อมูลที่ต้องการลบ:</label>
-            <div class="d-flex flex-column gap-2">
-              <div class="form-check p-2.5 bg-white border rounded-3 shadow-2xs">
-                <input class="form-check-input ms-0 me-2.5" type="radio" name="purgeScopeOption" id="purgeScopeEquipment" value="EQUIPMENT" onchange="updatePurgeScopeSummary()">
-                <label class="form-check-label cursor-pointer w-100" for="purgeScopeEquipment">
-                  <div class="fw-bold text-dark fs-7"><i class="bi bi-tools text-primary me-1"></i> ลบเฉพาะข้อมูลระบบพัสดุ-อุปกรณ์ (Equipment Only)</div>
-                  <small class="text-muted fs-8">ลบรายการอุปกรณ์, หมวดหมู่, สถานที่เก็บ, ประวัติการเบิก-ยืม-คืน <span class="text-success fw-semibold">(ข้อมูลบุคลากรคงอยู่ปลอดภัย)</span></small>
-                </label>
-              </div>
-
-              <div class="form-check p-2.5 bg-white border rounded-3 shadow-2xs">
-                <input class="form-check-input ms-0 me-2.5" type="radio" name="purgeScopeOption" id="purgeScopePersonnel" value="PERSONNEL" onchange="updatePurgeScopeSummary()">
-                <label class="form-check-label cursor-pointer w-100" for="purgeScopePersonnel">
-                  <div class="fw-bold text-dark fs-7"><i class="bi bi-people-fill text-success me-1"></i> ลบเฉพาะข้อมูลระบบบุคลากร (Personnel Only)</div>
-                  <small class="text-muted fs-8">ลบรายชื่อพนักงาน, แผนก, ตำแหน่ง, ประวัติการลงเวลาเข้างาน <span class="text-success fw-semibold">(ข้อมูลพัสดุอุปกรณ์คงอยู่ปลอดภัย)</span></small>
-                </label>
-              </div>
-
-              <div class="form-check p-2.5 bg-white border border-danger-subtle bg-danger-subtle bg-opacity-25 rounded-3 shadow-2xs">
-                <input class="form-check-input ms-0 me-2.5" type="radio" name="purgeScopeOption" id="purgeScopeBoth" value="BOTH" checked onchange="updatePurgeScopeSummary()">
-                <label class="form-check-label cursor-pointer w-100" for="purgeScopeBoth">
-                  <div class="fw-bold text-danger fs-7"><i class="bi bi-database-x text-danger me-1"></i> ลบข้อมูลทั้งหมดทั้ง 2 ระบบ (Entire Database)</div>
-                  <small class="text-muted fs-8">ลบทั้งข้อมูลพัสดุอุปกรณ์ และข้อมูลบุคลากรทั้งหมดพร้อมกัน</small>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <p class="text-dark fw-semibold mb-2 fs-7">รายการข้อมูลที่จะถูกลบตามขอบเขตที่เลือก:</p>
-          <ul class="list-unstyled mb-3 ps-1 fs-8" id="purgeScopeDetailList">
-            <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> รายการอุปกรณ์และจำนวนสต๊อกทั้งหมด</li>
-            <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> รายชื่อบุคลากรและเจ้าหน้าที่ทั้งหมด</li>
-            <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> ประวัติการเบิก-ยืม-คืน อุปกรณ์ทั้งหมด</li>
-            <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> บันทึกเวลาเข้า-ออกงานทั้งหมด</li>
-            <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> หมวดหมู่ แผนก ตำแหน่ง และสถานที่จัดเก็บ</li>
+          <p class="text-dark fw-semibold mb-2 fs-7">การดำเนินการนี้จะทำการลบเฉพาะข้อมูลเอกสารในระบบและ Firestore ได้แก่:</p>
+          <ul class="list-unstyled mb-3 ps-1 fs-8 text-secondary">
+            <li class="mb-1"><i class="bi bi-trash3 text-danger me-1.5"></i> รายการอุปกรณ์และจำนวนสต๊อกทั้งหมด</li>
+            <li class="mb-1"><i class="bi bi-trash3 text-danger me-1.5"></i> รายชื่อบุคลากรและเจ้าหน้าที่ทั้งหมด</li>
+            <li class="mb-1"><i class="bi bi-trash3 text-danger me-1.5"></i> ประวัติการเบิก-ยืม-คืน อุปกรณ์ทั้งหมด</li>
+            <li class="mb-1"><i class="bi bi-trash3 text-danger me-1.5"></i> บันทึกเวลาเข้า-ออกงานทั้งหมด</li>
+            <li class="mb-1"><i class="bi bi-trash3 text-danger me-1.5"></i> หมวดหมู่ แผนก และสถานที่จัดเก็บ</li>
           </ul>
 
           <div class="form-check p-3 bg-white border border-danger-subtle rounded-3 mb-2">
             <input class="form-check-input ms-0 me-2" type="checkbox" id="chkConfirmPurgeDb" onchange="document.getElementById('btnConfirmPurgeDbAction').disabled = !this.checked">
             <label class="form-check-label fw-bold text-danger fs-8 cursor-pointer" for="chkConfirmPurgeDb">
-              ฉันเข้าใจและยืนยันต้องการลบข้อมูลตามขอบเขตที่เลือก (รูปภาพใน Storage จะไม่หาย ปลอดภัย 100%)
+              ฉันเข้าใจและยืนยันต้องการลบเอกสารฐานข้อมูล (รูปภาพใน Storage จะไม่หาย)
             </label>
           </div>
         </div>
@@ -5553,6 +5479,7 @@
 
 
   <!-- Application Main Logic -->
+  <script src="/undo_redo_manager.js"></script>
   <script type="module" src="/global_logo.js"></script>
   <script type="module" src="org_tree.js"></script>
   <script type="module" src="script.js"></script>

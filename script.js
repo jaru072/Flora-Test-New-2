@@ -1641,11 +1641,7 @@
     }
 
     function generateInitialAttendance() {
-      const now = new Date();
-      const beYear = now.getFullYear() + 543;
-      const day = String(now.getDate()).padStart(2, '0');
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const todayStr = `${day}/${month}/${beYear}`;
+      const todayStr = new Date().toLocaleDateString('th-TH');
       return [
         {
           id: 'att-01',
@@ -1866,11 +1862,7 @@
 
       const dateElem = document.getElementById('todayDateSpan');
       if (dateElem) {
-        const now = new Date();
-        const beYear = now.getFullYear() + 543;
-        const day = String(now.getDate()).padStart(2, '0');
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        dateElem.textContent = `ประจำวันที่ ${day}/${month}/${beYear}`;
+        dateElem.textContent = `ประจำวันที่ ${new Date().toLocaleDateString('th-TH')}`;
       }
 
       renderCategoryDropdowns();
@@ -2638,8 +2630,6 @@
       return await autoOptimizeAndResizeImage(fileOrBlob, { presetKey, presetType });
     }
 
-    window._stagedCompressedFiles = window._stagedCompressedFiles || {};
-
     window.previewSelectedImage = async function(input, imgElementId, boxElementId, presetRadioName = null) {
       if (input.files && input.files[0]) {
         const rawFile = input.files[0];
@@ -2653,9 +2643,6 @@
         if (input.id === 'empPhotoFileInput' || input.id === 'empPhotoCameraInput') {
           const urlInput = document.getElementById('empPhotoUrlInput');
           if (urlInput) urlInput.value = '';
-        } else if (input.id === 'equipImageFileInput' || input.id === 'equipImageCameraInput') {
-          const urlInput = document.getElementById('equipManualImgUrl');
-          if (urlInput) urlInput.value = '';
         }
 
         const presetType = (presetRadioName === 'empCompressPreset' || input.id === 'empPhotoFileInput' || input.id === 'empPhotoCameraInput') ? 'EMPLOYEE' : 'EQUIPMENT';
@@ -2667,22 +2654,11 @@
         if (img) img.src = res.dataUrl;
         if (box) box.classList.remove('d-none');
 
-        // Store compressed file directly on input and global stage
-        const finalFile = res.file || rawFile;
-        input._compressedFile = finalFile;
-        if (input.id) {
-          window._stagedCompressedFiles[input.id] = finalFile;
-        }
-
-        // Replace input file with compressed file using DataTransfer if supported
+        // Replace input file with compressed file using DataTransfer
         if (res.file) {
-          try {
-            const dt = new DataTransfer();
-            dt.items.add(res.file);
-            input.files = dt.files;
-          } catch (dtErr) {
-            console.warn("DataTransfer notice:", dtErr);
-          }
+          const dt = new DataTransfer();
+          dt.items.add(res.file);
+          input.files = dt.files;
         }
 
         // Show compressed size badge inside preview box if available
@@ -2697,39 +2673,14 @@
       }
     };
 
-    window.handleEquipManualUrlInput = function(val) {
-      const img = document.getElementById('equipImgPreview');
-      const box = document.getElementById('equipImgPreviewBox');
-      const fileInput = document.getElementById('equipImageFileInput');
-      const cameraInput = document.getElementById('equipImageCameraInput');
-
-      if (fileInput) { fileInput.value = ''; fileInput._compressedFile = null; }
-      if (cameraInput) { cameraInput.value = ''; cameraInput._compressedFile = null; }
-      if (window._stagedCompressedFiles) {
-        window._stagedCompressedFiles['equipImageFileInput'] = null;
-        window._stagedCompressedFiles['equipImageCameraInput'] = null;
-      }
-
-      if (val && val.trim()) {
-        if (img) img.src = val.trim();
-        if (box) box.classList.remove('d-none');
-      } else {
-        if (box) box.classList.add('d-none');
-      }
-    };
-
     window.handleEmpPhotoUrlInput = function(val) {
       const img = document.getElementById('empPhotoPreview');
       const box = document.getElementById('empPhotoPreviewBox');
       const fileInput = document.getElementById('empPhotoFileInput');
       const cameraInput = document.getElementById('empPhotoCameraInput');
 
-      if (fileInput) { fileInput.value = ''; fileInput._compressedFile = null; }
-      if (cameraInput) { cameraInput.value = ''; cameraInput._compressedFile = null; }
-      if (window._stagedCompressedFiles) {
-        window._stagedCompressedFiles['empPhotoFileInput'] = null;
-        window._stagedCompressedFiles['empPhotoCameraInput'] = null;
-      }
+      if (fileInput) fileInput.value = '';
+      if (cameraInput) cameraInput.value = '';
 
       if (val && val.trim()) {
         if (img) img.src = val.trim();
@@ -3360,12 +3311,11 @@
       if (event.target) event.target.value = '';
     };
 
-    // Firebase Storage Upload Helpers (Dual-Tier: Direct Server Proxy + Client SDK Fallback with Timeout Protection)
+    // Firebase Storage Upload Helpers
     async function uploadFileToFirebaseStorage(file, folderName = "equipment_images", presetKey = 'MEDIUM', customFileName = null) {
-      if (!file) {
-        throw new Error("ไม่พบไฟล์รูปภาพที่จะอัปโหลด");
+      if (!isFirebaseReady || !storage) {
+        throw new Error("Firebase Storage ยังไม่พร้อมใช้งาน");
       }
-
       let targetFile = file;
       let optStats = null;
       try {
@@ -3390,138 +3340,53 @@
         fileName = `${Date.now()}_${safeName}.${ext}`;
       }
 
-      // Tier 1: Direct Server Proxy Upload (/api/upload-image) with 6s Timeout
-      try {
-        let base64Data = (optStats && optStats.dataUrl) ? optStats.dataUrl : '';
-        if (!base64Data) {
-          base64Data = await blobToBase64(targetFile);
-        }
+      const storageRef = ref(storage, `${folderName}/${fileName}`);
+      const snapshot = await uploadBytes(storageRef, targetFile);
+      const downloadUrl = await getDownloadURL(snapshot.ref);
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6500);
-
-        const currentBucket = (typeof window.firebaseConfig !== 'undefined' && window.firebaseConfig.storageBucket) 
-          ? window.firebaseConfig.storageBucket 
-          : 'flora-gaden.firebasestorage.app';
-
-        const serverResp = await fetch('/api/upload-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            folder: folderName,
-            fileName: fileName,
-            base64Data: base64Data,
-            contentType: (optStats && optStats.format) || targetFile.type || 'image/webp',
-            customBucket: currentBucket
-          }),
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (serverResp.ok) {
-          const sJson = await serverResp.json();
-          if (sJson && sJson.success && sJson.downloadUrl) {
-            if (optStats && optStats.savedPercent > 0) {
-              console.log(`⚡ [Server Proxy Upload] (${folderName}/${fileName}): ${optStats.originalSizeFormatted} -> ${optStats.compressedSizeFormatted} (-${optStats.savedPercent}%)`);
-            }
-            return sJson.downloadUrl;
-          }
-        }
-      } catch (proxyErr) {
-        console.warn("[Server Proxy Upload] Notice, trying Client SDK:", proxyErr.message);
+      if (optStats && optStats.savedPercent > 0) {
+        console.log(`⚡ Auto Resized & Optimized before uploading (${folderName}/${fileName}): ${optStats.originalSizeFormatted} -> ${optStats.compressedSizeFormatted} (Saved ${optStats.savedPercent}%)`);
       }
 
-      // Tier 2: Fallback to Firebase Client SDK with 6s Promise.race Timeout
-      if (isFirebaseReady && storage) {
-        const storageRef = ref(storage, `${folderName}/${fileName}`);
-        const uploadPromise = uploadBytes(storageRef, targetFile).then(snapshot => getDownloadURL(snapshot.ref));
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Client SDK Storage upload timeout")), 6500));
-        const downloadUrl = await Promise.race([uploadPromise, timeoutPromise]);
-
-        if (optStats && optStats.savedPercent > 0) {
-          console.log(`⚡ [Client SDK Upload] (${folderName}/${fileName}): ${optStats.originalSizeFormatted} -> ${optStats.compressedSizeFormatted} (-${optStats.savedPercent}%)`);
-        }
-        return downloadUrl;
-      }
-
-      throw new Error("ไม่สามารถอัปโหลดไปยัง Firebase Storage ได้ (การเชื่อมต่อขัดข้อง)");
+      return downloadUrl;
     }
 
     async function uploadImageBlobToFirebaseStorage(imageUrl, folderName = "equipment_images", defaultName = "item.jpeg", presetKey = 'MEDIUM') {
       if (!imageUrl) return imageUrl;
       if (imageUrl.startsWith('data:image')) return imageUrl;
 
-      let targetBlob = null;
-      let optStats = null;
-      let ext = 'webp';
-
-      try {
-        const res = await fetch(imageUrl);
-        const rawBlob = await res.blob();
-        const presetType = (folderName === 'employee_photos') ? 'EMPLOYEE' : 'EQUIPMENT';
-        optStats = await autoOptimizeAndResizeImage(rawBlob, { presetKey, presetType });
-        targetBlob = (optStats && optStats.blob) ? optStats.blob : rawBlob;
-        ext = (optStats && optStats.extension) ? optStats.extension : 'webp';
-      } catch (fErr) {
-        console.warn("Fetch blob notice:", fErr);
-      }
-
-      if (!targetBlob) return imageUrl;
-
-      const cleanName = defaultName ? defaultName.replace(/[^a-zA-Z0-9._-]/g, '_') : 'item';
-      const baseName = cleanName.replace(/\.(jpeg|jpg|png|webp)$/i, '');
-      const fileName = `${baseName}.${ext}`;
-
-      // Tier 1: Try Server Proxy
-      try {
-        let base64Data = (optStats && optStats.dataUrl) ? optStats.dataUrl : await blobToBase64(targetBlob);
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6500);
-
-        const currentBucket = (typeof window.firebaseConfig !== 'undefined' && window.firebaseConfig.storageBucket) 
-          ? window.firebaseConfig.storageBucket 
-          : 'flora-gaden.firebasestorage.app';
-
-        const serverResp = await fetch('/api/upload-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            folder: folderName,
-            fileName: fileName,
-            base64Data: base64Data,
-            contentType: (optStats && optStats.format) || targetBlob.type || 'image/webp',
-            customBucket: currentBucket
-          }),
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (serverResp.ok) {
-          const sJson = await serverResp.json();
-          if (sJson && sJson.success && sJson.downloadUrl) {
-            return sJson.downloadUrl;
-          }
-        }
-      } catch (proxyErr) {}
-
-      // Tier 2: Try Client SDK
       if (isFirebaseReady && storage) {
         try {
+          const res = await fetch(imageUrl);
+          const rawBlob = await res.blob();
+          const presetType = (folderName === 'employee_photos') ? 'EMPLOYEE' : 'EQUIPMENT';
+          const optStats = await autoOptimizeAndResizeImage(rawBlob, { presetKey, presetType });
+          const targetBlob = (optStats && optStats.blob) ? optStats.blob : rawBlob;
+          const ext = (optStats && optStats.extension) ? optStats.extension : 'webp';
+
+          const cleanName = defaultName ? defaultName.replace(/[^a-zA-Z0-9._-]/g, '_') : 'item';
+          const baseName = cleanName.replace(/\.(jpeg|jpg|png|webp)$/i, '');
+          const fileName = `${baseName}.${ext}`;
+
           const storageRef = ref(storage, `${folderName}/${fileName}`);
-          const uploadPromise = uploadBytes(storageRef, targetBlob).then(snapshot => getDownloadURL(snapshot.ref));
-          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 6500));
-          return await Promise.race([uploadPromise, timeoutPromise]);
+          const snapshot = await uploadBytes(storageRef, targetBlob);
+          const downloadUrl = await getDownloadURL(snapshot.ref);
+
+          if (optStats && optStats.savedPercent > 0) {
+            console.log(`⚡ Proxy Storage Upload Optimized (${folderName}/${fileName}): ${optStats.originalSizeFormatted} -> ${optStats.compressedSizeFormatted} (Saved ${optStats.savedPercent}%)`);
+          }
+          return downloadUrl;
         } catch (err) {
-          console.warn("Client Storage notice:", err.message);
+          console.warn("Proxy to Firebase Storage notice:", err.message);
         }
       }
 
       // Fallback: If local blob URL, convert to compressed base64 so other devices can load it
       if (imageUrl.startsWith('blob:')) {
         try {
-          return await compressImageToBase64(targetBlob, 800, 0.8);
+          const res = await fetch(imageUrl);
+          const blob = await res.blob();
+          return await compressImageToBase64(blob, 800, 0.8);
         } catch (e) {
           return imageUrl;
         }
@@ -3757,33 +3622,20 @@
       const fileInput = document.getElementById('equipImageFileInput');
       const cameraInput = document.getElementById('equipImageCameraInput');
 
-      const selectedEquipFile = (fileInput && fileInput._compressedFile)
-        ? fileInput._compressedFile
-        : ((fileInput && fileInput.files && fileInput.files.length > 0)
-            ? fileInput.files[0]
-            : ((window._stagedCompressedFiles && window._stagedCompressedFiles['equipImageFileInput'])
-                ? window._stagedCompressedFiles['equipImageFileInput']
-                : ((cameraInput && cameraInput._compressedFile)
-                    ? cameraInput._compressedFile
-                    : ((cameraInput && cameraInput.files && cameraInput.files.length > 0)
-                        ? cameraInput.files[0]
-                        : ((window._stagedCompressedFiles && window._stagedCompressedFiles['equipImageCameraInput'])
-                            ? window._stagedCompressedFiles['equipImageCameraInput']
-                            : null)))));
+      const selectedEquipFile = (fileInput && fileInput.files && fileInput.files.length > 0)
+        ? fileInput.files[0]
+        : ((cameraInput && cameraInput.files && cameraInput.files.length > 0) ? cameraInput.files[0] : null);
 
       const overlay = document.getElementById('autoSearchLoadingOverlay');
       const stepTitle = document.getElementById('loadingStepTitle');
       const stepDetail = document.getElementById('loadingStepDetail');
 
-      if (overlay) overlay.classList.remove('d-none');
+      overlay.classList.remove('d-none');
 
       try {
         let finalImageUrl = '';
         const safeEquipCode = (code || 'equipment').replace(/[^a-zA-Z0-9_-]/g, '_');
-        const equipFileName = `${safeEquipCode}_${Date.now()}.webp`;
-
-        const existingItem = editId ? equipmentList.find(x => x.id === editId || x.code === editId) : null;
-        const oldImageUrl = existingItem ? existingItem.imageUrl : null;
+        const equipFileName = `${safeEquipCode}.jpeg`;
 
         if (selectedEquipFile) {
           const presetKey = document.querySelector('input[name="equipCompressPreset"]:checked')?.value || 'MEDIUM';
@@ -3798,29 +3650,13 @@
         } else if (manualUrl) {
           if (stepTitle) stepTitle.textContent = "กำลังบันทึกข้อมูลอุปกรณ์...";
           if (stepDetail) stepDetail.textContent = "ระบบกำลังประมวลผลข้อมูลและรูปภาพ...";
-          if (manualUrl.startsWith('data:') || manualUrl.startsWith('http://') || manualUrl.startsWith('https://')) {
-            finalImageUrl = manualUrl;
-          } else if (manualUrl.startsWith('blob:')) {
-            finalImageUrl = await uploadImageBlobToFirebaseStorage(manualUrl, "equipment_images", equipFileName);
-          } else {
-            finalImageUrl = manualUrl;
-          }
+          finalImageUrl = await uploadImageBlobToFirebaseStorage(manualUrl, "equipment_images", equipFileName);
         } else {
-          if (existingItem && existingItem.imageUrl) {
-            finalImageUrl = existingItem.imageUrl;
+          if (editId) {
+            const existing = equipmentList.find(x => x.id === editId);
+            finalImageUrl = existing && existing.imageUrl ? existing.imageUrl : DEFAULT_EQUIPMENT_IMAGE;
           } else {
             finalImageUrl = DEFAULT_EQUIPMENT_IMAGE;
-          }
-        }
-
-        // Delete old photo from Firebase Storage if replaced by a new photo
-        if (oldImageUrl && oldImageUrl !== finalImageUrl && typeof window.deleteImageFromFirebaseStorage === 'function') {
-          if (oldImageUrl.includes('firebasestorage') || oldImageUrl.includes('storage.googleapis.com') || oldImageUrl.startsWith('gs://')) {
-            try {
-              window.deleteImageFromFirebaseStorage(oldImageUrl);
-            } catch (delErr) {
-              console.warn("Delete old storage image notice:", delErr);
-            }
           }
         }
 
@@ -6644,8 +6480,11 @@
         }
       });
 
-      const thaiDateInfo = typeof formatThaiBuddhistDateAndTime === 'function' ? formatThaiBuddhistDateAndTime(now) : null;
-      const thaiDateStr = thaiDateInfo ? thaiDateInfo.dateBE : `${now.getDate()} ${['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][now.getMonth()]} ${now.getFullYear() + 543}`;
+      const thaiDateStr = now.toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
 
       container.innerHTML = `
         <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 bg-white border-start border-4 border-primary">
@@ -6847,19 +6686,10 @@
           itemsDisplay = `<span class="fw-bold text-success">${tx.equipmentName || '-'}</span>`;
         }
 
-        let displayTimestamp = tx.timestamp || '-';
-        if (tx.timestamp) {
-          const ms = typeof window.getRecordTimestampMs === 'function' ? window.getRecordTimestampMs(tx) : 0;
-          if (ms > 0 && typeof formatThaiBuddhistDateAndTime === 'function') {
-            const f = formatThaiBuddhistDateAndTime(ms);
-            displayTimestamp = `${f.dateBE} ${f.time24}`;
-          }
-        }
-
         html += `
           <tr>
             <td class="ps-3 fs-7 text-secondary">
-              <div>${displayTimestamp}</div>
+              <div>${tx.timestamp}</div>
               <small class="text-muted font-monospace fs-8"><i class="bi bi-receipt me-1"></i>${tx.docNo || tx.id}</small>
             </td>
             <td>${typeBadge}</td>
@@ -6978,8 +6808,9 @@
         const userName = currentAuthUser?.displayName || currentUserProfile?.displayName || userEmail.split('@')[0] || 'เจ้าหน้าที่';
         
         const now = new Date();
-        const formatted = formatThaiBuddhistDateAndTime(now);
-        const fullTimestamp = `${formatted.dateBE} ${formatted.time24}`;
+        const dateStr = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+        const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
+        const fullTimestamp = `${dateStr} ${timeStr}`;
         const logId = 'audit-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
 
         const logEntry = {
@@ -9361,9 +9192,9 @@
         return;
       }
 
-      const now = new Date();
-      const thaiFmt = typeof formatThaiBuddhistDateAndTime === 'function' ? formatThaiBuddhistDateAndTime(now) : null;
-      const todayThai = thaiFmt ? `${thaiFmt.dateBE} เวลา ${thaiFmt.time24}` : `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()+543}`;
+      const todayThai = new Date().toLocaleDateString('th-TH', {
+        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
 
       const dateRangeDisplay = (startDate && endDate)
         ? `${formattedStart} ถึง ${formattedEnd}`
@@ -10023,9 +9854,9 @@
         return;
       }
 
-      const now = new Date();
-      const thaiFmt = typeof formatThaiBuddhistDateAndTime === 'function' ? formatThaiBuddhistDateAndTime(now) : null;
-      const todayThai = thaiFmt ? `${thaiFmt.dateBE} เวลา ${thaiFmt.time24}` : `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()+543}`;
+      const todayThai = new Date().toLocaleDateString('th-TH', {
+        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
 
       const dateRangeDisplay = (startDate && endDate)
         ? `${formattedStart} ถึง ${formattedEnd}`
@@ -10713,19 +10544,10 @@
 
         const qtyDisplay = `<strong class="text-dark fs-7">${tx.itemSpecificQty || tx.quantity || 1}</strong> <span class="text-muted fs-9">${tx.itemSpecificUnit || tx.unit || 'ชิ้น'}</span>`;
 
-        let modalTxTime = tx.timestamp || '-';
-        if (tx.timestamp) {
-          const ms = typeof window.getRecordTimestampMs === 'function' ? window.getRecordTimestampMs(tx) : 0;
-          if (ms > 0 && typeof formatThaiBuddhistDateAndTime === 'function') {
-            const f = formatThaiBuddhistDateAndTime(ms);
-            modalTxTime = `${f.dateBE} ${f.time24}`;
-          }
-        }
-
         html += `
           <tr>
             <td class="ps-3 text-nowrap">
-              <div class="fw-bold text-dark fs-8">${modalTxTime}</div>
+              <div class="fw-bold text-dark fs-8">${tx.timestamp || '-'}</div>
               <small class="text-muted font-monospace fs-9">#${tx.docNo || (tx.id ? tx.id.substring(0, 8) : '-')}</small>
             </td>
             <td>${typeBadge}</td>
@@ -11445,14 +11267,12 @@
         return;
       }
 
-      const now = new Date();
-      const thaiFmt = typeof formatThaiBuddhistDateAndTime === 'function' ? formatThaiBuddhistDateAndTime(now) : null;
-      const todayThai = thaiFmt ? thaiFmt.dateBE : `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()+543}`;
-      const timeThai = thaiFmt ? thaiFmt.time24 : `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} น.`;
+      const todayThai = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+      const timeThai = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
       let msg = `📲 [แจ้งเตือนรายการยืมอุปกรณ์เกินกำหนดคืนทาง LINE]\n`;
       msg += `🌿 บริษัท โฟลร่า การ์เด้น จำกัด\n`;
-      msg += `📅 ข้อมูล ณ วันที่ ${todayThai} เวลา ${timeThai}\n`;
+      msg += `📅 ข้อมูล ณ วันที่ ${todayThai} เวลา ${timeThai} น.\n`;
       msg += `----------------------------------------\n`;
 
       const groupedByEmp = {};
@@ -11549,13 +11369,8 @@
         return;
       }
 
-      const now = new Date();
-      const thaiFmt = typeof formatThaiBuddhistDateAndTime === 'function' ? formatThaiBuddhistDateAndTime(now) : null;
-      const todayThai = thaiFmt ? thaiFmt.dateBE : `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()+543}`;
-      const timeThai = thaiFmt ? thaiFmt.time24 : `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} น.`;
-
       let text = `📢 **แจ้งเตือนรายการยืมอุปกรณ์การเกษตรเกินกำหนดคืน**\n`;
-      text += `📅 ข้อมูล ณ วันที่ ${todayThai} เวลา ${timeThai}\n`;
+      text += `📅 ข้อมูล ณ วันที่ ${new Date().toLocaleDateString('th-TH')} เวลา ${new Date().toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'})} น.\n`;
       text += `----------------------------------------\n`;
 
       const groupedByEmp = {};
@@ -11669,7 +11484,7 @@
       if (scannerAutoDetectEnabled) {
         if (pulseDot) pulseDot.className = 'scanner-status-pulse-dot';
         if (modalDot) modalDot.className = 'scanner-status-pulse-dot';
-        if (btnText) btnText.textContent = 'โหมดยิงสแกน: พร้อมทำงาน';
+        if (btnText) btnText.textContent = 'ยิงสแกน';
         if (headerBtn) {
           headerBtn.className = 'btn btn-outline-success btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm d-flex align-items-center gap-2';
         }
@@ -11962,14 +11777,8 @@
         showToast("การลงเวลาถูกย้ายไปที่ศูนย์ผังโครงสร้างและจัดการบุคลากร");
         return;
       }
-      const now = new Date();
-      const beYear = now.getFullYear() + 543;
-      const day = String(now.getDate()).padStart(2, '0');
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const hours = String(now.getHours()).padStart(2, '0');
-      const mins = String(now.getMinutes()).padStart(2, '0');
-      const timeStr = `${hours}:${mins} น.`;
-      const todayStr = `${day}/${month}/${beYear}`;
+      const timeStr = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
+      const todayStr = new Date().toLocaleDateString('th-TH');
 
       const log = {
         id: 'att-' + Date.now(),
@@ -13358,14 +13167,8 @@
       const emp = employeeList.find(x => x.id === activeScannedEmpId);
       if (!emp) return;
 
-      const now = new Date();
-      const beYear = now.getFullYear() + 543;
-      const day = String(now.getDate()).padStart(2, '0');
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const hours = String(now.getHours()).padStart(2, '0');
-      const mins = String(now.getMinutes()).padStart(2, '0');
-      const timeStr = `${hours}:${mins} น.`;
-      const todayStr = `${day}/${month}/${beYear}`;
+      const timeStr = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
+      const todayStr = new Date().toLocaleDateString('th-TH');
 
       const log = {
         id: 'att-' + Date.now(),
@@ -14605,15 +14408,6 @@
       const item = equipmentList.find(x => x.id === id);
       if (!item) return;
 
-      const fileInput = document.getElementById('equipImageFileInput');
-      const cameraInput = document.getElementById('equipImageCameraInput');
-      if (fileInput) { fileInput.value = ''; fileInput._compressedFile = null; }
-      if (cameraInput) { cameraInput.value = ''; cameraInput._compressedFile = null; }
-      if (window._stagedCompressedFiles) {
-        window._stagedCompressedFiles['equipImageFileInput'] = null;
-        window._stagedCompressedFiles['equipImageCameraInput'] = null;
-      }
-
       document.getElementById('editEquipId').value = item.id;
       document.getElementById('equipModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>แก้ไขรายการอุปกรณ์การเกษตร';
       document.getElementById('equipNameThai').value = item.name;
@@ -14624,18 +14418,14 @@
       document.getElementById('equipUnitInput').value = item.unit;
       populateLocationDropdowns(item.location || '');
       document.getElementById('equipLocationInput').value = item.location || '';
-      document.getElementById('equipManualImgUrl').value = item.imageUrl || '';
-      document.getElementById('equipDescInput').value = item.description || '';
+      document.getElementById('equipManualImgUrl').value = item.imageUrl;
+      document.getElementById('equipDescInput').value = item.description;
 
       const img = document.getElementById('equipImgPreview');
       const box = document.getElementById('equipImgPreviewBox');
-      if (img && box) {
-        if (item.imageUrl) {
-          img.src = item.imageUrl;
-          box.classList.remove('d-none');
-        } else {
-          box.classList.add('d-none');
-        }
+      if (img && box && item.imageUrl) {
+        img.src = item.imageUrl;
+        box.classList.remove('d-none');
       }
 
       const modal = new bootstrap.Modal(document.getElementById('addEquipmentModal'));
@@ -14651,15 +14441,6 @@
 
     window.resetAddModal = function() {
       document.getElementById('addEquipmentForm').reset();
-      const fileInput = document.getElementById('equipImageFileInput');
-      const cameraInput = document.getElementById('equipImageCameraInput');
-      if (fileInput) { fileInput.value = ''; fileInput._compressedFile = null; }
-      if (cameraInput) { cameraInput.value = ''; cameraInput._compressedFile = null; }
-      if (window._stagedCompressedFiles) {
-        window._stagedCompressedFiles['equipImageFileInput'] = null;
-        window._stagedCompressedFiles['equipImageCameraInput'] = null;
-      }
-
       document.getElementById('editEquipId').value = '';
       document.getElementById('equipCodeInput').value = '';
       if (document.getElementById('equipMinQtyInput')) document.getElementById('equipMinQtyInput').value = 3;
@@ -14828,43 +14609,10 @@
       };
     };
 
-    // Dynamic detail preview based on selected purge scope
-    window.updatePurgeScopeSummary = function() {
-      const purgeScope = document.querySelector('input[name="purgeScopeOption"]:checked')?.value || 'BOTH';
-      const listEl = document.getElementById('purgeScopeDetailList');
-      if (!listEl) return;
-
-      if (purgeScope === 'EQUIPMENT') {
-        listEl.innerHTML = `
-          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> รายการอุปกรณ์และจำนวนสต๊อกทั้งหมด</li>
-          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> หมวดหมู่อุปกรณ์ และสถานที่จัดเก็บทั้งหมด</li>
-          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> ประวัติการทำรายการเบิก-ยืม-คืน อุปกรณ์ทั้งหมด</li>
-          <li class="mb-1 text-success"><i class="bi bi-shield-check text-success me-1.5"></i> <strong>คงอยู่ปลอดภัย:</strong> ข้อมูลบุคลากร แผนก ตำแหน่ง และเวลาเข้างาน</li>
-        `;
-      } else if (purgeScope === 'PERSONNEL') {
-        listEl.innerHTML = `
-          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> รายชื่อบุคลากรและเจ้าหน้าที่ทั้งหมด</li>
-          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> แผนก และตำแหน่งงานทั้งหมด</li>
-          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> บันทึกเวลาเข้า-ออกงาน (Attendance Logs) ทั้งหมด</li>
-          <li class="mb-1 text-success"><i class="bi bi-shield-check text-success me-1.5"></i> <strong>คงอยู่ปลอดภัย:</strong> รายการอุปกรณ์ สต๊อก หมวดหมู่ สถานที่ และประวัติเบิกจ่าย</li>
-        `;
-      } else {
-        listEl.innerHTML = `
-          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> รายการอุปกรณ์และจำนวนสต๊อกทั้งหมด</li>
-          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> รายชื่อบุคลากรและเจ้าหน้าที่ทั้งหมด</li>
-          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> ประวัติการเบิก-ยืม-คืน อุปกรณ์ทั้งหมด</li>
-          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> บันทึกเวลาเข้า-ออกงานทั้งหมด</li>
-          <li class="mb-1 text-danger"><i class="bi bi-trash3-fill text-danger me-1.5"></i> หมวดหมู่ แผนก ตำแหน่ง และสถานที่จัดเก็บ</li>
-        `;
-      }
-    };
-
     // Function to show the custom confirmation modal for database purge (PRESERVING Firebase Storage images)
     window.purgeEntireDatabaseAndStorage = function() {
-      if (!window.isThammaSrithongAdminStrict()) {
-        const msg = '⛔ สงวนสิทธิ์การล้างข้อมูลระบบเฉพาะ Admin (jaru072@gmail.com) เท่านั้น';
-        if (typeof showToast === 'function') showToast(msg);
-        else alert(msg);
+      if (MAIN_PERSONNEL_READ_ONLY) {
+        if (typeof showToast === 'function') showToast('⛔ ปิดการลบฐานข้อมูลทั้งหมดจากหน้าหลัก เพื่อป้องกันข้อมูลบุคลากรและโครงสร้าง');
         return;
       }
       const modalEl = document.getElementById('confirmPurgeDbModal');
@@ -14875,10 +14623,6 @@
       if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="bi bi-trash3-fill me-1.5"></i> ยืนยันลบฐานข้อมูลทันที';
-      }
-
-      if (typeof window.updatePurgeScopeSummary === 'function') {
-        window.updatePurgeScopeSummary();
       }
 
       // Populate dynamic Database ID and Project Name in the confirmation modal
@@ -14902,7 +14646,7 @@
         modal.show();
       } else {
         // Fallback confirmation with project and database ID details
-        const c1 = confirm(`⚠️ คำเตือน: คุณแน่ใจหรือไม่ว่าต้องการ 'ล้างข้อมูลระบบ' ?\n\n📌 โปรเจ็กต์: ${info.projectName}\n📌 Database ID: ${info.databaseId}\n📌 Firebase Project: ${info.projectId}\n\n*หมายเหตุ: จะไม่ลบไฟล์รูปภาพใน Firebase Storage (รูปภาพจะยังคงอยู่ใน Storage ปลอดภัย 100%)*`);
+        const c1 = confirm(`⚠️ คำเตือน: คุณแน่ใจหรือไม่ว่าต้องการ 'ลบฐานข้อมูลทั้งหมด' ?\n\n📌 โปรเจ็กต์: ${info.projectName}\n📌 Database ID: ${info.databaseId}\n📌 Firebase Project: ${info.projectId}\n\n*หมายเหตุ: จะไม่ลบไฟล์รูปภาพใน Firebase Storage (รูปภาพจะยังคงอยู่ใน Storage ปลอดภัย)*`);
         if (c1) {
           window.executeConfirmedPurgeDatabase();
         }
@@ -14911,43 +14655,30 @@
 
     // Execute the confirmed database purge
     window.executeConfirmedPurgeDatabase = async function() {
-      if (!window.isThammaSrithongAdminStrict()) {
-        const msg = '⛔ สงวนสิทธิ์การล้างข้อมูลระบบเฉพาะ Admin (jaru072@gmail.com) เท่านั้น';
-        if (typeof showToast === 'function') showToast(msg);
-        else alert(msg);
+      if (MAIN_PERSONNEL_READ_ONLY) {
+        if (typeof showToast === 'function') showToast('⛔ ยกเลิกการลบฐานข้อมูลทั้งหมดจากหน้าหลัก');
         return;
       }
-
-      const purgeScope = document.querySelector('input[name="purgeScopeOption"]:checked')?.value || 'BOTH';
       const modalEl = document.getElementById('confirmPurgeDbModal');
       const btn = document.getElementById('btnConfirmPurgeDbAction');
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span> กำลังลบข้อมูล...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span> กำลังลบฐานข้อมูล...';
       }
 
-      const scopeText = purgeScope === 'EQUIPMENT' 
-        ? 'ข้อมูลระบบพัสดุ-อุปกรณ์' 
-        : (purgeScope === 'PERSONNEL' ? 'ข้อมูลระบบบุคลากร' : 'ข้อมูลทั้งหมดทั้ง 2 ระบบ');
-
       if (typeof showToast === 'function') {
-        showToast(`⏳ กำลังเริ่มประมวลผลลบ${scopeText} ใน Firestore (คงรูปภาพใน Storage)...`);
+        showToast("⏳ กำลังเริ่มประมวลผลลบเอกสารฐานข้อมูลใน Firestore (คงรูปภาพใน Storage)...");
       }
 
       let deletedDocsCount = 0;
 
       try {
-        let collectionsToPurge = [];
-        if (purgeScope === 'BOTH') {
-          collectionsToPurge = ["equipment", "employees", "transactions", "attendance", "categories", "departments", "locations", "system_metadata", "audit_logs", "user_login_logs"];
-        } else if (purgeScope === 'EQUIPMENT') {
-          collectionsToPurge = ["equipment", "transactions", "categories", "locations"];
-        } else if (purgeScope === 'PERSONNEL') {
-          collectionsToPurge = ["employees", "attendance", "departments"];
-        }
+        // NOTE: We DO NOT delete images from Firebase Storage here as requested.
+        // Storage images remain intact and preserved in Firebase Storage.
 
-        // 1. Delete Firestore docs
+        // 1. Delete all documents in Firestore collections if Firestore ready
         if (isFirebaseReady && db) {
+          const collectionsToPurge = ["equipment", "employees", "transactions", "attendance", "categories", "departments", "locations", "system_metadata", "audit_logs"];
           for (const colName of collectionsToPurge) {
             try {
               const colRef = collection(db, colName);
@@ -14962,75 +14693,54 @@
           }
         }
 
-        // 2. Clear local memory & LocalStorage based on scope
-        if (purgeScope === 'BOTH' || purgeScope === 'EQUIPMENT') {
-          equipmentList = [];
-          transactionHistory = [];
-          categoriesList = [];
-          locationsList = [];
-          window.locationsList = [];
-          
-          localStorage.removeItem('flora_equipment');
-          localStorage.removeItem('flora_transactions');
-          localStorage.removeItem('flora_categories');
-          localStorage.removeItem('flora_locations');
-          localStorage.removeItem('flora_fs_seeded_equipment');
-          localStorage.removeItem('flora_fs_seeded_categories');
-          localStorage.removeItem('flora_fs_seeded_locations');
-        }
+        // 2. Clear local memory arrays
+        equipmentList = [];
+        employeeList = [];
+        transactionHistory = [];
+        attendanceLogs = [];
+        auditLogs = [];
+        categoriesList = [];
+        departmentsList = [];
+        locationsList = [];
+        window.departmentsList = [];
+        window.locationsList = [];
 
-        if (purgeScope === 'BOTH' || purgeScope === 'PERSONNEL') {
-          employeeList = [];
-          attendanceLogs = [];
-          departmentsList = [];
-          window.departmentsList = [];
-          window.positionsList = [];
-
-          localStorage.removeItem('flora_employees');
-          localStorage.removeItem('flora_attendance');
-          localStorage.removeItem('flora_departments');
-          localStorage.removeItem('flora_positions');
-          localStorage.removeItem('flora_fs_seeded_employees');
-          localStorage.removeItem('flora_fs_seeded_attendance');
-        }
-
-        if (purgeScope === 'BOTH') {
-          auditLogs = [];
-          userLoginLogs = [];
-          localStorage.removeItem('flora_audit_logs');
-          localStorage.removeItem('flora_user_login_logs');
-          localStorage.removeItem('flora_db_initialized');
-        }
+        // 3. Clear LocalStorage keys
+        localStorage.removeItem('flora_employees');
+        localStorage.removeItem('flora_equipment');
+        localStorage.removeItem('flora_transactions');
+        localStorage.removeItem('flora_attendance');
+        localStorage.removeItem('flora_audit_logs');
+        localStorage.removeItem('flora_categories');
+        localStorage.removeItem('flora_departments');
+        localStorage.removeItem('flora_locations');
+        localStorage.removeItem('flora_db_initialized');
+        localStorage.removeItem('flora_fs_seeded_employees');
+        localStorage.removeItem('flora_fs_seeded_attendance');
+        localStorage.removeItem('flora_fs_seeded_categories');
+        localStorage.removeItem('flora_fs_seeded_equipment');
+        localStorage.removeItem('flora_fs_seeded_locations');
 
         saveToLocalStorage();
 
-        // 3. Refresh UI components
-        if (purgeScope === 'BOTH' || purgeScope === 'EQUIPMENT') {
-          renderCatalogGrid();
-          renderStaffTable();
-          renderHistoryTable();
-          populateEquipmentDropdown();
-          populateQuickScanDropdown();
-          populateLocationDropdowns();
-          if (typeof renderLocationsListModal === 'function') renderLocationsListModal();
-          if (typeof renderCategoryManagementList === 'function') renderCategoryManagementList();
-        }
-
-        if (purgeScope === 'BOTH' || purgeScope === 'PERSONNEL') {
-          renderEmployeeDirectory();
-          renderAttendanceTable();
-          populateEmployeeDropdowns();
-          populateDepartmentDropdowns();
-          if (typeof renderDepartmentsListModal === 'function') renderDepartmentsListModal();
-          if (typeof renderPositionsListModal === 'function') renderPositionsListModal();
-        }
-
+        // 4. Refresh UI components
+        renderCatalogGrid();
+        renderStaffTable();
+        renderHistoryTable();
+        renderEmployeeDirectory();
+        renderAttendanceTable();
+        populateEmployeeDropdowns();
+        populateEquipmentDropdown();
+        populateQuickScanDropdown();
+        populateLocationDropdowns();
+        populateDepartmentDropdowns();
+        if (typeof renderLocationsListModal === 'function') renderLocationsListModal();
+        if (typeof renderDepartmentsListModal === 'function') renderDepartmentsListModal();
+        if (typeof renderCategoryManagementList === 'function') renderCategoryManagementList();
         if (typeof renderAuditLogsTable === 'function') renderAuditLogsTable();
-        if (typeof renderUserLoginLogsTable === 'function') renderUserLoginLogsTable();
         updateStats();
 
         if (typeof renderDbEditorTable === 'function') renderDbEditorTable();
-        if (typeof updateDbBadges === 'function') updateDbBadges();
 
         // Hide confirmation modal
         if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
@@ -15038,13 +14748,13 @@
           if (modalInstance) modalInstance.hide();
         }
 
-        showToast(`🗑️ ลบ${scopeText}สำเร็จแล้ว (${deletedDocsCount} รายการ) รูปภาพใน Storage ปลอดภัย 100%`);
+        showToast(`🗑️ ลบฐานข้อมูลสำเร็จแล้ว (${deletedDocsCount} รายการ) รวมถึง locations ใน Firestore เรียบร้อยแล้ว`);
       } catch (err) {
         console.error("Purge error:", err);
         if (typeof showToast === 'function') {
-          showToast("❌ เกิดข้อผิดพลาดขณะลบข้อมูล: " + err.message);
+          showToast("❌ เกิดข้อผิดพลาดขณะลบฐานข้อมูล: " + err.message);
         } else {
-          alert("เกิดข้อผิดพลาดขณะลบข้อมูล: " + err.message);
+          alert("เกิดข้อผิดพลาดขณะลบฐานข้อมูล: " + err.message);
         }
       } finally {
         if (btn) {

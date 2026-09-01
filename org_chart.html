@@ -984,12 +984,17 @@
       align-items: center;
       justify-content: center;
       font-size: 16px;
-      transition: background 0.15s ease;
+      transition: background 0.15s ease, opacity 0.15s ease;
       cursor: pointer;
     }
-    .btn-zoom:hover {
+    .btn-zoom:hover:not(:disabled) {
       background: #f1f5f9;
       color: #0d2258;
+    }
+    .btn-zoom:disabled, .btn-zoom[disabled] {
+      opacity: 0.35;
+      cursor: not-allowed;
+      pointer-events: none;
     }
 
     .zoom-percent-text {
@@ -1104,16 +1109,6 @@
 
     <!-- Right: Navigation and Profile Controls -->
     <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-      <!-- Back / Forward Navigation Buttons (◀ ย้อนกลับ  ▶ ถัดไป) -->
-      <div class="btn-group shadow-sm me-1" role="group" aria-label="นำทางย้อนกลับและถัดไป">
-        <button type="button" class="btn btn-outline-light btn-sm rounded-start-pill px-2.5 py-1 fw-bold d-flex align-items-center gap-1" id="orgNavBtnBack" onclick="window.history.back()" title="ย้อนกลับ">
-          <span class="fs-8">◀ ย้อนกลับ</span>
-        </button>
-        <button type="button" class="btn btn-outline-light btn-sm rounded-end-pill px-2.5 py-1 fw-bold d-flex align-items-center gap-1" id="orgNavBtnForward" onclick="window.history.forward()" title="ถัดไป">
-          <span class="fs-8">▶ ถัดไป</span>
-        </button>
-      </div>
-
       <!-- Compact Profile & Settings Dropdown Button -->
       <div class="dropdown" id="topNavSettingsDropdown">
         <button class="btn btn-outline-light btn-sm rounded-pill px-2.5 py-1 fw-semibold d-flex align-items-center gap-1.5 shadow-sm dropdown-toggle" type="button" id="settingsAccountDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="บัญชีผู้ใช้และการตั้งค่า">
@@ -1175,6 +1170,18 @@
         <i class="bi bi-arrow-clockwise fs-6"></i>
         <span>รีเฟรช</span>
       </button>
+
+      <!-- Undo / Redo Buttons (เลิกทำ / ทำซ้ำ) -->
+      <div class="btn-group btn-group-sm shadow-sm" role="group" aria-label="เลิกทำและทำซ้ำ">
+        <button type="button" class="btn btn-outline-secondary btn-sm rounded-start-pill px-2.5 py-1 fw-semibold d-flex align-items-center gap-1 text-nowrap opacity-50" id="btnToolbarUndo" onclick="window.undoFloraAction()" title="เลิกทำ (Undo) [Ctrl+Z]" disabled>
+          <i class="bi bi-arrow-counterclockwise fs-6"></i>
+          <span>เลิกทำ</span>
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm rounded-end-pill px-2.5 py-1 fw-semibold d-flex align-items-center gap-1 text-nowrap opacity-50" id="btnToolbarRedo" onclick="window.redoFloraAction()" title="ทำซ้ำ (Redo) [Ctrl+Y]" disabled>
+          <i class="bi bi-arrow-clockwise fs-6"></i>
+          <span>ทำซ้ำ</span>
+        </button>
+      </div>
 
       <!-- Search Match Navigator (แสดงเมื่อมีการค้นหา) -->
       <div id="searchNavControls" class="d-none align-items-center gap-1.5 bg-white border rounded-pill px-2.5 py-1 shadow-xs">
@@ -1345,6 +1352,9 @@
 
   <!-- ==================== FLOATING ZOOM CONTROLS ==================== -->
   <div class="zoom-controls no-print" id="zoomControls">
+    <button class="btn-zoom text-secondary" id="btnFloatingUndo" onclick="window.undoFloraAction()" title="เลิกทำ (Undo) [Ctrl+Z]" disabled><i class="bi bi-arrow-counterclockwise"></i></button>
+    <button class="btn-zoom text-secondary" id="btnFloatingRedo" onclick="window.redoFloraAction()" title="ทำซ้ำ (Redo) [Ctrl+Y]" disabled><i class="bi bi-arrow-clockwise"></i></button>
+    <div style="width: 1px; height: 20px; background: #e2e8f0; margin: 0 2px;"></div>
     <button class="btn-zoom" onclick="zoomOut()" title="ย่อผัง (-)"><i class="bi bi-dash-lg"></i></button>
     <span class="zoom-percent-text" id="zoomPercentText">100%</span>
     <button class="btn-zoom" onclick="zoomIn()" title="ขยายผัง (+)"><i class="bi bi-plus-lg"></i></button>
@@ -2389,6 +2399,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="/undo_redo_manager.js"></script>
   <script type="module" src="/global_logo.js"></script>
   <script type="module" src="personnel_backup_restore.js"></script>
   <script type="module" src="personnel_tools.js"></script>
@@ -3166,14 +3177,11 @@
 
       const now = new Date();
       const todayKey = localDateKey(now);
-      const beYear = now.getFullYear() + 543;
-      const day = String(now.getDate()).padStart(2, '0');
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const todayThai = `${day}/${month}/${beYear}`;
+      const todayThai = now.toLocaleDateString('th-TH');
       const dateBadge = document.getElementById('personnelAttendanceDate');
       if (dateBadge) dateBadge.textContent = `ประจำวันที่ ${todayThai}`;
 
-      const today = (window.attendanceLogs || []).filter(log => log.dateKey === todayKey || log.date === todayThai || log.date === now.toLocaleDateString('th-TH')).sort((a, b) => {
+      const today = (window.attendanceLogs || []).filter(log => log.dateKey === todayKey || log.date === todayThai).sort((a, b) => {
         const ta = Date.parse(a.timestamp || a.updatedAt || '') || 0;
         const tb = Date.parse(b.timestamp || b.updatedAt || '') || 0;
         return tb - ta;
@@ -3210,11 +3218,6 @@
           return;
         }
         const now = new Date();
-        const beYear = now.getFullYear() + 543;
-        const day = String(now.getDate()).padStart(2, '0');
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const hours = String(now.getHours()).padStart(2, '0');
-        const mins = String(now.getMinutes()).padStart(2, '0');
         const status = document.querySelector('input[name="personnelAttendanceStatus"]:checked')?.value || 'เข้างาน';
         const entry = {
           employeeId,
@@ -3222,8 +3225,8 @@
           employeeCode: emp.code || emp.id || '',
           department: emp.department || '',
           status,
-          time: `${hours}:${mins} น.`,
-          date: `${day}/${month}/${beYear}`,
+          time: now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.',
+          date: now.toLocaleDateString('th-TH'),
           dateKey: localDateKey(now),
           note: document.getElementById('personnelAttendanceNote')?.value.trim() || '-',
           timestamp: now.toISOString(),
@@ -5521,13 +5524,15 @@
         event?.preventDefault?.();
         return;
       }
-      window.draggedEmpId = empId;
+      const safeId = String(empId);
+      window.draggedEmpId = safeId;
+      window.lastDraggedEmpId = safeId;
       if (event?.dataTransfer) {
-        event.dataTransfer.setData('text/plain', empId);
+        event.dataTransfer.setData('text/plain', safeId);
         event.dataTransfer.effectAllowed = 'move';
       }
       
-      const el = event?.currentTarget || document.getElementById(`avatar-item-${empId}`);
+      const el = event?.currentTarget || document.getElementById(`avatar-item-${safeId}`);
       if (el) {
         el.classList.add('dragging');
       }
@@ -5546,6 +5551,9 @@
         slot.classList.remove('drop-target-active');
       });
       window.draggedEmpId = null;
+      setTimeout(() => {
+        window.lastDraggedEmpId = null;
+      }, 400);
     };
 
     window.handleSlotDragOver = function(event) {
@@ -5578,11 +5586,12 @@
         slot.classList.remove('drop-target-active');
       });
 
-      const empId = (event?.dataTransfer?.getData && event.dataTransfer.getData('text/plain')) || window.draggedEmpId;
+      const rawId = (event?.dataTransfer?.getData && event.dataTransfer.getData('text/plain')) || window.draggedEmpId || window.lastDraggedEmpId;
       window.draggedEmpId = null;
-      if (!empId) return;
+      if (!rawId) return;
 
-      const emp = (window.employees || []).find(e => (e.id || e.code) === empId);
+      const empIdStr = String(rawId);
+      const emp = (window.employees || []).find(e => String(e.id || e.code) === empIdStr);
       if (!emp) return;
 
       const oldDept = emp.department || 'ยังไม่ระบุแผนก';
@@ -5600,9 +5609,21 @@
         return;
       }
 
+      // Snapshot before change
+      const prevSnapshot = {
+        id: String(emp.id || emp.code),
+        code: emp.code,
+        name: emp.name,
+        department: emp.department || '',
+        departmentNodeId: emp.departmentNodeId || '',
+        position: emp.position || 'พนักงาน',
+        positionNodeId: emp.positionNodeId || '',
+        role: emp.role || 'WORKER'
+      };
+
       // If assigning to a single-seat leadership role that already has an occupant, replace/swap cleanly
       if (nextPosNodeId && typeof window.getFloraLeadershipPositionConflict === 'function') {
-        const conflict = window.getFloraLeadershipPositionConflict(empId, nextPosNodeId);
+        const conflict = window.getFloraLeadershipPositionConflict(empIdStr, nextPosNodeId);
         if (conflict && conflict.occupants.length >= conflict.capacity) {
           conflict.occupants.forEach(existing => {
             existing.position = 'พนักงาน';
@@ -5620,6 +5641,25 @@
       emp.positionNodeId = nextPosNodeId;
       emp.role = window.getFloraRoleForPositionNode ? window.getFloraRoleForPositionNode(emp.positionNodeId, emp.positionNodeId ? emp.role : 'WORKER') : (emp.role || 'WORKER');
       emp.updatedAt = new Date().toISOString();
+
+      // Snapshot after change
+      const nextSnapshot = {
+        id: String(emp.id || emp.code),
+        code: emp.code,
+        name: emp.name,
+        department: emp.department,
+        departmentNodeId: emp.departmentNodeId,
+        position: emp.position,
+        positionNodeId: emp.positionNodeId,
+        role: emp.role
+      };
+
+      // Push into Universal Undo/Redo Engine
+      if (typeof window.createPersonnelMoveAction === 'function' && typeof window.pushFloraUndoAction === 'function') {
+        const desc = `ย้าย [${emp.name}] ไปยัง "${nextDept}"`;
+        const action = window.createPersonnelMoveAction(empIdStr, prevSnapshot, nextSnapshot, desc);
+        window.pushFloraUndoAction(action);
+      }
 
       // 2. Mark dirty and synchronous local cache persistence
       orgChartDirty = true;
@@ -5653,7 +5693,7 @@
 
       try {
         window.logPersonnelAudit?.('ย้ายบุคลากรในผัง', { 
-          employeeId: empId, 
+          employeeId: empIdStr, 
           name: emp.name, 
           oldDepartment: oldDept, 
           department: emp.department, 
@@ -5725,13 +5765,15 @@
 
         if (!empId) return;
 
-        const emp = (window.employees || []).find(e => (e.id || e.code) === empId);
+        const safeEmpId = String(empId);
+        const emp = (window.employees || []).find(e => String(e.id || e.code) === safeEmpId);
         if (!emp) return;
 
         // Start long-press timer (180ms)
         touchTimer = setTimeout(() => {
           isTouchDragging = true;
-          window.draggedEmpId = empId;
+          window.draggedEmpId = safeEmpId;
+          window.lastDraggedEmpId = safeEmpId;
           draggedElement = source;
           source.classList.add('dragging');
           if (navigator.vibrate) {
@@ -5823,7 +5865,7 @@
         setTimeout(() => { window.justFinishedDragging = false; }, 350);
 
         const dropTarget = currentDropTarget;
-        const empId = window.draggedEmpId;
+        const empId = window.draggedEmpId || window.lastDraggedEmpId;
         cleanupTouchDrag();
 
         if (dropTarget && empId) {
@@ -6726,11 +6768,6 @@
         }
         window.location.href = 'index.html';
       }, 100);
-    };
-
-    // Open Unified Backup & Restore Modal from Org Chart
-    window.openPersonnelBackupRestoreModal = function() {
-      window.location.href = 'index.html?openBackup=true';
     };
 
     // Initialize on load

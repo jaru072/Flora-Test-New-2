@@ -177,9 +177,10 @@ window.refreshBackupModalLiveStats = function() {
 
 // 1. Open Backup/Restore Modal
 window.openBackupRestoreModal = function() {
-  const isAuthorized = isCurrentUserAdmin();
+  const isAuthorized = (typeof window.isThammaSrithongAdminStrict === 'function' && window.isThammaSrithongAdminStrict()) ||
+                       (typeof window.canAccessDatabaseEditor === 'function' && window.canAccessDatabaseEditor());
   if (!isAuthorized) {
-    getGlobalToast()("⚠️ เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่มีสิทธิ์เข้าถึงส่วนสำรอง/กู้คืนข้อมูล");
+    getGlobalToast()("⚠️ เฉพาะผู้ดูแลระบบหลัก คุณ Thamma Srithong (jaru072@gmail.com) เท่านั้นที่มีสิทธิ์เข้าถึงส่วนสำรอง/กู้คืนข้อมูล");
     return;
   }
   try {
@@ -3261,11 +3262,10 @@ function isCurrentUserAdmin() {
   const currentEmail = (window.currentAuthUser && window.currentAuthUser.email) ||
                        (window.currentUserProfile && window.currentUserProfile.email) ||
                        (window.currentUser && window.currentUser.email) ||
-                       (window.personnelAccess && window.personnelAccess.email) ||
                        '';
-  const currentRole = window.currentRole || (window.personnelAccess && window.personnelAccess.role) || '';
+  const currentRole = window.currentRole || '';
   const isEmailAdmin = currentEmail.toLowerCase() === 'jaru072@gmail.com';
-  const isRoleAdmin = currentRole === 'ADMIN' || (window.personnelAccess && window.personnelAccess.isAdmin);
+  const isRoleAdmin = currentRole === 'ADMIN';
   const isSuperAdminStrict = typeof window.isThammaSrithongAdminStrict === 'function' && window.isThammaSrithongAdminStrict();
   const isDbEditor = typeof window.canAccessDatabaseEditor === 'function' && window.canAccessDatabaseEditor();
   return isEmailAdmin || isRoleAdmin || isSuperAdminStrict || isDbEditor;
@@ -3430,10 +3430,7 @@ window.updateHybridBackupStatusUI = function() {
     if (cloud && cloud.lastBackupDate === todayStr && cloud.lastBackupTime) {
       let timeStr = '';
       try {
-        const d = new Date(cloud.lastBackupTime);
-        const hours = String(d.getHours()).padStart(2, '0');
-        const mins = String(d.getMinutes()).padStart(2, '0');
-        timeStr = `${hours}:${mins}`;
+        timeStr = new Date(cloud.lastBackupTime).toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit' });
       } catch (e) {
         timeStr = '';
       }
@@ -3456,13 +3453,7 @@ window.updateHybridBackupStatusUI = function() {
     } else if (cloud && cloud.lastBackupDate && cloud.lastBackupTime) {
       let dateFormatted = '';
       try {
-        const d = new Date(cloud.lastBackupTime);
-        const beYear = d.getFullYear() + 543;
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const hours = String(d.getHours()).padStart(2, '0');
-        const mins = String(d.getMinutes()).padStart(2, '0');
-        dateFormatted = `${day}/${month}/${beYear} ${hours}:${mins} น.`;
+        dateFormatted = new Date(cloud.lastBackupTime).toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok' });
       } catch (e) {
         dateFormatted = cloud.lastBackupDate;
       }
@@ -3500,18 +3491,6 @@ function initBackupRestore() {
       window.runHybridDailyBackup(false).catch(e => console.warn("[HybridBackup] Startup auto-check notice:", e));
     }
   }, 3500);
-
-  // Handle ?openBackup=true or ?backup=1 URL search param
-  try {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('openBackup') === 'true' || urlParams.get('backup') === '1') {
-      setTimeout(() => {
-        if (typeof window.openBackupRestoreModal === 'function') {
-          window.openBackupRestoreModal();
-        }
-      }, 800);
-    }
-  } catch (e) {}
 
   const modalElem = document.getElementById('backupRestoreModal');
   if (modalElem) {
