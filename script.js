@@ -11617,12 +11617,12 @@
       }
 
       let explicitType = null;
-      if (clean.startsWith('EMPLOYEE:')) {
+      if (/^(EMPLOYEE|EE|EMP|PERSONNEL|STAFF)\s*[:=\-_\/]\s*/i.test(clean)) {
         explicitType = 'EMPLOYEE';
-        clean = clean.replace('EMPLOYEE:', '').trim();
-      } else if (clean.startsWith('EQUIPMENT:')) {
+        clean = clean.replace(/^(EMPLOYEE|EE|EMP|PERSONNEL|STAFF)\s*[:=\-_\/]\s*/i, '').trim();
+      } else if (/^(EQUIPMENT|EQ|TOOL|ASSET)\s*[:=\-_\/]\s*/i.test(clean)) {
         explicitType = 'EQUIPMENT';
-        clean = clean.replace('EQUIPMENT:', '').trim();
+        clean = clean.replace(/^(EQUIPMENT|EQ|TOOL|ASSET)\s*[:=\-_\/]\s*/i, '').trim();
       }
 
       const lower = clean.toLowerCase();
