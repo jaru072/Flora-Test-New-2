@@ -535,6 +535,18 @@ async function main() {
       }
     });
 
+    app.get(['/payroll', '/payroll.html'], async (req, res, next) => {
+      try {
+        const filePath = path.resolve(process.cwd(), 'payroll.html');
+        let html = fs.readFileSync(filePath, 'utf-8');
+        html = await vite.transformIndexHtml(req.originalUrl || req.url, html);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
+
     app.get('*', async (req, res, next) => {
       try {
         const filePath = path.resolve(process.cwd(), 'index.html');
@@ -554,6 +566,9 @@ async function main() {
     });
     app.get(['/job_application.html', '/job_application'], (req, res) => {
       res.sendFile(path.join(distPath, 'job_application.html'));
+    });
+    app.get(['/payroll.html', '/payroll'], (req, res) => {
+      res.sendFile(path.join(distPath, 'payroll.html'));
     });
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));

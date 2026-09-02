@@ -170,17 +170,23 @@
         <span class="fs-7 fw-bold text-white">ระบบพัสดุ-อุปกรณ์</span>
       </button>
 
-      <ul class="dropdown-menu dropdown-menu-center shadow-lg border-0 rounded-4 mt-2 p-1.5" style="min-width: 220px; background: #ffffff;" aria-labelledby="systemSwitcherBtn">
+      <ul class="dropdown-menu dropdown-menu-center shadow-lg border-0 rounded-4 mt-2 p-1.5" style="min-width: 240px; background: #ffffff;" aria-labelledby="systemSwitcherBtn">
         <li>
           <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2.5 rounded-3 active bg-success bg-opacity-10 text-success fw-bold" href="index.html">
             <i class="bi bi-box-seam-fill fs-6 text-success"></i>
-            <span class="fs-7">ระบบพัสดุ-อุปกรณ์</span>
+            <span class="fs-7">1. ระบบพัสดุ-อุปกรณ์</span>
           </a>
         </li>
         <li class="mt-1">
           <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2.5 rounded-3 text-dark fw-semibold" href="org_chart.html">
             <i class="bi bi-people-fill fs-6 text-primary"></i>
-            <span class="fs-7">ระบบงานบุคคล</span>
+            <span class="fs-7">2. ระบบงานบุคคล</span>
+          </a>
+        </li>
+        <li class="mt-1">
+          <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2.5 rounded-3 text-dark fw-semibold" href="payroll.html">
+            <i class="bi bi-cash-coin fs-6 text-warning"></i>
+            <span class="fs-7">3. ระบบเงินเดือน</span>
           </a>
         </li>
       </ul>
@@ -333,7 +339,7 @@
         <button class="nav-link active" id="catalog-tab" data-bs-toggle="tab" data-bs-target="#catalog-pane" type="button" role="tab">คลังอุปกรณ์</button>
       </li>
       <li class="nav-item staff-only-element d-none" role="presentation">
-        <button class="nav-link" id="transaction-tab" data-bs-toggle="tab" data-bs-target="#transaction-pane" type="button" role="tab">บันทึก เบิก-จ่าย-ยืม-คืน</button>
+        <button class="nav-link" id="transaction-tab" data-bs-toggle="tab" data-bs-target="#transaction-pane" type="button" role="tab">บันทึก เบิก-จ่าย-ยืม-คืน-รับเข้า</button>
       </li>
       <li class="nav-item staff-only-element d-none" role="presentation">
         <button class="nav-link" id="manage-tab" data-bs-toggle="tab" data-bs-target="#manage-pane" type="button" role="tab">จัดการคลังอุปกรณ์ <span id="manageLowStockBadge"></span></button>
@@ -416,6 +422,15 @@
                 </a>
               </li>
               <li>
+                <a class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center gap-2 fw-semibold" href="payroll.html">
+                  <i class="bi bi-cash-coin text-warning fs-6"></i>
+                  <div>
+                    <div class="lh-1 text-dark fw-bold">ระบบเงินเดือน (Payroll)</div>
+                    <small class="text-muted fs-8 fw-normal">คำนวณเงินเดือน เบี้ยขยัน OT ประกันสังคม ภาษี และสลิปเงินเดือน</small>
+                  </div>
+                </a>
+              </li>
+              <li>
                 <a class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center gap-2 fw-semibold" href="job_application.html">
                   <i class="bi bi-file-earmark-person-fill text-primary fs-6"></i>
                   <div>
@@ -461,7 +476,7 @@
                 <button class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center justify-content-between fw-semibold" id="gear-item-transaction" onclick="switchNavTab('transaction-tab')">
                   <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-pencil-square text-primary fs-6"></i>
-                    <span>บันทึก เบิก-จ่าย-ยืม-คืน</span>
+                    <span>บันทึก เบิก-จ่าย-ยืม-คืน-รับเข้า</span>
                   </div>
                 </button>
               </li>
@@ -606,20 +621,22 @@
         <div class="row justify-content-center">
           <div class="col-12 col-lg-8">
             <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
-              <!-- <div class="card-header bg-flora-green text-white p-3 d-flex align-items-center justify-content-between">
-                <div>
-                  <h5 class="mb-0 fw-semibold"><i class="bi bi-pencil-square me-2"></i>บันทึก เบิก - จ่าย - ยืม - คืน อุปกรณ์</h5>
-                  <small class="text-white-50">บันทึกข้อมูลและตัดยอดสต๊อกลง Cloud Firestore แบบ Real-time</small>
+              <div class="card-header bg-flora-green text-white p-3.5 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2.5">
+                  <div class="bg-white bg-opacity-20 rounded-circle p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px;">
+                    <i class="bi bi-pencil-square fs-5 text-white"></i>
+                  </div>
+                  <div>
+                    <h5 class="mb-0 fw-bold">บันทึก เบิก - จ่าย - ยืม - คืน - รับเข้า อุปกรณ์</h5>
+                    <small class="text-white-50 fs-8">บันทึกความเคลื่อนไหวและปรับปรุงยอดสต๊อกคลังแบบ Real-time</small>
+                  </div>
                 </div>
-                <div class="d-flex align-items-center gap-1">
-                  <button class="btn btn-warning btn-sm rounded-pill fw-semibold shadow-sm" type="button" onclick="openBarcodeQrScannerModal()" title="สแกนบาร์โค้ดอุปกรณ์">
-                    <i class="bi bi-barcode me-1"></i> สแกนบาร์โค้ดอุปกรณ์
-                  </button>
-                  <button class="btn btn-success btn-sm rounded-pill fw-semibold shadow-sm" type="button" onclick="openScanEmpBadgeModal()" title="สแกน QR Code บัตรพนักงาน">
-                    <i class="bi bi-qr-code-scan me-1"></i> สแกน QR บัตรพนักงาน
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-sm btn-outline-light rounded-circle p-1 d-flex align-items-center justify-content-center" onclick="closeTransactionAndReturnToEquipment()" title="ปิดหน้าต่าง / กลับหน้าพัสดุและอุปกรณ์" style="width: 32px; height: 32px;">
+                    <i class="bi bi-x-lg fs-6"></i>
                   </button>
                 </div>
-              </div> -->
+              </div>
               <div class="card-body p-4">
 
                 <form id="transactionForm">
@@ -627,30 +644,74 @@
                   <div class="mb-4">
                     <label class="form-label fw-bold">1. เลือกประเภทการทำรายการ <span class="text-danger">*</span></label>
                     <div class="row g-2">
-                      <div class="col-12 col-sm-4">
+                      <div class="col-6 col-md-3">
                         <input type="radio" class="btn-check" name="transType" id="typeIssue" value="เบิกจ่าย" checked onchange="toggleTransTypeUI()" />
-                        <label class="btn btn-outline-danger w-100 py-2.5 rounded-3 fw-semibold fs-7" for="typeIssue">
-                          <i class="bi bi-box-arrow-up me-1"></i> เบิกตัดสต๊อก
+                        <label class="btn btn-outline-danger w-100 py-2.5 rounded-3 fw-semibold fs-7 d-flex flex-column align-items-center gap-1" for="typeIssue">
+                          <i class="bi bi-box-arrow-up fs-5"></i>
+                          <span>เบิกตัดสต๊อก</span>
                         </label>
                       </div>
-                      <div class="col-12 col-sm-4">
+                      <div class="col-6 col-md-3">
                         <input type="radio" class="btn-check" name="transType" id="typeBorrow" value="ยืมอุปกรณ์" onchange="toggleTransTypeUI()" />
-                        <label class="btn btn-outline-warning w-100 py-2.5 rounded-3 fw-semibold fs-7" for="typeBorrow">
-                          <i class="bi bi-arrow-repeat me-1"></i> ยืมอุปกรณ์
+                        <label class="btn btn-outline-warning w-100 py-2.5 rounded-3 fw-semibold fs-7 d-flex flex-column align-items-center gap-1" for="typeBorrow">
+                          <i class="bi bi-arrow-repeat fs-5"></i>
+                          <span>ยืมอุปกรณ์</span>
                         </label>
                       </div>
-                      <div class="col-12 col-sm-4">
+                      <div class="col-6 col-md-3">
                         <input type="radio" class="btn-check" name="transType" id="typeReturn" value="คืนอุปกรณ์" onchange="toggleTransTypeUI()" />
-                        <label class="btn btn-outline-info w-100 py-2.5 rounded-3 fw-semibold fs-7" for="typeReturn">
-                          <i class="bi bi-box-arrow-in-down me-1"></i> คืนอุปกรณ์
+                        <label class="btn btn-outline-info w-100 py-2.5 rounded-3 fw-semibold fs-7 d-flex flex-column align-items-center gap-1" for="typeReturn">
+                          <i class="bi bi-box-arrow-in-down fs-5"></i>
+                          <span>คืนอุปกรณ์</span>
                         </label>
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <input type="radio" class="btn-check" name="transType" id="typeStockIn" value="รับเข้าสต๊อก" onchange="toggleTransTypeUI()" />
+                        <label class="btn btn-outline-success w-100 py-2.5 rounded-3 fw-semibold fs-7 d-flex flex-column align-items-center gap-1" for="typeStockIn">
+                          <i class="bi bi-box-arrow-in-down-left fs-5"></i>
+                          <span>รับเข้าสต๊อก</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Return Mode Active Borrowings Helper Card -->
+                  <div id="returnActiveBorrowsCard" class="mb-4 p-3 bg-info bg-opacity-10 border border-2 border-info border-opacity-50 rounded-4 shadow-sm d-none">
+                    <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom border-info border-opacity-25 flex-wrap gap-2">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-info text-dark p-2 rounded-circle fs-6"><i class="bi bi-shield-check"></i></span>
+                        <div>
+                          <h6 class="fw-bold text-dark mb-0"><i class="bi bi-list-check me-1 text-info"></i>รายการอุปกรณ์ที่กำลังถูกยืมอยู่ (Active Borrowings)</h6>
+                          <small class="text-muted fs-8">เลือกคืนจากรายการที่ยืมจริงเท่านั้น เพื่อความถูกต้องของยอดคงเหลือในคลัง</small>
+                        </div>
+                      </div>
+                      <span id="activeBorrowCountBadge" class="badge bg-info text-dark rounded-pill px-2.5 py-1 fs-8">ค้างคืน 0 รายการ</span>
+                    </div>
+
+                    <div id="noBorrowAlertForEmp" class="alert alert-warning py-2.5 px-3 rounded-3 fs-8 mb-2 d-none">
+                      <i class="bi bi-exclamation-triangle-fill text-warning me-1.5 fs-6"></i>
+                      <span><strong>ไม่พบรายการยืมค้าง:</strong> พนักงานท่านนี้ไม่มีรายการอุปกรณ์ที่ยืมค้างไว้ในระบบ จึงไม่สามารถทำรายการคืนได้</span>
+                    </div>
+
+                    <div id="returnActiveBorrowListContainer" class="my-2">
+                      <!-- Rendered Active Borrows to pick from -->
+                    </div>
+                  </div>
+
+                  <!-- Stock In Mode Helper Banner -->
+                  <div id="stockInHelperBanner" class="alert alert-success py-2.5 px-3 mb-4 rounded-4 border-0 shadow-sm bg-success bg-opacity-10 text-success-emphasis d-none">
+                    <div class="d-flex align-items-center gap-2">
+                      <i class="bi bi-plus-circle-fill fs-4 text-success flex-shrink-0"></i>
+                      <div>
+                        <div class="fw-bold fs-7">📦 โหมดรับเข้าสต๊อก (Stock In / Inbound Restock)</div>
+                        <div class="fs-8 text-secondary">บันทึกรับเข้าอุปกรณ์ใหม่ หรือเติมสต๊อกคลัง ยอดคงเหลือของอุปกรณ์จะเพิ่มขึ้นทันทีหลังบันทึก</div>
                       </div>
                     </div>
                   </div>
 
                   <!-- Select Employee -->
                   <div class="mb-3">
-                    <label class="form-label fw-bold" for="empSelect">2. เลือกรายชื่อผู้ทำรายการ / สแกน QR บัตรพนักงาน <span class="text-danger">*</span></label>
+                    <label class="form-label fw-bold" for="empSelect" id="transEmpSelectLabel">2. เลือกรายชื่อผู้ทำรายการ / สแกน QR บัตรพนักงาน <span class="text-danger">*</span></label>
                     <div class="input-group mb-2">
                       <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
                       <input type="text" id="transEmpSearchInput" class="form-control border-start-0 bg-light fs-7" placeholder="🔍 พิมพ์ชื่อ หรือ รหัสพนักงานเพื่อค้นหา (เรียงตามชื่อ)..." oninput="filterTransEmployeeSelect(this.value)" />
@@ -662,7 +723,7 @@
                     </div>
                     <div class="input-group">
                       <span class="input-group-text bg-light"><i class="bi bi-person-fill text-success"></i></span>
-                      <select id="empSelect" class="form-select fw-semibold" required>
+                      <select id="empSelect" class="form-select fw-semibold" required onchange="handleTransEmpSelectionChange()">
                         <option value="">-- กรุณาเลือกรายชื่อพนักงาน --</option>
                       </select>
                     </div>
@@ -670,7 +731,7 @@
 
                   <!-- Select Equipment -->
                   <div class="mb-3">
-                    <label class="form-label fw-bold" for="equipSelect">3. เลือกอุปกรณ์การเกษตร / ค้นชื่ออุปกรณ์ / สแกนบาร์โค้ด</label>
+                    <label class="form-label fw-bold" for="equipSelect" id="transEquipSelectLabel">3. เลือกอุปกรณ์การเกษตร / ค้นชื่ออุปกรณ์ / สแกนบาร์โค้ด</label>
                     
                     <!-- Search Input & Barcode Scan Button -->
                     <div class="input-group mb-2">
@@ -688,9 +749,6 @@
                       <select id="equipSelect" class="form-select fw-semibold" onchange="updateEquipSelectPreview()">
                         <option value="">-- กรุณาเลือกอุปกรณ์การเกษตร --</option>
                       </select>
-                      <!-- <button class="btn btn-outline-warning fw-bold px-3" type="button" onclick="openBarcodeQrScannerModal()">
-                        <i class="bi bi-barcode me-1"></i> สแกนบาร์โค้ดอุปกรณ์
-                      </button> -->
                     </div>
                     <div id="equipStockInfo" class="form-text mt-1 text-primary fw-semibold"></div>
 
@@ -719,17 +777,20 @@
                   <!-- Quantity & Add to Cart -->
                   <div class="row g-3 mb-3">
                     <div class="col-12 col-md-6">
-                      <label class="form-label fw-bold" for="transQty">4. ระบุจำนวนตัดยอด/ยืม/คืน</label>
+                      <label class="form-label fw-bold" for="transQty" id="transQtyLabel">4. ระบุจำนวนตัดยอด/ยืม/คืน/รับเข้า</label>
                       <div class="input-group">
-                        <input type="number" id="transQty" class="form-control" min="1" value="1" />
+                        <input type="number" id="transQty" class="form-control" min="1" value="1" oninput="validateTransQtyInputLive()" />
                         <span id="transUnitSpan" class="input-group-text bg-light">ชิ้น</span>
+                      </div>
+                      <div id="transQtyStockWarning" class="form-text text-danger fw-bold mt-1.5 d-none">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i><span id="transQtyStockWarningText">ระบุจำนวนเกินสต๊อกที่มีอยู่</span>
                       </div>
                     </div>
 
                     <div class="col-12 col-md-6 d-flex align-items-end">
                       <button type="button" class="btn btn-outline-success fw-bold w-100 py-2 rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2" onclick="addCurrentEquipToCart()">
                         <i class="bi bi-cart-plus-fill fs-5"></i>
-                        <span>➕ เพิ่มเข้าเอกสาร (เบิก/ยืมหลายชนิด)</span>
+                        <span id="btnAddCartSpan">➕ เพิ่มเข้าเอกสาร (เบิก/ยืม/คืน/รับเข้า)</span>
                       </button>
                     </div>
                   </div>
@@ -740,7 +801,7 @@
                       <div class="d-flex align-items-center gap-2">
                         <span class="badge bg-success p-2 rounded-circle fs-6"><i class="bi bi-basket3-fill"></i></span>
                         <div>
-                          <h6 class="fw-bold text-dark mb-0">รายการอุปกรณ์ในเอกสารเบิก/ยืมใบนี้</h6>
+                          <h6 class="fw-bold text-dark mb-0" id="transCartTitleHeader">รายการอุปกรณ์ในเอกสารใบนี้</h6>
                           <small class="text-muted fs-8">สามารถเพิ่มอุปกรณ์ได้หลายชนิดในเอกสารฉบับเดียวกัน</small>
                         </div>
                       </div>
@@ -759,8 +820,8 @@
 
                   <div class="row g-3 mb-3">
                     <div class="col-12">
-                      <label class="form-label fw-bold" for="transLocation">5. แปลงเกษตร / เรือนกระจกที่นำไปใช้</label>
-                      <input type="text" id="transLocation" class="form-control" placeholder="เช่น แปลงกุหลาบ B2, เรือนกล้วยไม้ 1" />
+                      <label class="form-label fw-bold" for="transLocation" id="transLocationLabel">5. แปลงเกษตร / เรือนกระจกที่นำไปใช้ / คลังที่เก็บ</label>
+                      <input type="text" id="transLocation" class="form-control" placeholder="เช่น แปลงกุหลาบ B2, คลังอุปกรณ์ A1, โรงเรือน 1" />
                     </div>
                   </div>
 
@@ -792,8 +853,8 @@
                   </div>
 
                   <div class="mb-3">
-                    <label class="form-label fw-bold" for="transNote">7. หมายเหตุเพิ่มเติม / สภาพอุปกรณ์</label>
-                    <textarea id="transNote" class="form-control" rows="2" placeholder="เช่น ใช้ตัดแต่งกิ่งช่วงเช้า, ยืมคืนภายในเย็นนี้"></textarea>
+                    <label class="form-label fw-bold" for="transNote" id="transNoteLabel">7. หมายเหตุเพิ่มเติม / สภาพอุปกรณ์</label>
+                    <textarea id="transNote" class="form-control" rows="2" placeholder="เช่น ใช้ตัดแต่งกิ่งช่วงเช้า, ยืมคืนภายในเย็นนี้, รับเข้าใบสั่งซื้อ PO-102"></textarea>
                   </div>
 
                   <!-- Checkbox: ต้องการ "เอกสารใบเบิก-จ่าย-ยืม-คืนอุปกรณ์การเกษตร" (Default ไม่ติ๊กเลือก) -->
@@ -806,10 +867,16 @@
                     </div>
                   </div>
 
-                  <!-- Submit Button -->
-                  <button type="submit" id="btnSubmitTransaction" class="btn btn-success btn-lg w-100 rounded-pill fw-semibold shadow-sm">
-                    <i class="bi bi-check-circle-fill me-2"></i> บันทึก ตัดสต๊อก
-                  </button>
+                  <!-- Action Buttons: Submit & Close -->
+                  <div class="d-flex gap-2.5 flex-column flex-sm-row">
+                    <button type="submit" id="btnSubmitTransaction" class="btn btn-danger btn-lg flex-grow-1 py-3 rounded-3 fw-bold shadow-sm">
+                      <i class="bi bi-box-arrow-up me-2"></i> บันทึกเบิกจ่าย / ตัดสต๊อก
+                    </button>
+                    <button type="button" class="btn btn-light border btn-lg px-4 py-3 rounded-3 fw-bold text-secondary shadow-sm d-flex align-items-center justify-content-center gap-2" onclick="closeTransactionAndReturnToEquipment()" title="ปิดหน้าต่าง / กลับหน้าพัสดุและอุปกรณ์">
+                      <i class="bi bi-x-circle fs-5"></i>
+                      <span>ปิดหน้าต่าง</span>
+                    </button>
+                  </div>
                 </form>
 
               </div>

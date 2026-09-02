@@ -134,7 +134,9 @@
     const cleanNote = String(note !== undefined ? note : (tree?.note || "")).trim();
     try {
       localStorage.setItem(getScopedKey(BASE_PROJECT_TITLE_KEY), cleanTitle);
+      localStorage.setItem(BASE_PROJECT_TITLE_KEY, cleanTitle);
       localStorage.setItem(getScopedKey(BASE_PROJECT_NOTE_KEY), cleanNote);
+      localStorage.setItem(BASE_PROJECT_NOTE_KEY, cleanNote);
     } catch (e) {}
     try {
       window.dispatchEvent(new CustomEvent("flora-project-title-changed", { detail: { title: cleanTitle, note: cleanNote } }));
@@ -222,7 +224,7 @@
   }
   function dispatchChange(origin = "local") {
     persistLocal(); syncDerivedLists(); reconcileEmployeesFromTree(true); renderManager();
-    syncMasterTitleToStorageAndDom(tree.name);
+    syncMasterTitleToStorageAndDom(tree.name, tree.note);
     window.dispatchEvent(new CustomEvent("flora-org-tree-changed", { detail: { origin, tree: clone(tree) } }));
     if (origin !== "remote" && firestoreBridge) firestoreBridge.write(tree);
     if (origin !== "remote") window.logPersonnelAudit?.("แก้ไขโครงสร้าง Tree", { rootId: tree.id, rootName: tree.name });
@@ -553,8 +555,8 @@
   window.getFloraOrgQuickAssignGroups = getQuickAssignGroups;
   window.getFloraOrgNode = id => { const node=findNode(id); return node ? clone(node) : null; };
   window.getFloraOrgTree = () => clone(tree);
-  window.getFloraProjectTitle = () => (tree?.name || localStorage.getItem(PROJECT_TITLE_KEY) || "โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา").trim();
-  window.getFloraProjectNote = () => ((tree?.note !== undefined ? tree.note : (localStorage.getItem(PROJECT_NOTE_KEY) || "")) || "").trim();
+  window.getFloraProjectTitle = () => (tree?.name || localStorage.getItem(getScopedKey(BASE_PROJECT_TITLE_KEY)) || localStorage.getItem(BASE_PROJECT_TITLE_KEY) || "โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา").trim();
+  window.getFloraProjectNote = () => ((tree?.note !== undefined ? tree.note : (localStorage.getItem(getScopedKey(BASE_PROJECT_NOTE_KEY)) || localStorage.getItem(BASE_PROJECT_NOTE_KEY) || "")) || "").trim();
   window.syncFloraEmployeesToTree = (persist = true) => reconcileEmployeesFromTree(Boolean(persist));
   window.isEmployeeAssignedToFloraTree = emp => Boolean(resolveEmployeeNode(emp));
   window.resolveFloraAssignmentByLabels = (department, position) => {

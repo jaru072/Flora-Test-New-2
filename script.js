@@ -2007,6 +2007,67 @@
       }
     };
 
+    window.lastInteractedEquipmentId = null;
+
+    // Return to catalog tab and smoothly highlight/scroll to the target equipment
+    window.returnToCatalogEquipment = function(equipId) {
+      const targetId = equipId ||
+                       document.getElementById('equipSelect')?.value ||
+                       (typeof selectedTransItems !== 'undefined' && selectedTransItems.length > 0 ? selectedTransItems[0].equipmentId : null) ||
+                       window.lastInteractedEquipmentId;
+
+      if (typeof window.switchNavTab === 'function') {
+        window.switchNavTab('catalog-tab');
+      }
+
+      if (targetId) {
+        const equipObj = (equipmentList || []).find(x => String(x.id) === String(targetId) || String(x.code) === String(targetId));
+        const finalId = equipObj ? equipObj.id : targetId;
+
+        // Reset search input and filter if it might hide this equipment
+        const searchInput = document.getElementById('catalogSearchInput');
+        const catSelect = document.getElementById('catalogCategorySelect');
+        const statusSelect = document.getElementById('catalogStatusSelect');
+
+        let needReRender = false;
+        if (searchInput && searchInput.value.trim() !== '') {
+          searchInput.value = '';
+          needReRender = true;
+        }
+        if (catSelect && catSelect.value !== 'ALL' && equipObj && catSelect.value !== equipObj.category) {
+          catSelect.value = 'ALL';
+          needReRender = true;
+        }
+        if (statusSelect && statusSelect.value !== 'ALL') {
+          statusSelect.value = 'ALL';
+          needReRender = true;
+        }
+        if (needReRender && typeof renderCatalogGrid === 'function') {
+          renderCatalogGrid();
+        }
+
+        setTimeout(() => {
+          const cardContainer = document.getElementById('equip-card-' + finalId) ||
+                                document.querySelector(`[data-equip-id="${finalId}"]`);
+          if (cardContainer) {
+            cardContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const cardInner = cardContainer.querySelector('.equipment-card') || cardContainer;
+            cardInner.classList.remove('highlight-equipment-pulse');
+            void cardInner.offsetWidth; // trigger reflow
+            cardInner.classList.add('highlight-equipment-pulse');
+            setTimeout(() => {
+              cardInner.classList.remove('highlight-equipment-pulse');
+            }, 3200);
+          }
+        }, 220);
+      }
+    };
+
+    window.closeTransactionAndReturnToEquipment = function() {
+      const currentEquipId = document.getElementById('equipSelect')?.value || window.lastInteractedEquipmentId;
+      window.returnToCatalogEquipment(currentEquipId);
+    };
+
     function updateGearMenuActiveState(activeTabId) {
       const mapping = {
         'catalog-tab': { itemId: 'gear-item-catalog', label: 'คลังอุปกรณ์', icon: 'bi-grid-fill' },
@@ -3997,11 +4058,29 @@
       }
 
       const type = document.querySelector('input[name="transType"]:checked')?.value || 'เบิกจ่าย';
+      const empId = document.getElementById('empSelect')?.value;
 
-      // Check current quantity already in cart
       const existingInCart = selectedTransItems.find(x => x.id === equipId);
-      const currentCartQty = existingInCart ? existingInCart.qty : 0;
+      const currentCartQty = existingInCart ? (existingInCart.qty || 0) : 0;
       const totalRequestedQty = currentCartQty + qty;
+
+      // Validate Return Mode: Prevent adding/returning items that were not borrowed
+      if (type === 'คืนอุปกรณ์') {
+        const allActive = typeof window.getAllActiveBorrowings === 'function' ? window.getAllActiveBorrowings() : [];
+        const relevantBorrows = empId ? allActive.filter(b => b.employeeId === empId) : allActive;
+        const matchingBorrows = relevantBorrows.filter(b => b.equipmentId === equipId);
+        const totalBorrowedRemaining = matchingBorrows.reduce((sum, b) => sum + b.remainingQty, 0);
+
+        if (totalBorrowedRemaining <= 0) {
+          alert(`❌ ไม่สามารถทำรายการคืนได้: "${item.name}"\nเนื่องจากไม่มีประวัติการยืมอุปกรณ์รายการนี้ค้างอยู่ในระบบ (อุปกรณ์ที่จะคืนได้ต้องมีการยืมไปก่อนเท่านั้น)`);
+          return;
+        }
+
+        if (totalRequestedQty > totalBorrowedRemaining) {
+          alert(`❌ จำนวนที่ส่งคืนเกินจำนวนที่ยืมไปจริง!\nอุปกรณ์: "${item.name}"\nจำนวนที่ค้างส่งคืน: ${totalBorrowedRemaining} ${item.unit || 'ชิ้น'}\nในเอกสารแล้ว: ${currentCartQty} ${item.unit || 'ชิ้น'}\nต้องการเพิ่มอีก: ${qty} ${item.unit || 'ชิ้น'}`);
+          return;
+        }
+      }
 
       if (type === 'เบิกจ่าย' || type === 'ยืมอุปกรณ์') {
         if (totalRequestedQty > item.quantity) {
@@ -4112,6 +4191,8 @@
         typeBadge = '<span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-arrow-repeat me-1"></i>ยืมอุปกรณ์</span>';
       } else if (activeType === 'คืนอุปกรณ์') {
         typeBadge = '<span class="badge bg-info text-dark px-2 py-1"><i class="bi bi-box-arrow-in-down me-1"></i>คืนอุปกรณ์</span>';
+      } else if (activeType === 'รับเข้าสต๊อก' || activeType === 'รับเข้าสต๊อก (ขาเข้า)') {
+        typeBadge = '<span class="badge bg-success px-2 py-1"><i class="bi bi-box-arrow-in-down-left me-1"></i>รับเข้าสต๊อก</span>';
       } else {
         typeBadge = '<span class="badge bg-danger px-2 py-1"><i class="bi bi-box-arrow-up me-1"></i>เบิกจ่าย</span>';
       }
@@ -4244,12 +4325,30 @@
         }];
       }
 
-      // Check stock for all items
+      // Check stock & borrow validation for all items
       if (type === 'เบิกจ่าย' || type === 'ยืมอุปกรณ์') {
         for (const it of itemsToProcess) {
           const equipObj = equipmentList.find(x => x.id === it.equipmentId);
           if (!equipObj || equipObj.quantity < it.quantity) {
             alert(`❌ ยอดคงเหลือไม่พอสำหรับทำรายการ: "${it.equipmentName}" (คงเหลือปัจจุบัน: ${equipObj ? equipObj.quantity : 0} ${it.unit}, ต้องการ: ${it.quantity} ${it.unit})`);
+            return;
+          }
+        }
+      } else if (type === 'คืนอุปกรณ์') {
+        const allActive = typeof window.getAllActiveBorrowings === 'function' ? window.getAllActiveBorrowings() : [];
+        const relevantBorrows = allActive.filter(b => b.employeeId === empId);
+
+        for (const it of itemsToProcess) {
+          const matchingBorrows = relevantBorrows.filter(b => b.equipmentId === it.equipmentId);
+          const totalBorrowedRemaining = matchingBorrows.reduce((sum, b) => sum + b.remainingQty, 0);
+
+          if (totalBorrowedRemaining <= 0) {
+            alert(`❌ ไม่สามารถทำรายการคืนได้: "${it.equipmentName}"\nเนื่องจากไม่มีประวัติการยืมอุปกรณ์รายการนี้ของพนักงาน (${emp.name}) ในระบบ`);
+            return;
+          }
+
+          if (it.quantity > totalBorrowedRemaining) {
+            alert(`❌ จำนวนที่ส่งคืนเกินจำนวนที่ยืมจริง!\nอุปกรณ์: "${it.equipmentName}"\nจำนวนที่ค้างส่งคืน: ${totalBorrowedRemaining} ${it.unit}\nจำนวนที่ระบุในรายการ: ${it.quantity} ${it.unit}`);
             return;
           }
         }
@@ -4373,6 +4472,8 @@
       // Check if user requested transaction voucher document (Default: false)
       const requireVoucher = document.getElementById('transRequireVoucherDoc')?.checked || false;
 
+      const primaryEquipId = (itemsToProcess && itemsToProcess.length > 0) ? itemsToProcess[0].equipmentId : (document.getElementById('equipSelect')?.value || window.lastInteractedEquipmentId);
+
       // Reset form & cart
       clearTransCart();
       document.getElementById('transactionForm')?.reset();
@@ -4394,8 +4495,10 @@
         validateFirestoreHistorySync(false);
       }
 
-      // Exit from "บันทึก เบิก-จ่าย-ยืม-คืน" screen immediately
-      if (typeof switchNavTab === 'function') {
+      // Exit from "บันทึก เบิก-จ่าย-ยืม-คืน" screen immediately and return to that equipment
+      if (typeof returnToCatalogEquipment === 'function') {
+        returnToCatalogEquipment(primaryEquipId);
+      } else if (typeof switchNavTab === 'function') {
         switchNavTab('catalog-tab');
       }
 
@@ -4833,7 +4936,7 @@
         const highlightedCode = highlightSearchText(item.code, rawSearchInput);
 
         html += `
-          <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+          <div class="col-12 col-sm-6 col-lg-4 col-xl-3" id="equip-card-${item.id}" data-equip-id="${item.id}">
             <div class="equipment-card">
               <div class="equipment-img-container position-relative" onclick="openEquipmentTransactionHistoryModal('${item.id}')" title="คลิกรูปภาพเพื่อดูประวัติการทำรายการอุปกรณ์ (${escapeHtml(item.name)})">
                 <img src="${item.imageUrl}" loading="lazy" class="equipment-img" alt="${escapeHtml(item.name)}" onerror="this.src='${DEFAULT_EQUIPMENT_IMAGE}'" />
@@ -7815,9 +7918,22 @@
       if (!select) return;
       const q = (query || '').trim().toLowerCase();
       const currentVal = select.value;
+      const activeTransType = document.querySelector('input[name="transType"]:checked')?.value || 'เบิกจ่าย';
+      const selectedEmpId = document.getElementById('empSelect')?.value;
+
       select.innerHTML = '<option value="">-- กรุณาเลือกอุปกรณ์การเกษตร --</option>';
 
-      const filtered = equipmentList.filter(item => {
+      let candidateList = [...equipmentList];
+
+      // If in Return mode, only allow equipment that has been borrowed
+      if (activeTransType === 'คืนอุปกรณ์') {
+        const allActive = typeof window.getAllActiveBorrowings === 'function' ? window.getAllActiveBorrowings() : [];
+        const relevantBorrows = selectedEmpId ? allActive.filter(b => b.employeeId === selectedEmpId) : allActive;
+        const borrowedEquipIds = new Set(relevantBorrows.map(b => b.equipmentId));
+        candidateList = candidateList.filter(item => borrowedEquipIds.has(item.id));
+      }
+
+      const filtered = candidateList.filter(item => {
         if (!q) return true;
         return (item.name && item.name.toLowerCase().includes(q)) ||
                (item.code && item.code.toLowerCase().includes(q)) ||
@@ -7834,7 +7950,16 @@
       filtered.forEach(item => {
         const opt = document.createElement('option');
         opt.value = item.id;
-        opt.textContent = `[${item.code}] ${item.name} (คงเหลือ: ${item.quantity} ${item.unit})`;
+        if (activeTransType === 'คืนอุปกรณ์') {
+          const allActive = typeof window.getAllActiveBorrowings === 'function' ? window.getAllActiveBorrowings() : [];
+          const matchedBorrows = allActive.filter(b => b.equipmentId === item.id && (!selectedEmpId || b.employeeId === selectedEmpId));
+          const borrowedSum = matchedBorrows.reduce((sum, b) => sum + b.remainingQty, 0);
+          opt.textContent = `[${item.code}] ${item.name} (ค้างคืน: ${borrowedSum} ${item.unit} | สต๊อกคลัง: ${item.quantity} ${item.unit})`;
+        } else if (activeTransType === 'รับเข้าสต๊อก' || activeTransType === 'รับเข้าสต๊อก (ขาเข้า)') {
+          opt.textContent = `📥 [${item.code}] ${item.name} (สต๊อกปัจจุบัน: ${item.quantity} ${item.unit})`;
+        } else {
+          opt.textContent = `[${item.code}] ${item.name} (คงเหลือ: ${item.quantity} ${item.unit})`;
+        }
         if (currentVal && currentVal === item.id) opt.selected = true;
         select.appendChild(opt);
       });
@@ -7968,6 +8093,75 @@
       filterRestockEquipDropdown('');
     };
 
+    window.validateTransQtyInputLive = function() {
+      const equipSelect = document.getElementById('equipSelect');
+      const qtyInput = document.getElementById('transQty');
+      const warningBox = document.getElementById('transQtyStockWarning');
+      const warningText = document.getElementById('transQtyStockWarningText');
+
+      if (!qtyInput) return;
+
+      const equipId = equipSelect ? equipSelect.value : '';
+      const qty = parseInt(qtyInput.value) || 0;
+      const type = document.querySelector('input[name="transType"]:checked')?.value || 'เบิกจ่าย';
+
+      if (!equipId) {
+        if (warningBox) warningBox.classList.add('d-none');
+        qtyInput.classList.remove('is-invalid');
+        return;
+      }
+
+      const item = equipmentList.find(x => x.id === equipId);
+      if (!item) {
+        if (warningBox) warningBox.classList.add('d-none');
+        qtyInput.classList.remove('is-invalid');
+        return;
+      }
+
+      if (type === 'เบิกจ่าย' || type === 'ยืมอุปกรณ์') {
+        const existingInCart = selectedTransItems.find(x => x.id === equipId);
+        const currentCartQty = existingInCart ? (existingInCart.qty || 0) : 0;
+        const totalRequestedQty = currentCartQty + qty;
+
+        if (totalRequestedQty > item.quantity) {
+          if (warningBox && warningText) {
+            warningText.innerHTML = `<i class="bi bi-exclamation-octagon-fill me-1"></i>จำนวนที่ระบุเกินสต๊อกที่มีอยู่! (คงเหลือในคลัง: <span class="badge bg-danger fs-8">${item.quantity} ${item.unit || 'ชิ้น'}</span>${currentCartQty > 0 ? `, ในเอกสารแล้ว: ${currentCartQty} ${item.unit || 'ชิ้น'}` : ''})`;
+            warningBox.classList.remove('d-none');
+          }
+          qtyInput.classList.add('is-invalid');
+        } else {
+          if (warningBox) warningBox.classList.add('d-none');
+          qtyInput.classList.remove('is-invalid');
+        }
+      } else if (type === 'คืนอุปกรณ์') {
+        const empId = document.getElementById('empSelect')?.value;
+        const allActive = typeof window.getAllActiveBorrowings === 'function' ? window.getAllActiveBorrowings() : [];
+        const relevantBorrows = empId ? allActive.filter(b => b.employeeId === empId) : allActive;
+        const matchingBorrows = relevantBorrows.filter(b => b.equipmentId === equipId);
+        const totalBorrowedRemaining = matchingBorrows.reduce((sum, b) => sum + b.remainingQty, 0);
+
+        if (totalBorrowedRemaining <= 0) {
+          if (warningBox && warningText) {
+            warningText.innerHTML = `<i class="bi bi-exclamation-octagon-fill me-1"></i>ไม่พบรายการยืมอุปกรณ์รายการนี้ของพนักงานในระบบ`;
+            warningBox.classList.remove('d-none');
+          }
+          qtyInput.classList.add('is-invalid');
+        } else if (qty > totalBorrowedRemaining) {
+          if (warningBox && warningText) {
+            warningText.innerHTML = `<i class="bi bi-exclamation-octagon-fill me-1"></i>จำนวนที่ส่งคืนเกินจำนวนที่ยืมไปจริง (ยืมค้างไว้: <span class="badge bg-warning text-dark fs-8">${totalBorrowedRemaining} ${item.unit || 'ชิ้น'}</span>)`;
+            warningBox.classList.remove('d-none');
+          }
+          qtyInput.classList.add('is-invalid');
+        } else {
+          if (warningBox) warningBox.classList.add('d-none');
+          qtyInput.classList.remove('is-invalid');
+        }
+      } else {
+        if (warningBox) warningBox.classList.add('d-none');
+        qtyInput.classList.remove('is-invalid');
+      }
+    };
+
     window.updateEquipSelectPreview = function() {
       const select = document.getElementById('equipSelect');
       if (!select) return;
@@ -7980,14 +8174,18 @@
       if (!equipId) {
         if (previewBox) previewBox.classList.add('d-none');
         if (infoSpan) infoSpan.innerHTML = '';
+        if (typeof window.validateTransQtyInputLive === 'function') window.validateTransQtyInputLive();
         return;
       }
 
       const item = equipmentList.find(x => x.id === equipId);
       if (!item) {
         if (previewBox) previewBox.classList.add('d-none');
+        if (typeof window.validateTransQtyInputLive === 'function') window.validateTransQtyInputLive();
         return;
       }
+
+      window.lastInteractedEquipmentId = item.id;
 
       if (unitSpan) unitSpan.textContent = item.unit || 'ชิ้น';
       if (infoSpan) {
@@ -8014,12 +8212,18 @@
         const stockElem = document.getElementById('equipPreviewStockText');
         if (stockElem) {
           stockElem.textContent = `${item.quantity} ${item.unit}`;
-          if (item.quantity <= 3) {
+          if (item.quantity <= 0) {
             stockElem.className = "fs-4 fw-bold text-danger mb-0";
+          } else if (item.quantity <= 3) {
+            stockElem.className = "fs-4 fw-bold text-warning mb-0";
           } else {
             stockElem.className = "fs-4 fw-bold text-success mb-0";
           }
         }
+      }
+
+      if (typeof window.validateTransQtyInputLive === 'function') {
+        window.validateTransQtyInputLive();
       }
     };
 
@@ -10758,11 +10962,14 @@
                 </td>
                 <td class="text-center">
                   <div class="d-flex align-items-center justify-content-center gap-1">
+                    <button type="button" class="btn btn-xs btn-info text-dark rounded-pill px-2.5 py-1 fs-8 fw-bold shadow-sm d-inline-flex align-items-center gap-1" onclick="returnEquipmentFromBorrowersModal(event, '${item.id}', '${b.employeeId || ''}', ${b.borrowedQty})" title="บันทึกรับคืนอุปกรณ์นี้เข้าคลังทันที">
+                      <i class="bi bi-box-arrow-in-down fs-7"></i> คืน
+                    </button>
                     <button type="button" class="btn btn-xs btn-success rounded-pill px-2 py-1 fs-8 fw-bold shadow-sm d-inline-flex align-items-center gap-1" onclick="sendLineOverdueReminder('${b.employeeId || ''}', '${b.employeeName.replace(/'/g, "\\'")}', '${item.name.replace(/'/g, "\\'")}', '${item.code || ''}', ${b.borrowedQty}, '${item.unit || 'ชิ้น'}', ${isOverdue ? 1 : 0}, '${dueDateText}')" title="ส่งการแจ้งเตือนติดตามคืนทาง LINE">
                       <i class="bi bi-line"></i> LINE
                     </button>
                     ${b.employeeId ? `
-                      <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2 py-1 fs-8 fw-semibold" onclick="viewBorrowerEmpHistory('${b.employeeId}')">
+                      <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2 py-1 fs-8 fw-semibold" onclick="viewBorrowerEmpHistory('${b.employeeId}')">
                         <i class="bi bi-clock-history me-1"></i> ประวัติ
                       </button>
                     ` : ''}
@@ -10831,6 +11038,120 @@
           openEmployeeBorrowHistoryModal(empId);
         }
       }, 250);
+    };
+
+    // Return equipment directly from the borrowers modal
+    window.returnEquipmentFromBorrowersModal = async function(e, equipId, empId, returnQty) {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+
+      try {
+        const equipObj = (equipmentList || []).find(x => String(x.id) === String(equipId) || String(x.code) === String(equipId));
+        const empObj = (employeeList || []).find(x => String(x.id) === String(empId) || String(x.code) === String(empId));
+        const equipName = equipObj ? equipObj.name : 'อุปกรณ์';
+        const empName = empObj ? empObj.name : 'พนักงาน';
+        const unit = equipObj ? equipObj.unit : 'ชิ้น';
+        const qtyNum = parseInt(returnQty, 10) || 1;
+
+        let confirmed = false;
+        if (typeof window.showConfirmDialog === 'function') {
+          confirmed = await window.showConfirmDialog({
+            title: "ยืนยันรับคืนอุปกรณ์เข้าคลัง",
+            message: `ต้องการบันทึกรับคืน "${equipName}" จำนวน ${qtyNum} ${unit} จากคุณ ${empName} เข้าคลังทันทีหรือไม่?`,
+            type: "info",
+            icon: "bi-box-arrow-in-down",
+            confirmText: "บันทึกรับคืน",
+            cancelText: "ยกเลิก",
+            target: e ? (e.currentTarget || e.target) : null
+          });
+        } else {
+          confirmed = true;
+        }
+
+        if (!confirmed) return;
+
+        // 1. Update inventory stock
+        if (equipObj) {
+          equipObj.quantity = (equipObj.quantity || 0) + qtyNum;
+          equipObj.borrowedCount = Math.max(0, (equipObj.borrowedCount || 0) - qtyNum);
+
+          if (isFirebaseReady && db && equipObj.id) {
+            setDoc(doc(db, "equipment", equipObj.id), equipObj, { merge: true }).catch(err => {
+              console.warn("Firestore update equipment stock error from borrowers modal:", err);
+            });
+          }
+        }
+
+        // 2. Create transaction record
+        const now = new Date();
+        const docNo = 'DOC-' + String(Date.now()).slice(-6);
+        const newTx = {
+          id: 'tx-' + String(Date.now()).slice(-6),
+          docNo: docNo,
+          type: 'คืนอุปกรณ์',
+          employeeId: empObj ? empObj.id : (empId || 'UNKNOWN'),
+          employeeName: empObj ? `${empObj.name} (${empObj.department || 'แผนกทั่วไป'})` : 'พนักงาน',
+          employeeCode: empObj ? (empObj.code || empObj.id) : '',
+          employeeDepartment: empObj ? (empObj.department || 'แผนกทั่วไป') : 'แผนกทั่วไป',
+          items: [{
+            equipmentId: equipId,
+            equipmentName: equipName,
+            equipmentCode: equipObj ? (equipObj.code || equipObj.id) : '',
+            quantity: qtyNum,
+            unit: unit,
+            imageUrl: equipObj?.imageUrl || '',
+            location: equipObj?.location || 'คลังหลัก'
+          }],
+          equipmentId: equipId,
+          equipmentName: `${equipName} [${equipObj ? (equipObj.code || equipObj.id) : ''}]`,
+          quantity: qtyNum,
+          unit: unit,
+          location: equipObj?.location || 'คลังหลัก',
+          note: 'บันทึกรับคืนอุปกรณ์จากหน้ารายชื่อผู้ยืม',
+          dueDate: null,
+          dueDateStr: null,
+          rawTimestamp: now.getTime(),
+          timestamp: now.toLocaleString('th-TH')
+        };
+
+        transactionHistory.unshift(newTx);
+        saveToLocalStorage();
+
+        if (isFirebaseReady && db) {
+          try {
+            await setDoc(doc(db, "transactions", newTx.id), newTx, { merge: true });
+          } catch (err) {
+            console.warn("Firestore add transaction error from borrowers modal:", err);
+          }
+        }
+
+        if (typeof logAuditAction === 'function') {
+          logAuditAction('ประวัติรายการ', 'เพิ่ม', `ทำรายการคืนอุปกรณ์ (${qtyNum} ${unit}): ${equipName} จากคุณ ${empName}`, newTx.id);
+        }
+
+        showToast(`✅ บันทึกรับคืน "${equipName}" (${qtyNum} ${unit}) จากคุณ ${empName} เรียบร้อยแล้ว`);
+
+        // Refresh lists & UI
+        renderCatalogGrid();
+        renderStaffTable();
+        renderHistoryTable();
+        populateEquipmentDropdown();
+        populateQuickScanDropdown();
+        updateStats();
+
+        // Refresh the borrowers modal data or close if 0
+        if (equipObj && equipObj.id) {
+          showEquipmentBorrowersModal(equipObj.id);
+        }
+
+        // Automatic sync
+        if (typeof validateFirestoreHistorySync === 'function') {
+          validateFirestoreHistorySync(false);
+        }
+      } catch (err) {
+        console.error("Return from borrowers modal error:", err);
+        showToast("เกิดข้อผิดพลาดในการบันทึกคืนอุปกรณ์");
+      }
     };
 
     // ==========================================
@@ -10931,7 +11252,7 @@
     };
 
     window.toggleTransTypeUI = function() {
-      const selectedType = document.querySelector('input[name="transType"]:checked')?.value;
+      const selectedType = document.querySelector('input[name="transType"]:checked')?.value || 'เบิกจ่าย';
       const box = document.getElementById('borrowDueDateBox');
       if (box) {
         if (selectedType === 'ยืมอุปกรณ์') {
@@ -10945,19 +11266,445 @@
         }
       }
 
+      // Return Active Borrows Card UI
+      const returnBorrowsCard = document.getElementById('returnActiveBorrowsCard');
+      if (returnBorrowsCard) {
+        if (selectedType === 'คืนอุปกรณ์') {
+          returnBorrowsCard.classList.remove('d-none');
+          if (typeof window.refreshReturnActiveBorrowsUI === 'function') {
+            window.refreshReturnActiveBorrowsUI();
+          }
+        } else {
+          returnBorrowsCard.classList.add('d-none');
+        }
+      }
+
+      // Stock In Helper Banner
+      const stockInBanner = document.getElementById('stockInHelperBanner');
+      if (stockInBanner) {
+        if (selectedType === 'รับเข้าสต๊อก' || selectedType === 'รับเข้าสต๊อก (ขาเข้า)') {
+          stockInBanner.classList.remove('d-none');
+        } else {
+          stockInBanner.classList.add('d-none');
+        }
+      }
+
+      // Labels & Headings adaptation
+      const empLabel = document.getElementById('transEmpSelectLabel');
+      if (empLabel) {
+        if (selectedType === 'คืนอุปกรณ์') {
+          empLabel.innerHTML = '2. เลือกพนักงานผู้ส่งคืนอุปกรณ์ <span class="text-danger">*</span>';
+        } else if (selectedType === 'รับเข้าสต๊อก') {
+          empLabel.innerHTML = '2. เลือกเจ้าหน้าที่ผู้รับเข้าพัสดุ / ตรวจรับพัสดุ <span class="text-danger">*</span>';
+        } else {
+          empLabel.innerHTML = '2. เลือกรายชื่อผู้ทำรายการ / สแกน QR บัตรพนักงาน <span class="text-danger">*</span>';
+        }
+      }
+
+      const equipLabel = document.getElementById('transEquipSelectLabel');
+      if (equipLabel) {
+        if (selectedType === 'คืนอุปกรณ์') {
+          equipLabel.innerHTML = '3. เลือกอุปกรณ์ที่ต้องการคืน (เฉพาะรายการที่ยืมไป)';
+        } else if (selectedType === 'รับเข้าสต๊อก') {
+          equipLabel.innerHTML = '3. เลือกอุปกรณ์การเกษตรที่ต้องการรับเข้าสต๊อกคลัง';
+        } else {
+          equipLabel.innerHTML = '3. เลือกอุปกรณ์การเกษตร / ค้นชื่ออุปกรณ์ / สแกนบาร์โค้ด';
+        }
+      }
+
+      const qtyLabel = document.getElementById('transQtyLabel');
+      if (qtyLabel) {
+        if (selectedType === 'คืนอุปกรณ์') {
+          qtyLabel.textContent = '4. ระบุจำนวนที่ส่งคืน';
+        } else if (selectedType === 'รับเข้าสต๊อก') {
+          qtyLabel.textContent = '4. ระบุจำนวนที่รับเข้าคลัง';
+        } else {
+          qtyLabel.textContent = '4. ระบุจำนวนตัดยอด/ยืม';
+        }
+      }
+
+      const btnAddCartSpan = document.getElementById('btnAddCartSpan');
+      if (btnAddCartSpan) {
+        if (selectedType === 'ยืมอุปกรณ์') {
+          btnAddCartSpan.textContent = '➕ เพิ่มเข้าเอกสารยืมอุปกรณ์';
+        } else if (selectedType === 'คืนอุปกรณ์') {
+          btnAddCartSpan.textContent = '➕ เพิ่มเข้าเอกสารคืนอุปกรณ์';
+        } else if (selectedType === 'รับเข้าสต๊อก' || selectedType === 'รับเข้าสต๊อก (ขาเข้า)') {
+          btnAddCartSpan.textContent = '➕ เพิ่มเข้าเอกสารรับเข้าสต๊อก';
+        } else {
+          btnAddCartSpan.textContent = '➕ เพิ่มเข้าเอกสารเบิกจ่าย';
+        }
+      }
+
+      const cartTitleHeader = document.getElementById('transCartTitleHeader');
+      if (cartTitleHeader) {
+        if (selectedType === 'ยืมอุปกรณ์') {
+          cartTitleHeader.textContent = 'รายการอุปกรณ์ในเอกสารยืมฉบับนี้';
+        } else if (selectedType === 'คืนอุปกรณ์') {
+          cartTitleHeader.textContent = 'รายการอุปกรณ์ในเอกสารคืนฉบับนี้';
+        } else if (selectedType === 'รับเข้าสต๊อก' || selectedType === 'รับเข้าสต๊อก (ขาเข้า)') {
+          cartTitleHeader.textContent = 'รายการอุปกรณ์ในเอกสารรับเข้าสต๊อกใบนี้';
+        } else {
+          cartTitleHeader.textContent = 'รายการอุปกรณ์ในเอกสารเบิกจ่ายใบนี้';
+        }
+      }
+
       const submitBtn = document.getElementById('btnSubmitTransaction');
       if (submitBtn) {
         if (selectedType === 'ยืมอุปกรณ์') {
-          submitBtn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> บันทึก ยืมอุปกรณ์';
+          submitBtn.className = 'btn btn-warning btn-lg flex-grow-1 py-3 rounded-3 fw-bold shadow-sm';
+          submitBtn.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i> บันทึกยืมอุปกรณ์';
         } else if (selectedType === 'คืนอุปกรณ์') {
-          submitBtn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> บันทึก คืนอุปกรณ์';
+          submitBtn.className = 'btn btn-info btn-lg flex-grow-1 py-3 rounded-3 fw-bold text-dark shadow-sm';
+          submitBtn.innerHTML = '<i class="bi bi-box-arrow-in-down me-2"></i> บันทึกรับคืนอุปกรณ์';
+        } else if (selectedType === 'รับเข้าสต๊อก' || selectedType === 'รับเข้าสต๊อก (ขาเข้า)') {
+          submitBtn.className = 'btn btn-success btn-lg flex-grow-1 py-3 rounded-3 fw-bold shadow-sm';
+          submitBtn.innerHTML = '<i class="bi bi-box-arrow-in-down-left me-2"></i> บันทึกรับเข้าสต๊อก';
         } else {
-          submitBtn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> บันทึก ตัดสต๊อก';
+          submitBtn.className = 'btn btn-danger btn-lg flex-grow-1 py-3 rounded-3 fw-bold shadow-sm';
+          submitBtn.innerHTML = '<i class="bi bi-box-arrow-up me-2"></i> บันทึกเบิกจ่าย / ตัดสต๊อก';
         }
+      }
+
+      if (typeof populateEquipmentDropdown === 'function') {
+        populateEquipmentDropdown();
       }
 
       if (typeof renderTransCartList === 'function') {
         renderTransCartList();
+      }
+
+      if (typeof window.validateTransQtyInputLive === 'function') {
+        window.validateTransQtyInputLive();
+      }
+    };
+
+    // Calculate all active borrowings currently remaining in the system
+    window.getAllActiveBorrowings = function() {
+      if (!Array.isArray(transactionHistory) || transactionHistory.length === 0) {
+        return [];
+      }
+
+      const sortedTxs = [...transactionHistory].sort((a, b) => {
+        const tA = (a.rawTimestamp || (a.timestamp ? new Date(a.timestamp).getTime() : 0));
+        const tB = (b.rawTimestamp || (b.timestamp ? new Date(b.timestamp).getTime() : 0));
+        return tA - tB;
+      });
+
+      const activeBatches = [];
+
+      sortedTxs.forEach(tx => {
+        if (!tx) return;
+        const type = tx.type || '';
+        if (type !== 'ยืมอุปกรณ์' && type !== 'คืนอุปกรณ์') return;
+
+        const txTime = tx.rawTimestamp || (tx.timestamp ? new Date(tx.timestamp).getTime() : Date.now());
+        const empId = tx.employeeId || tx.employeeName || 'unknown';
+        const empName = tx.employeeName || 'ไม่ระบุชื่อ';
+
+        let itemsInTx = [];
+        if (Array.isArray(tx.items) && tx.items.length > 0) {
+          itemsInTx = tx.items;
+        } else if (tx.equipmentId || tx.equipmentName) {
+          itemsInTx = [{
+            equipmentId: tx.equipmentId,
+            equipmentCode: tx.equipmentCode,
+            equipmentName: tx.equipmentName,
+            quantity: Number(tx.quantity || 0)
+          }];
+        }
+
+        itemsInTx.forEach(it => {
+          const qty = Number(it.quantity || 0);
+          if (qty <= 0) return;
+
+          if (type === 'ยืมอุปกรณ์') {
+            activeBatches.push({
+              txId: tx.id,
+              docNo: tx.docNo || tx.id,
+              borrowTime: txTime,
+              timestampStr: tx.timestamp || new Date(txTime).toLocaleString('th-TH'),
+              dueDate: tx.dueDate || null,
+              dueDateStr: tx.dueDateStr || null,
+              employeeId: tx.employeeId,
+              employeeName: empName,
+              equipmentId: it.equipmentId,
+              equipmentCode: it.equipmentCode,
+              equipmentName: it.equipmentName,
+              borrowedQty: qty,
+              remainingQty: qty,
+              note: tx.note || ''
+            });
+          } else if (type === 'คืนอุปกรณ์') {
+            let returnRemaining = qty;
+            for (let i = 0; i < activeBatches.length && returnRemaining > 0; i++) {
+              const batch = activeBatches[i];
+              if (batch.remainingQty <= 0) continue;
+
+              const sameEmp = (batch.employeeId && tx.employeeId && batch.employeeId === tx.employeeId) ||
+                              (batch.employeeName && empName && batch.employeeName === empName);
+
+              const sameEq = (batch.equipmentId && it.equipmentId && batch.equipmentId === it.equipmentId) ||
+                             (batch.equipmentCode && it.equipmentCode && batch.equipmentCode === it.equipmentCode) ||
+                             (batch.equipmentName && it.equipmentName && batch.equipmentName === it.equipmentName);
+
+              if (sameEmp && sameEq) {
+                const deduct = Math.min(batch.remainingQty, returnRemaining);
+                batch.remainingQty -= deduct;
+                returnRemaining -= deduct;
+              }
+            }
+          }
+        });
+      });
+
+      return activeBatches.filter(b => b.remainingQty > 0);
+    };
+
+    // Refresh Return Active Borrows UI list in the transaction screen
+    window.refreshReturnActiveBorrowsUI = function() {
+      const container = document.getElementById('returnActiveBorrowListContainer');
+      const badge = document.getElementById('activeBorrowCountBadge');
+      const noBorrowAlert = document.getElementById('noBorrowAlertForEmp');
+      if (!container) return;
+
+      const selectedEmpId = document.getElementById('empSelect')?.value;
+      const allActive = window.getAllActiveBorrowings();
+
+      let targetBorrows = allActive;
+      if (selectedEmpId) {
+        targetBorrows = allActive.filter(b => b.employeeId === selectedEmpId);
+      }
+
+      if (badge) {
+        badge.textContent = `ค้างคืน ${targetBorrows.length} รายการ`;
+      }
+
+      if (noBorrowAlert) {
+        if (selectedEmpId && targetBorrows.length === 0) {
+          noBorrowAlert.classList.remove('d-none');
+        } else {
+          noBorrowAlert.classList.add('d-none');
+        }
+      }
+
+      if (targetBorrows.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-3 px-2 text-muted bg-white rounded-3 border fs-8">
+            <i class="bi bi-check-circle-fill text-success fs-5 d-block mb-1"></i>
+            <div>${selectedEmpId ? 'พนักงานท่านนี้ไม่มีรายการอุปกรณ์ที่ค้างยืมในระบบ' : 'ไม่มีรายการยืมอุปกรณ์ที่ค้างส่งคืนในระบบ'}</div>
+            <small class="text-secondary">เฉพาะอุปกรณ์ที่ถูกยืมไปเท่านั้นจึงจะสามารถบันทึกส่งคืนเข้าคลังได้</small>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '<div class="row g-2">';
+      targetBorrows.forEach(b => {
+        const eqObj = (equipmentList || []).find(e => e.id === b.equipmentId || e.code === b.equipmentCode);
+        const img = eqObj?.imageUrl || DEFAULT_EQUIPMENT_IMAGE;
+        const unit = eqObj?.unit || 'ชิ้น';
+        const empNameClean = b.employeeName ? b.employeeName.split('(')[0].trim() : 'พนักงาน';
+
+        html += `
+          <div class="col-12 col-md-6">
+            <div class="card border rounded-3 p-2.5 bg-white h-100 shadow-none d-flex flex-row align-items-center justify-content-between gap-2">
+              <div class="d-flex align-items-center gap-2 overflow-hidden">
+                <img src="${img}" class="rounded-2 border flex-shrink-0" style="width: 42px; height: 42px; object-fit: cover;" onerror="this.src='${DEFAULT_EQUIPMENT_IMAGE}'" />
+                <div class="overflow-hidden">
+                  <div class="fw-bold text-dark text-truncate fs-7" title="${b.equipmentName}">${b.equipmentName}</div>
+                  <div class="d-flex align-items-center gap-1.5 flex-wrap fs-8">
+                    <span class="badge bg-secondary font-monospace">${b.equipmentCode || 'ITEM'}</span>
+                    <span class="text-primary fw-semibold"><i class="bi bi-person me-0.5"></i>${empNameClean}</span>
+                    <span class="badge bg-warning text-dark fw-bold">ค้าง: ${b.remainingQty} ${unit}</span>
+                  </div>
+                  <small class="text-muted fs-8 d-block text-truncate"><i class="bi bi-clock me-0.5"></i>ยืม: ${b.timestampStr}</small>
+                </div>
+              </div>
+              <button type="button" class="btn btn-sm btn-info text-dark fw-bold rounded-pill px-2.5 py-1.5 flex-shrink-0 shadow-sm d-flex align-items-center gap-1" onclick="quickReturnAllActiveBorrow(event, '${b.equipmentId}', '${b.employeeId}', ${b.remainingQty})">
+                <i class="bi bi-box-arrow-in-down fs-7"></i>
+                <span class="fs-8">คืนทั้งหมด</span>
+              </button>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+
+      container.innerHTML = html;
+    };
+
+    // Quick direct 1-click return all quantity for an active borrowing and close window
+    window.quickReturnAllActiveBorrow = async function(e, equipId, empId, returnQty) {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+
+      try {
+        const equipObj = (equipmentList || []).find(x => String(x.id) === String(equipId) || String(x.code) === String(equipId));
+        const empObj = (employeeList || []).find(x => String(x.id) === String(empId) || String(x.code) === String(empId));
+        const equipName = equipObj ? equipObj.name : 'อุปกรณ์';
+        const empName = empObj ? empObj.name : 'พนักงาน';
+        const unit = equipObj ? equipObj.unit : 'ชิ้น';
+        const qtyNum = parseInt(returnQty, 10) || 1;
+
+        let confirmed = false;
+        if (typeof window.showConfirmDialog === 'function') {
+          confirmed = await window.showConfirmDialog({
+            title: "ยืนยันรับคืนอุปกรณ์ทั้งหมด",
+            message: `ต้องการบันทึกรับคืน "${equipName}" จำนวน ${qtyNum} ${unit} จากคุณ ${empName} เข้าคลังทันทีหรือไม่?`,
+            type: "info",
+            icon: "bi-box-arrow-in-down",
+            confirmText: "คืนทั้งหมด",
+            cancelText: "ยกเลิก",
+            target: e ? (e.currentTarget || e.target) : null
+          });
+        } else {
+          confirmed = true;
+        }
+
+        if (!confirmed) return;
+
+        // 1. Update inventory stock
+        if (equipObj) {
+          equipObj.quantity = (equipObj.quantity || 0) + qtyNum;
+          equipObj.borrowedCount = Math.max(0, (equipObj.borrowedCount || 0) - qtyNum);
+
+          if (isFirebaseReady && db && equipObj.id) {
+            setDoc(doc(db, "equipment", equipObj.id), equipObj, { merge: true }).catch(err => {
+              console.warn("Firestore update equipment stock error on quick return:", err);
+            });
+          }
+        }
+
+        // 2. Create transaction record
+        const now = new Date();
+        const docNo = 'DOC-' + String(Date.now()).slice(-6);
+        const newTx = {
+          id: 'tx-' + String(Date.now()).slice(-6),
+          docNo: docNo,
+          type: 'คืนอุปกรณ์',
+          employeeId: empObj ? empObj.id : (empId || 'UNKNOWN'),
+          employeeName: empObj ? `${empObj.name} (${empObj.department || 'แผนกทั่วไป'})` : 'พนักงาน',
+          employeeCode: empObj ? (empObj.code || empObj.id) : '',
+          employeeDepartment: empObj ? (empObj.department || 'แผนกทั่วไป') : 'แผนกทั่วไป',
+          items: [{
+            equipmentId: equipId,
+            equipmentName: equipName,
+            equipmentCode: equipObj ? (equipObj.code || equipObj.id) : '',
+            quantity: qtyNum,
+            unit: unit,
+            imageUrl: equipObj?.imageUrl || '',
+            location: equipObj?.location || 'คลังหลัก'
+          }],
+          equipmentId: equipId,
+          equipmentName: `${equipName} [${equipObj ? (equipObj.code || equipObj.id) : ''}]`,
+          quantity: qtyNum,
+          unit: unit,
+          location: equipObj?.location || 'คลังหลัก',
+          note: 'บันทึกรับคืนอุปกรณ์ทั้งหมดแบบรวดเร็ว (1-Click Quick Return)',
+          dueDate: null,
+          dueDateStr: null,
+          rawTimestamp: now.getTime(),
+          timestamp: now.toLocaleString('th-TH')
+        };
+
+        transactionHistory.unshift(newTx);
+        saveToLocalStorage();
+
+        if (isFirebaseReady && db) {
+          try {
+            await setDoc(doc(db, "transactions", newTx.id), newTx, { merge: true });
+          } catch (err) {
+            console.warn("Firestore add transaction error on quick return:", err);
+          }
+        }
+
+        if (typeof logAuditAction === 'function') {
+          logAuditAction('ประวัติรายการ', 'เพิ่ม', `ทำรายการคืนอุปกรณ์ทั้งหมด (${qtyNum} ${unit}): ${equipName} จากคุณ ${empName}`, newTx.id);
+        }
+
+        showToast(`✅ บันทึกรับคืน "${equipName}" (${qtyNum} ${unit}) จากคุณ ${empName} เรียบร้อยแล้ว`);
+
+        // 3. Reset form & refresh UI
+        clearTransCart();
+        document.getElementById('transactionForm')?.reset();
+        if (typeof toggleTransTypeUI === 'function') toggleTransTypeUI();
+        const stockInfo = document.getElementById('equipStockInfo');
+        if (stockInfo) stockInfo.innerHTML = '';
+        const previewBox = document.getElementById('equipSelectPreviewBox');
+        if (previewBox) previewBox.classList.add('d-none');
+
+        renderCatalogGrid();
+        renderStaffTable();
+        renderHistoryTable();
+        populateEquipmentDropdown();
+        populateQuickScanDropdown();
+        updateStats();
+
+        // Automatic sync
+        if (typeof validateFirestoreHistorySync === 'function') {
+          validateFirestoreHistorySync(false);
+        }
+
+        // Close window and switch back to that equipment in catalog
+        if (typeof returnToCatalogEquipment === 'function') {
+          returnToCatalogEquipment(equipId);
+        } else if (typeof switchNavTab === 'function') {
+          switchNavTab('catalog-tab');
+        }
+      } catch (err) {
+        console.error("Quick return error:", err);
+        showToast("เกิดข้อผิดพลาดในการบันทึกคืนอุปกรณ์");
+      }
+    };
+
+    // Quick select active borrowing to form
+    window.selectActiveBorrowForReturn = function(equipId, empId, maxQty) {
+      if (equipId) {
+        window.lastInteractedEquipmentId = equipId;
+      }
+      const typeReturnRadio = document.getElementById('typeReturn');
+      if (typeReturnRadio) {
+        typeReturnRadio.checked = true;
+        window.toggleTransTypeUI();
+      }
+
+      if (empId) {
+        const empSelect = document.getElementById('empSelect');
+        if (empSelect) {
+          empSelect.value = empId;
+          const searchInput = document.getElementById('transEmpSearchInput');
+          const emp = employeeList.find(x => x.id === empId);
+          if (searchInput && emp) searchInput.value = emp.name;
+        }
+      }
+
+      if (equipId) {
+        const equipSelect = document.getElementById('equipSelect');
+        if (equipSelect) {
+          equipSelect.value = equipId;
+          if (typeof updateEquipSelectPreview === 'function') updateEquipSelectPreview();
+        }
+      }
+
+      const qtyInput = document.getElementById('transQty');
+      if (qtyInput) {
+        qtyInput.value = maxQty || 1;
+      }
+
+      showToast(`🎯 เลือกรายการ "${equipmentList.find(x=>x.id===equipId)?.name || 'อุปกรณ์'}" สำหรับส่งคืนแล้ว`);
+    };
+
+    // Handle employee change in transaction form
+    window.handleTransEmpSelectionChange = function() {
+      const selectedType = document.querySelector('input[name="transType"]:checked')?.value;
+      if (selectedType === 'คืนอุปกรณ์') {
+        if (typeof window.refreshReturnActiveBorrowsUI === 'function') {
+          window.refreshReturnActiveBorrowsUI();
+        }
+        if (typeof populateEquipmentDropdown === 'function') {
+          populateEquipmentDropdown();
+        }
       }
     };
 
@@ -14396,9 +15143,15 @@
     };
 
     window.quickSelectTransaction = function(equipId) {
+      window.lastInteractedEquipmentId = equipId;
       const select = document.getElementById('equipSelect');
-      select.value = equipId;
-      select.dispatchEvent(new Event('change'));
+      if (select) {
+        select.value = equipId;
+        select.dispatchEvent(new Event('change'));
+      }
+      if (typeof updateEquipSelectPreview === 'function') {
+        updateEquipSelectPreview();
+      }
 
       const transTabBtn = new bootstrap.Tab(document.getElementById('transaction-tab'));
       transTabBtn.show();

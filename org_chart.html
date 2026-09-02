@@ -1091,17 +1091,23 @@
         <span class="fs-7 fw-bold text-white">ระบบงานบุคคล</span>
       </button>
 
-      <ul class="dropdown-menu dropdown-menu-center shadow-lg border-0 rounded-4 mt-2 p-1.5" style="min-width: 220px; background: #ffffff;" aria-labelledby="orgSystemSwitcherBtn">
+      <ul class="dropdown-menu dropdown-menu-center shadow-lg border-0 rounded-4 mt-2 p-1.5" style="min-width: 240px; background: #ffffff;" aria-labelledby="orgSystemSwitcherBtn">
         <li>
           <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2.5 rounded-3 text-dark fw-semibold" href="index.html">
             <i class="bi bi-box-seam-fill fs-6 text-success"></i>
-            <span class="fs-7">ระบบพัสดุและอุปกรณ์</span>
+            <span class="fs-7">1. ระบบพัสดุ-อุปกรณ์</span>
           </a>
         </li>
         <li class="mt-1">
           <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2.5 rounded-3 active bg-primary bg-opacity-10 text-primary fw-bold" href="org_chart.html">
             <i class="bi bi-people-fill fs-6 text-primary"></i>
-            <span class="fs-7">ระบบงานบุคคล</span>
+            <span class="fs-7">2. ระบบงานบุคคล</span>
+          </a>
+        </li>
+        <li class="mt-1">
+          <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2.5 rounded-3 text-dark fw-semibold" href="payroll.html">
+            <i class="bi bi-cash-coin fs-6 text-warning"></i>
+            <span class="fs-7">3. ระบบเงินเดือน</span>
           </a>
         </li>
       </ul>
@@ -1244,6 +1250,12 @@
             </button>
           </li>
           <li>
+            <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-semibold rounded-2 mx-1 mt-1 text-decoration-none" href="payroll.html">
+              <i class="bi bi-cash-coin text-warning fs-5"></i>
+              <span class="fs-7 text-dark fw-bold">ระบบเงินเดือน (Payroll)</span>
+            </a>
+          </li>
+          <li>
             <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-semibold rounded-2 mx-1 mt-1 text-decoration-none" href="job_application.html">
               <i class="bi bi-file-earmark-person-fill text-primary fs-5"></i>
               <span class="fs-7 text-dark fw-bold">รับสมัครงาน & ฟอร์ม</span>
@@ -1319,12 +1331,29 @@
           </div>
 
           <!-- Scanner Action Controls -->
-          <div class="d-flex flex-wrap gap-2 mt-3 mb-3">
+          <div class="d-flex flex-wrap gap-2 mt-3 mb-2">
             <button type="button" class="btn btn-success flex-grow-1 rounded-pill fw-semibold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2" id="btnToggleAttCamera" onclick="toggleAttCameraScanner()">
               <i class="bi bi-camera-fill"></i> <span id="btnToggleAttCameraText">เปิดกล้องสแกน QR</span>
             </button>
             <button type="button" class="btn btn-outline-primary rounded-pill fw-semibold py-2 px-3 shadow-sm d-flex align-items-center gap-1.5" onclick="openPersonnelBadgePrint()">
               <i class="bi bi-person-vcard-fill"></i> <span>พิมพ์ QR บัตร</span>
+            </button>
+          </div>
+
+          <!-- GPS Location Status Badge & Toggle -->
+          <div class="d-flex justify-content-between align-items-center bg-body-tertiary p-2 px-3 rounded-3 border mb-3">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-geo-alt-fill text-danger fs-6" id="attGpsIcon"></i>
+              <div>
+                <div class="fs-8 fw-bold text-dark d-flex align-items-center gap-1">
+                  <span>บันทึกพิกัด GPS อัตโนมัติ</span>
+                  <span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5 rounded-pill fs-9" id="attGpsStatusBadge">กำลังตรวจพิกัด...</span>
+                </div>
+                <div class="text-muted fs-9" id="attGpsCoordinatesText">รอรับสัญญาณดาวเทียม/เบราว์เซอร์</div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill py-1 px-2.5 fs-8" onclick="requestGpsPosition(true)" title="กดเพื่ออัปเดตพิกัดตำแหน่งปัจจุบันใหม่">
+              <i class="bi bi-arrow-clockwise"></i> อัปเดตพิกัด
             </button>
           </div>
 
@@ -1451,16 +1480,17 @@
             <table class="table table-hover align-middle small mb-0">
               <thead class="table-light sticky-top">
                 <tr>
-                  <th style="width: 95px;">เวลา</th>
+                  <th style="width: 90px;">เวลา</th>
                   <th>บุคลากร</th>
-                  <th style="width: 110px;">สถานะ</th>
-                  <th style="width: 90px;">ช่องทาง</th>
+                  <th style="width: 105px;">สถานะ</th>
+                  <th style="width: 85px;">ช่องทาง</th>
+                  <th style="width: 105px;">พิกัด GPS</th>
                   <th>หมายเหตุ</th>
-                  <th style="width: 60px;" class="text-center">จัดการ</th>
+                  <th style="width: 50px;" class="text-center">จัดการ</th>
                 </tr>
               </thead>
               <tbody id="personnelAttendanceTable">
-                <tr><td colspan="6" class="text-center text-muted py-4">กำลังโหลดข้อมูล...</td></tr>
+                <tr><td colspan="7" class="text-center text-muted py-4">กำลังโหลดข้อมูล...</td></tr>
               </tbody>
             </table>
           </div>
@@ -3303,6 +3333,74 @@
     let attIsScanning = false;
     let attLastScannedCode = '';
     let attLastScanTimestamp = 0;
+    let attCurrentGpsLocation = null;
+    let attIsLocatingGps = false;
+
+    // GPS Location Tracker (HTML5 Geolocation)
+    function updateGpsStatusUi(status, text, coordsText) {
+      const badge = document.getElementById('attGpsStatusBadge');
+      const coords = document.getElementById('attGpsCoordinatesText');
+      const icon = document.getElementById('attGpsIcon');
+
+      if (badge) {
+        badge.textContent = text;
+        badge.className = status === 'ready' ? 'badge bg-success text-white border-0 px-1.5 py-0.5 rounded-pill fs-9' :
+                          status === 'locating' ? 'badge bg-warning text-dark border-0 px-1.5 py-0.5 rounded-pill fs-9' :
+                          'badge bg-secondary text-white border-0 px-1.5 py-0.5 rounded-pill fs-9';
+      }
+      if (coords && coordsText) {
+        coords.textContent = coordsText;
+      }
+      if (icon) {
+        icon.className = status === 'ready' ? 'bi bi-geo-alt-fill text-success fs-6' :
+                         status === 'locating' ? 'bi bi-geo-alt text-warning fs-6' :
+                         'bi bi-geo-alt-fill text-secondary fs-6';
+      }
+    }
+
+    async function requestGpsPosition(userInitiated = false) {
+      if (!('geolocation' in navigator)) {
+        updateGpsStatusUi('disabled', 'ไม่รองรับ GPS', 'อุปกรณ์นี้ไม่รองรับระบบตรวจหาตำแหน่ง');
+        if (userInitiated) showToast('อุปกรณ์/เบราว์เซอร์ไม่รองรับ GPS');
+        return null;
+      }
+
+      if (attIsLocatingGps && !userInitiated) return attCurrentGpsLocation;
+      attIsLocatingGps = true;
+      updateGpsStatusUi('locating', 'กำลังระบุพิกัด...', 'กำลังเชื่อมต่อสัญญาณดาวเทียม/เครือข่าย');
+
+      return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            attIsLocatingGps = false;
+            const lat = Number(pos.coords.latitude.toFixed(6));
+            const lng = Number(pos.coords.longitude.toFixed(6));
+            const acc = Math.round(pos.coords.accuracy || 0);
+            attCurrentGpsLocation = {
+              latitude: lat,
+              longitude: lng,
+              accuracy: acc,
+              timestamp: new Date().toISOString()
+            };
+            updateGpsStatusUi('ready', `พิกัดพร้อม (±${acc}m)`, `ละติจูด: ${lat}, ลองจิจูด: ${lng}`);
+            if (userInitiated) showToast(`อัปเดตพิกัด GPS สำเร็จ (ความแม่นยำ ±${acc} เมตร)`);
+            resolve(attCurrentGpsLocation);
+          },
+          (err) => {
+            attIsLocatingGps = false;
+            console.warn('Geolocation notice:', err.message || err);
+            let errMsg = 'ไม่ได้รับอนุญาตสิทธิ์เข้าถึงพิกัด';
+            if (err.code === 2) errMsg = 'ไม่สามารถจับสัญญาณพิกัดได้';
+            else if (err.code === 3) errMsg = 'หมดเวลารอสัญญาณ GPS';
+            updateGpsStatusUi('error', 'ไม่ได้เปิดพิกัด', errMsg);
+            if (userInitiated) showToast(`ไม่สามารถดึงพิกัดได้: ${errMsg}`);
+            resolve(null);
+          },
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+        );
+      });
+    }
+    window.requestGpsPosition = requestGpsPosition;
 
     // Helper: Find employee by raw scanned QR text or barcode
     function resolveEmployeeFromScan(rawCode) {
@@ -3469,10 +3567,19 @@
         return;
       }
 
+      // Determine Auto Status (Clock In vs Clock Out)
       const autoStatus = determineAutoAttendanceStatus(emp.id || emp.code);
       const now = new Date();
       const statusColor = autoStatus === 'เข้างาน' ? 'success' : 'danger';
       const statusIcon = autoStatus === 'เข้างาน' ? 'bi-box-arrow-in-right' : 'bi-box-arrow-right';
+
+      // Capture GPS location if available or refresh quickly
+      let gps = attCurrentGpsLocation;
+      if (!gps && 'geolocation' in navigator) {
+        try {
+          gps = await requestGpsPosition(false);
+        } catch (e) {}
+      }
 
       const entry = {
         employeeId: String(emp.id || emp.code || ''),
@@ -3486,7 +3593,10 @@
         dateKey: localDateKey(now),
         note: `สแกนผ่าน ${source === 'barcode_gun' ? 'บาร์โค้ด / รหัส' : 'QR Scanner'} (อัตโนมัติ)`,
         timestamp: now.toISOString(),
-        source: source
+        source: source,
+        latitude: gps?.latitude || null,
+        longitude: gps?.longitude || null,
+        accuracy: gps?.accuracy || null
       };
 
       try {
@@ -3495,10 +3605,15 @@
           employeeId: entry.employeeId,
           employeeName: entry.employeeName,
           status: autoStatus,
-          source: source
+          source: source,
+          hasGps: !!(entry.latitude && entry.longitude)
         });
 
         playScanBeep(true);
+
+        const gpsNotice = (entry.latitude && entry.longitude) ?
+          `<div class="small text-success mt-1"><i class="bi bi-geo-alt-fill me-1"></i>บันทึกพิกัด GPS: ${entry.latitude}, ${entry.longitude} (±${entry.accuracy || 0}m)</div>` :
+          `<div class="small text-muted mt-1"><i class="bi bi-geo-alt me-1"></i>ไม่มีพิกัด GPS (ไม่ได้เปิดการระบุตำแหน่ง)</div>`;
 
         if (resultCard) {
           resultCard.className = `mt-3 p-3 rounded-3 border border-${statusColor} bg-${statusColor} bg-opacity-10 text-${statusColor} d-block`;
@@ -3511,11 +3626,12 @@
                 <div class="fw-bold text-dark fs-6">${escapeHtml(emp.name || 'บุคลากร')} <span class="badge bg-${statusColor} ms-1">${escapeHtml(autoStatus)}</span></div>
                 <div class="small text-muted">${escapeHtml(emp.department || '')} • ${escapeHtml(emp.role || '')}</div>
                 <div class="small fw-semibold text-${statusColor} mt-1"><i class="bi bi-clock me-1"></i>ลงเวลา: ${entry.time} (${entry.date})</div>
+                ${gpsNotice}
               </div>
             </div>
           `;
         }
-        showToast(`บันทึก "${autoStatus}" ของ ${emp.name} สำเร็จ`);
+        showToast(`บันทึก "${autoStatus}" ของ ${emp.name} สำเร็จ` + (entry.latitude ? ' พร้อมพิกัด GPS' : ''));
       } catch (err) {
         console.error('Scan attendance save error:', err);
         showToast('บันทึกลงฐานข้อมูลไม่สำเร็จ กรุณาตรวจสอบสิทธิ์การเชื่อมต่อ');
@@ -3537,6 +3653,9 @@
         showToast('กำลังโหลดไลบรารีสแกนเนอร์ กรุณาลองใหม่อีกครั้ง');
         return;
       }
+
+      // Pre-fetch GPS location when camera starts
+      requestGpsPosition(false);
 
       try {
         if (!attHtml5QrCode) {
@@ -3633,7 +3752,7 @@
         return;
       }
 
-      const headers = ['เวลา', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'แผนก', 'สถานะ', 'ช่องทาง', 'หมายเหตุ', 'วันที่'];
+      const headers = ['เวลา', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'แผนก', 'สถานะ', 'ช่องทาง', 'ละติจูด', 'ลองจิจูด', 'ความแม่นยำ(เมตร)', 'ลิงก์แผนที่', 'หมายเหตุ', 'วันที่'];
       const rows = today.map(l => [
         `"${l.time || ''}"`,
         `"${l.employeeCode || l.employeeId || ''}"`,
@@ -3641,6 +3760,10 @@
         `"${l.department || ''}"`,
         `"${l.status || ''}"`,
         `"${l.source || 'org_chart'}"`,
+        `"${l.latitude || ''}"`,
+        `"${l.longitude || ''}"`,
+        `"${l.accuracy || ''}"`,
+        `"${l.latitude && l.longitude ? `https://www.google.com/maps?q=${l.latitude},${l.longitude}` : ''}"`,
         `"${(l.note || '').replace(/"/g, '""')}"`,
         `"${l.date || todayThai}"`
       ]);
@@ -3655,7 +3778,7 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast('ส่งออกไฟล์ CSV เรียบร้อยแล้ว');
+      showToast('ส่งออกไฟล์ CSV พร้อมพิกัด GPS เรียบร้อยแล้ว');
     }
     window.exportTodayAttendanceCsv = exportTodayAttendanceCsv;
 
@@ -3711,7 +3834,7 @@
       const tbody = document.getElementById('personnelAttendanceTable');
       if (!tbody) return;
       if (!filteredToday.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">ยังไม่มีรายการลงเวลาตรงตามเงื่อนไข</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">ยังไม่มีรายการลงเวลาตรงตามเงื่อนไข</td></tr>';
         return;
       }
 
@@ -3721,6 +3844,12 @@
                             log.source === 'barcode_gun' ? '<span class="badge bg-light text-dark border"><i class="bi bi-upc me-1 text-primary"></i>บาร์โค้ด</span>' :
                             '<span class="badge bg-light text-muted border">ฟอร์ม</span>';
 
+        const gpsBadge = (log.latitude && log.longitude) ?
+          `<a href="https://www.google.com/maps?q=${log.latitude},${log.longitude}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-success py-0 px-1.5 text-nowrap rounded-pill fs-9 text-decoration-none shadow-none" title="พิกัด: ${log.latitude}, ${log.longitude} (±${log.accuracy || 0}m) คลิกเพื่อดูบนแผนที่">
+            <i class="bi bi-geo-alt-fill text-danger me-0.5"></i>ดูแผนที่
+          </a>` :
+          `<span class="badge bg-light text-secondary border fs-9">ไม่มีพิกัด</span>`;
+
         return `<tr>
           <td class="text-nowrap fw-semibold">${escapeHtml(log.time || '-')}</td>
           <td>
@@ -3729,6 +3858,7 @@
           </td>
           <td><span class="badge ${badgeClass[log.status] || 'text-bg-secondary'}">${escapeHtml(log.status || '-')}</span></td>
           <td>${sourceBadge}</td>
+          <td>${gpsBadge}</td>
           <td class="text-truncate" style="max-width: 180px;" title="${escapeHtml(log.note || '-')}">${escapeHtml(log.note || '-')}</td>
           <td class="text-center">
             <button class="btn btn-outline-danger btn-sm p-1 rounded-circle border-0" onclick="deleteAttendanceLog('${escapeHtml(log.id || '')}', '${escapeHtml(log.employeeName || '')}')" title="ลบรายการ">
@@ -3742,6 +3872,9 @@
     window.renderPersonnelAttendanceControls = renderPersonnelAttendanceControls;
 
     window.addEventListener('DOMContentLoaded', () => {
+      // Background GPS pre-fetch on workspace open
+      requestGpsPosition(false);
+
       // Manual Submission Form
       document.getElementById('personnelAttendanceForm')?.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -3756,6 +3889,15 @@
           showToast('ยังเชื่อมต่อฐานข้อมูลหลักไม่ได้ กรุณาลองใหม่');
           return;
         }
+
+        // Try getting GPS if available
+        let gps = attCurrentGpsLocation;
+        if (!gps && 'geolocation' in navigator) {
+          try {
+            gps = await requestGpsPosition(false);
+          } catch (e) {}
+        }
+
         const now = new Date();
         const status = document.querySelector('input[name="personnelAttendanceStatus"]:checked')?.value || 'เข้างาน';
         const entry = {
@@ -3770,13 +3912,16 @@
           dateKey: localDateKey(now),
           note: document.getElementById('personnelAttendanceNote')?.value.trim() || '-',
           timestamp: now.toISOString(),
-          source: 'manual_form'
+          source: 'manual_form',
+          latitude: gps?.latitude || null,
+          longitude: gps?.longitude || null,
+          accuracy: gps?.accuracy || null
         };
         try {
           await addDoc(collection(window.db, 'attendance'), entry);
-          await window.logPersonnelAudit?.('บันทึกเวลา/การลา', { employeeId, employeeName: emp.name || '', status, dateKey: entry.dateKey });
+          await window.logPersonnelAudit?.('บันทึกเวลา/การลา', { employeeId, employeeName: emp.name || '', status, dateKey: entry.dateKey, hasGps: !!(entry.latitude && entry.longitude) });
           document.getElementById('personnelAttendanceForm')?.reset();
-          showToast(`บันทึก "${status}" ของ ${emp.name || 'บุคลากร'} เรียบร้อยแล้ว`);
+          showToast(`บันทึก "${status}" ของ ${emp.name || 'บุคลากร'} เรียบร้อยแล้ว` + (entry.latitude ? ' พร้อมพิกัด GPS' : ''));
         } catch (error) {
           console.error('Attendance save error:', error);
           showToast('บันทึกลงฐานข้อมูลไม่สำเร็จ กรุณาตรวจการเชื่อมต่อและสิทธิ์');

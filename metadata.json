@@ -2,7 +2,8 @@
   "name": "Flora Garden Test",
   "description": "*** Flora Garden Test ***",
   "requestFramePermissions": [
-    "camera"
+    "camera",
+    "geolocation"
   ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

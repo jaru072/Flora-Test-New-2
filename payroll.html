@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบเงินเดือนและค่าตอบแทน (Payroll) - โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา</title>
+
+  <!-- App Icons & iOS Safari Support -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#1e3a8a">
+
+  <!-- Resource Hints & Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 CSS & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- Global Logo & Theme CSS -->
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="global_logo.css">
+
+  <style>
+    body {
+      font-family: 'Prompt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+    }
+    .navbar-payroll {
+      background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.2);
+    }
+    .card-payroll {
+      border: 0;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+      background: #ffffff;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-badge-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+    .payslip-sheet {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 32px;
+      max-width: 780px;
+      margin: 0 auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    .slip-table th, .slip-table td {
+      padding: 8px 12px;
+      font-size: 0.9rem;
+    }
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      .payslip-sheet, .payslip-sheet * {
+        visibility: visible;
+      }
+      .payslip-sheet {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== HEADER & 3-SYSTEM SWITCHER ==================== -->
+  <nav class="navbar navbar-expand-lg navbar-dark navbar-payroll sticky-top no-print">
+    <div class="container-fluid px-3 px-md-4">
+      <!-- Master Brand -->
+      <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="#" onclick="if(typeof openGlobalLogoModal === 'function') { openGlobalLogoModal(); return false; }">
+        <div class="d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" data-flora-logo="navbar" data-logo-size="34" style="width: 34px; height: 34px;">
+          <i class="bi bi-flower1 fs-3 text-warning"></i>
+        </div>
+        <div class="d-flex flex-column">
+          <div class="lh-1 fs-5 blink-text text-white brand-master-title" data-flora-project-title id="navbarMasterBrandTitle">โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา</div>
+        </div>
+      </a>
+
+      <!-- Central 3-System Switcher Dropdown -->
+      <div class="dropdown mx-auto my-1" id="navSystemSwitcherDropdown">
+        <button class="btn btn-sm rounded-pill px-3.5 py-1.5 fw-bold shadow-sm dropdown-toggle d-flex align-items-center gap-2 border hover-scale" type="button" id="systemSwitcherBtn" data-bs-toggle="dropdown" aria-expanded="false" style="background: rgba(30, 58, 138, 0.4); border-color: rgba(147, 197, 253, 0.6); color: #eff6ff;" title="คลิกเพื่อสลับระบบงาน">
+          <span class="p-1 bg-warning rounded-circle shadow-xs animate-pulse"></span>
+          <i class="bi bi-cash-coin text-warning fs-6"></i>
+          <span class="fs-7 fw-bold text-white">ระบบเงินเดือน (Payroll)</span>
+        </button>
+
+        <ul class="dropdown-menu dropdown-menu-center shadow-lg border-0 rounded-4 mt-2 p-1.5" style="min-width: 250px; background: #ffffff;" aria-labelledby="systemSwitcherBtn">
+          <li><span class="dropdown-header text-uppercase fs-9 fw-bold text-muted px-3">เลือกระบบงาน</span></li>
+          <!-- 1. ระบบพัสดุ-อุปกรณ์ -->
+          <li>
+            <a class="dropdown-item py-2.5 px-3 d-flex align-items-center gap-2.5 rounded-3 text-dark fw-semibold" href="index.html">
+              <i class="bi bi-box-seam-fill fs-5 text-success"></i>
+              <div>
+                <div class="fs-7 fw-bold text-dark">1. ระบบพัสดุ-อุปกรณ์</div>
+                <small class="text-muted fs-8">คลังพัสดุ เบิก-จ่าย-ยืม-คืน</small>
+              </div>
+            </a>
+          </li>
+          <!-- 2. ระบบงานบุคคล -->
+          <li class="mt-1">
+            <a class="dropdown-item py-2.5 px-3 d-flex align-items-center gap-2.5 rounded-3 text-dark fw-semibold" href="org_chart.html">
+              <i class="bi bi-people-fill fs-5 text-primary"></i>
+              <div>
+                <div class="fs-7 fw-bold text-dark">2. ระบบงานบุคคล</div>
+                <small class="text-muted fs-8">ผังองค์กร สารบรรณ ลงเวลา/การลา</small>
+              </div>
+            </a>
+          </li>
+          <!-- 3. ระบบเงินเดือน -->
+          <li class="mt-1">
+            <a class="dropdown-item py-2.5 px-3 d-flex align-items-center gap-2.5 rounded-3 active bg-warning bg-opacity-25 text-dark fw-bold border-start border-4 border-warning" href="payroll.html">
+              <i class="bi bi-cash-coin fs-5 text-warning"></i>
+              <div>
+                <div class="fs-7 fw-bold text-dark">3. ระบบเงินเดือน</div>
+                <small class="text-dark-50 fs-8">คำนวณเงินเดือน สลิป ประกันสังคม ภาษี</small>
+              </div>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- User Profile & Action Tools -->
+      <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+        <button type="button" class="btn btn-outline-light btn-sm rounded-pill px-3 py-1 fw-bold d-flex align-items-center gap-1.5 shadow-sm" data-bs-toggle="modal" data-bs-target="#newPeriodModal">
+          <i class="bi bi-plus-circle-fill text-warning"></i>
+          <span>สร้างงวดใหม่</span>
+        </button>
+
+        <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 py-1 fw-bold text-dark d-flex align-items-center gap-1.5 shadow-sm" onclick="window.payrollModule.exportPayrollCsv()">
+          <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+          <span>ส่งออก Excel/CSV</span>
+        </button>
+
+        <div class="dropdown" id="topNavSettingsDropdown">
+          <button class="btn btn-outline-light btn-sm rounded-pill px-2.5 py-1 fw-semibold d-flex align-items-center gap-1.5 shadow-sm dropdown-toggle" type="button" id="settingsAccountDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="บัญชีผู้ใช้">
+            <img id="navUserAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" class="rounded-circle border border-light shadow-xs" style="width: 22px; height: 22px; object-fit: cover;" />
+            <span id="currentRoleText" class="fw-bold fs-8 font-monospace">Admin</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-2 py-2" style="min-width: 220px;">
+            <li>
+              <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2.5" href="org_chart.html">
+                <i class="bi bi-diagram-3-fill text-primary"></i>
+                <span class="fs-7">ศูนย์ผังองค์กร</span>
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2.5" href="index.html">
+                <i class="bi bi-box-seam-fill text-success"></i>
+                <span class="fs-7">คลังพัสดุและอุปกรณ์</span>
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <button type="button" class="dropdown-item py-2 px-3 d-flex align-items-center gap-2.5 text-danger fw-semibold" onclick="handleSignOut()">
+                <i class="bi bi-box-arrow-right"></i>
+                <span class="fs-7">ออกจากระบบ</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ==================== MAIN WORKSPACE ==================== -->
+  <main class="container-fluid px-3 px-md-4 py-4">
+
+    <!-- Top Period Selector & Actions Bar -->
+    <div class="card card-payroll p-3 mb-4">
+      <div class="row g-3 align-items-center justify-content-between">
+        <!-- Period Select -->
+        <div class="col-12 col-md-5 d-flex align-items-center gap-2 flex-wrap">
+          <label class="form-label mb-0 fw-bold fs-7 text-secondary text-nowrap"><i class="bi bi-calendar-event me-1"></i> งวดเงินเดือน:</label>
+          <select id="payrollPeriodSelect" class="form-select form-select-sm rounded-pill border-primary fw-bold" style="min-width: 230px;">
+            <option value="">กำลังโหลดงวดเงินเดือน...</option>
+          </select>
+          <span id="payrollPeriodStatusBadge" class="badge bg-secondary px-2.5 py-1 rounded-pill">สถานะ</span>
+        </div>
+
+        <!-- Action Tools -->
+        <div class="col-12 col-md-7 d-flex align-items-center gap-2 justify-content-md-end flex-wrap">
+          <button id="btnRecalculatePayroll" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-sm" title="คำนวณใหม่โดยดึงข้อมูลสแกนเวลาเข้างานล่าสุด">
+            <i class="bi bi-arrow-repeat"></i>
+            <span>คำนวณเงินเดือนงวดนี้</span>
+          </button>
+
+          <button class="btn btn-outline-success btn-sm rounded-pill px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-sm" onclick="window.payrollModule.updatePeriodStatus(document.getElementById('payrollPeriodSelect').value, 'approved')" title="อนุมัติงวดเงินเดือน">
+            <i class="bi bi-shield-check"></i>
+            <span>อนุมัติงวด</span>
+          </button>
+
+          <button class="btn btn-success btn-sm rounded-pill px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-sm" onclick="window.payrollModule.updatePeriodStatus(document.getElementById('payrollPeriodSelect').value, 'paid')" title="บันทึกว่าจ่ายเงินเดือนแล้ว">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>บันทึกจ่ายแล้ว</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Stats Metric Cards -->
+    <div class="row g-3 mb-4">
+      <!-- 1. Total Employees -->
+      <div class="col-6 col-lg-2">
+        <div class="card card-payroll p-3 h-100">
+          <div class="d-flex align-items-center gap-2.5">
+            <div class="stat-badge-icon bg-primary bg-opacity-10 text-primary">
+              <i class="bi bi-people-fill"></i>
+            </div>
+            <div>
+              <div class="text-muted fs-8">จำนวนพนักงาน</div>
+              <h5 class="fw-bold mb-0 text-dark" id="statPayrollEmployees">0</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Gross Total -->
+      <div class="col-6 col-lg-2">
+        <div class="card card-payroll p-3 h-100">
+          <div class="d-flex align-items-center gap-2.5">
+            <div class="stat-badge-icon bg-info bg-opacity-10 text-info">
+              <i class="bi bi-cash-stack"></i>
+            </div>
+            <div>
+              <div class="text-muted fs-8">ยอดรวมรายรับ</div>
+              <h5 class="fw-bold mb-0 text-info" id="statPayrollGross">฿0.00</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Social Security -->
+      <div class="col-6 col-lg-2">
+        <div class="card card-payroll p-3 h-100">
+          <div class="d-flex align-items-center gap-2.5">
+            <div class="stat-badge-icon bg-warning bg-opacity-10 text-warning">
+              <i class="bi bi-shield-shaded"></i>
+            </div>
+            <div>
+              <div class="text-muted fs-8">ประกันสังคม (5%)</div>
+              <h5 class="fw-bold mb-0 text-warning" id="statPayrollSS">฿0.00</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Tax -->
+      <div class="col-6 col-lg-2">
+        <div class="card card-payroll p-3 h-100">
+          <div class="d-flex align-items-center gap-2.5">
+            <div class="stat-badge-icon bg-secondary bg-opacity-10 text-secondary">
+              <i class="bi bi-receipt-cutoff"></i>
+            </div>
+            <div>
+              <div class="text-muted fs-8">ภาษี หัก ณ ที่จ่าย</div>
+              <h5 class="fw-bold mb-0 text-secondary" id="statPayrollTax">฿0.00</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Total Deductions -->
+      <div class="col-6 col-lg-2">
+        <div class="card card-payroll p-3 h-100">
+          <div class="d-flex align-items-center gap-2.5">
+            <div class="stat-badge-icon bg-danger bg-opacity-10 text-danger">
+              <i class="bi bi-dash-circle-fill"></i>
+            </div>
+            <div>
+              <div class="text-muted fs-8">ยอดหักทั้งหมด</div>
+              <h5 class="fw-bold mb-0 text-danger" id="statPayrollDeductions">฿0.00</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Total Net Pay -->
+      <div class="col-6 col-lg-2">
+        <div class="card card-payroll p-3 h-100 border-start border-4 border-success">
+          <div class="d-flex align-items-center gap-2.5">
+            <div class="stat-badge-icon bg-success bg-opacity-10 text-success">
+              <i class="bi bi-wallet2"></i>
+            </div>
+            <div>
+              <div class="text-muted fs-8">ยอดจ่ายสุทธิ (Net)</div>
+              <h5 class="fw-bold mb-0 text-success" id="statPayrollNet">฿0.00</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payroll Records Worksheet Table Card -->
+    <div class="card card-payroll p-4">
+      
+      <!-- Table Filter and Search Header -->
+      <div class="row g-2 align-items-center justify-content-between mb-3">
+        <div class="col-12 col-md-3">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light border-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="payrollSearchInput" class="form-control border-0 bg-light" placeholder="ค้นหาชื่อ, รหัส, แผนก, ตำแหน่ง..." />
+          </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <select id="payrollDeptFilter" class="form-select form-select-sm rounded-pill">
+            <option value="ALL">-- ทุกแผนก/ฝ่ายงาน --</option>
+            <option value="ฝ่ายเกษตรกรรม">ฝ่ายเกษตรกรรม</option>
+            <option value="ฝ่ายผลิตดอกไม้">ฝ่ายผลิตดอกไม้</option>
+            <option value="ฝ่ายคลังและพัสดุ">ฝ่ายคลังและพัสดุ</option>
+            <option value="ฝ่ายธุรการและบุคคล">ฝ่ายธุรการและบุคคล</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <select id="payrollWageTypeFilter" class="form-select form-select-sm rounded-pill">
+            <option value="ALL">-- ทุกประเภทการจ้าง (รายเดือน/วัน/สัปดาห์) --</option>
+            <option value="monthly">💼 รายเดือน (Monthly)</option>
+            <option value="daily">⏱️ รายวัน (Daily)</option>
+            <option value="weekly">📅 รายสัปดาห์ (Weekly)</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-3 text-md-end">
+          <span class="text-muted fs-8"><i class="bi bi-info-circle me-1"></i> คลิก <b>"สลิป"</b> เพื่อดู/พิมพ์ใบจ่ายเงิน</span>
+        </div>
+      </div>
+
+      <!-- Table Content -->
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light fs-8 text-uppercase">
+            <tr>
+              <th class="text-center" style="width: 40px;">#</th>
+              <th>บุคลากร</th>
+              <th>แผนก / ตำแหน่ง</th>
+              <th class="text-end">เงินเดือนฐาน</th>
+              <th class="text-end">ค่าล่วงเวลา (OT)</th>
+              <th class="text-end">รวมรายรับ</th>
+              <th class="text-end">รวมรายการหัก</th>
+              <th class="text-end">สุทธิ (Net Pay)</th>
+              <th class="text-center" style="width: 140px;">การจัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="payrollRecordsTableBody" class="fs-7">
+            <tr>
+              <td colspan="9" class="text-center py-4 text-muted">
+                <div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div>
+                กำลังโหลดข้อมูลเงินเดือน...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ==================== MODAL 1: NEW PERIOD ==================== -->
+  <div class="modal fade" id="newPeriodModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4 shadow">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title fw-bold"><i class="bi bi-calendar-plus me-2"></i>สร้างงวดการจ่ายเงินเดือนใหม่</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="createPeriodForm">
+          <div class="modal-body p-4">
+            <div class="row g-3">
+              <div class="col-6">
+                <label class="form-label fw-bold fs-8">เดือนประจำงวด <span class="text-danger">*</span></label>
+                <select id="newPeriodMonth" class="form-select rounded-3" required>
+                  <option value="1">1. มกราคม</option>
+                  <option value="2">2. กุมภาพันธ์</option>
+                  <option value="3">3. มีนาคม</option>
+                  <option value="4">4. เมษายน</option>
+                  <option value="5">5. พฤษภาคม</option>
+                  <option value="6">6. มิถุนายน</option>
+                  <option value="7">7. กรกฎาคม</option>
+                  <option value="8">8. สิงหาคม</option>
+                  <option value="9" selected>9. กันยายน</option>
+                  <option value="10">10. ตุลาคม</option>
+                  <option value="11">11. พฤศจิกายน</option>
+                  <option value="12">12. ธันวาคม</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold fs-8">ปี (ค.ศ.) <span class="text-danger">*</span></label>
+                <input type="number" id="newPeriodYear" class="form-control rounded-3" value="2026" required />
+              </div>
+
+              <div class="col-6">
+                <label class="form-label fw-bold fs-8">วันที่เริ่มต้นรอบ <span class="text-danger">*</span></label>
+                <input type="date" id="newPeriodStartDate" class="form-control rounded-3" value="2026-09-01" required />
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold fs-8">วันที่สิ้นสุดรอบ <span class="text-danger">*</span></label>
+                <input type="date" id="newPeriodEndDate" class="form-control rounded-3" value="2026-09-30" required />
+              </div>
+
+              <div class="col-12">
+                <label class="form-label fw-bold fs-8">กำหนดวันจ่ายเงินเดือน <span class="text-danger">*</span></label>
+                <input type="date" id="newPeriodPayDate" class="form-control rounded-3" value="2026-09-30" required />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">สร้างและคำนวณทันที</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: E-PAYSLIP (ใบแจ้งเงินเดือน) ==================== -->
+  <div class="modal fade" id="payslipModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content border-0 rounded-4 shadow">
+        <div class="modal-header bg-dark text-white no-print">
+          <h5 class="modal-title fw-bold"><i class="bi bi-receipt me-2"></i>ใบแจ้งเงินเดือนอิเล็กทรอนิกส์ (E-Payslip)</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4 bg-light">
+          
+          <!-- Payslip Sheet (Printable Layout) -->
+          <div class="payslip-sheet">
+            <!-- Header -->
+            <div class="text-center border-bottom pb-3 mb-3">
+              <div class="d-inline-flex align-items-center justify-content-center mb-1" data-flora-logo="badge" data-logo-size="38"></div>
+              <div class="fw-bold fs-5 text-dark" data-flora-project-title id="payslipProjectTitle">โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา</div>
+              <div class="fs-6 fw-semibold text-primary">ใบแจ้งยอดเงินเดือนและค่าตอบแทน (PAYSLIP)</div>
+              <div class="text-muted fs-8 mt-1"><span id="payslipPeriodTitle">-</span> | กำหนดจ่าย: <span id="payslipPayDate">-</span></div>
+            </div>
+
+            <!-- Employee Details -->
+            <div class="row g-2 mb-3 fs-8">
+              <div class="col-6">
+                <div><b>ชื่อ-นามสกุล:</b> <span id="payslipEmployeeName" class="text-dark fw-semibold">-</span></div>
+                <div><b>รหัสพนักงาน:</b> <span id="payslipEmployeeCode" class="font-monospace">-</span></div>
+                <div><b>ประเภทการจ้าง:</b> <span id="payslipWageTypeBadge" class="badge bg-primary bg-opacity-10 text-primary border">รายเดือน</span></div>
+              </div>
+              <div class="col-6 text-end">
+                <div><b>แผนก/ฝ่าย:</b> <span id="payslipDepartment">-</span></div>
+                <div><b>ตำแหน่ง:</b> <span id="payslipPosition">-</span></div>
+                <div><b>การโอนเงิน:</b> <span id="payslipBankAccount" class="font-monospace text-muted">-</span></div>
+              </div>
+            </div>
+
+            <!-- Earnings vs Deductions Table -->
+            <div class="table-responsive mb-3">
+              <table class="table table-bordered slip-table mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th class="text-success w-50"><i class="bi bi-plus-circle me-1"></i> รายการได้ (Earnings)</th>
+                    <th class="text-danger w-50"><i class="bi bi-dash-circle me-1"></i> รายการหัก (Deductions)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <div class="d-flex justify-content-between"><span id="slipBaseSalaryLabel">เงินเดือน/ค่าจ้างพื้นฐาน:</span><b id="slipBaseSalary">0.00</b></div>
+                      <div class="d-flex justify-content-between text-muted fs-9" id="slipWageRateDetailRow"><span>- รายละเอียดการคิดค่าจ้าง:</span><span id="slipWageRateDetail">-</span></div>
+                      <div class="d-flex justify-content-between text-muted fs-9"><span>- ค่าล่วงเวลา (<span id="slipOtHours">0 ชม.</span>):</span><span id="slipOtAmount">0.00</span></div>
+                      <div class="d-flex justify-content-between text-muted fs-9"><span>- เบี้ยขยัน:</span><span id="slipDiligence">0.00</span></div>
+                      <div class="d-flex justify-content-between text-muted fs-9"><span>- เงินประจำตำแหน่ง:</span><span id="slipPositionAllow">0.00</span></div>
+                      <div class="d-flex justify-content-between text-muted fs-9"><span>- โบนัส/รางวัล:</span><span id="slipBonus">0.00</span></div>
+                      <div class="d-flex justify-content-between text-muted fs-9"><span>- รายรับอื่นๆ:</span><span id="slipOtherEarnings">0.00</span></div>
+                    </td>
+                    <td>
+                      <div class="d-flex justify-content-between"><span>หักประกันสังคม (5%):</span><b id="slipSocialSecurity" class="text-danger">0.00</b></div>
+                      <div class="d-flex justify-content-between text-muted fs-9"><span>- ภาษี หัก ณ ที่จ่าย:</span><span id="slipTax">0.00</span></div>
+                      <div class="d-flex justify-content-between text-muted fs-9"><span>- หักมาสาย:</span><span id="slipLateDeduct">0.00</span></div>
+                      <div class="d-flex justify-content-between text-muted fs-9"><span>- หักขาดงาน:</span><span id="slipAbsenceDeduct">0.00</span></div>
+                      <div class="d-flex justify-content-between text-muted fs-9"><span>- หักลางานเกินสิทธิ์:</span><span id="slipLeaveDeduct">0.00</span></div>
+                      <div class="d-flex justify-content-between text-muted fs-9"><span>- รายการหักอื่นๆ:</span><span id="slipOtherDeduct">0.00</span></div>
+                    </td>
+                  </tr>
+                  <tr class="fw-bold bg-light">
+                    <td class="d-flex justify-content-between text-success"><span>รวมรายได้:</span><span id="slipTotalEarnings">0.00</span></td>
+                    <td class="d-flex justify-content-between text-danger"><span>รวมรายการหัก:</span><span id="slipTotalDeductions">0.00</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Net Pay Box -->
+            <div class="p-3 bg-success bg-opacity-10 rounded-3 border border-success d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <div class="fs-8 text-success fw-semibold">เงินรับสุทธิ (Net Pay)</div>
+                <small class="text-muted">ยอดเงินโอนเข้าบัญชีธนาคาร</small>
+              </div>
+              <h3 class="fw-bold text-success mb-0" id="slipNetPay">฿0.00</h3>
+            </div>
+
+            <!-- Signature Line -->
+            <div class="row pt-4 text-center fs-8 text-muted">
+              <div class="col-6">
+                <div class="border-bottom mx-auto mb-1" style="width: 180px; height: 35px;"></div>
+                <div>ลงชื่อ ผู้รับเงิน</div>
+              </div>
+              <div class="col-6">
+                <div class="border-bottom mx-auto mb-1" style="width: 180px; height: 35px;"></div>
+                <div>ลงชื่อ ผู้จ่ายเงิน / ฝ่ายการเงิน</div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+        <div class="modal-footer bg-light no-print">
+          <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">ปิด</button>
+          <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold" onclick="window.payrollModule.printCurrentPayslip()">
+            <i class="bi bi-printer-fill me-1"></i> พิมพ์สลิปนี้
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: EDIT RECORD ADJUSTMENT ==================== -->
+  <div class="modal fade" id="editRecordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4 shadow">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title fw-bold text-dark"><i class="bi bi-pencil-square me-2"></i>ปรับยอดเงินเดือนรายบุคคล</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="editRecordForm">
+          <input type="hidden" id="editRecordId" />
+          <div class="modal-body p-4">
+            <h6 class="fw-bold text-primary mb-3" id="editRecordEmpName">-</h6>
+
+            <div class="row g-3">
+              <!-- Wage Type Selection Card -->
+              <div class="col-12">
+                <div class="p-3 bg-light rounded-3 border">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label fs-8 fw-bold text-dark mb-0"><i class="bi bi-tag-fill text-primary me-1"></i> รูปแบบการรับเงิน/ประเภทค่าจ้าง</label>
+                    <span id="wageTypeDescriptionBadge" class="badge bg-primary px-2.5 py-1 rounded-pill fs-9">รายเดือน (Monthly)</span>
+                  </div>
+                  <div class="row g-2">
+                    <div class="col-md-4">
+                      <label class="form-label fs-8 fw-semibold">ประเภทการจ่ายเงิน</label>
+                      <select id="editWageType" class="form-select form-select-sm fw-bold">
+                        <option value="monthly">💼 รายเดือน (Monthly)</option>
+                        <option value="daily">⏱️ รายวัน (Daily)</option>
+                        <option value="weekly">📅 รายสัปดาห์ (Weekly)</option>
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label fs-8 fw-semibold" id="editWageRateLabel">อัตราต่อหน่วย (บาท)</label>
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text">฿</span>
+                        <input type="number" id="editWageRate" class="form-control fw-bold" placeholder="เช่น 450 หรือ 15000" />
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label fs-8 fw-semibold" id="editWorkUnitsLabel">จำนวนวัน/หน่วยทำงาน</label>
+                      <div class="input-group input-group-sm">
+                        <input type="number" id="editWorkUnits" class="form-control fw-bold" placeholder="เช่น 26 หรือ 4" step="0.5" />
+                        <span class="input-group-text" id="editWorkUnitsUnitText">วัน</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-2 fs-9 text-muted d-flex align-items-center justify-content-between flex-wrap gap-1">
+                    <span id="wageFormulaPreviewText"><i class="bi bi-calculator me-1"></i> สูตรคำนวณ: ฿15,000 ต่อเดือน</span>
+                    <div class="btn-group btn-group-sm" id="wageQuickPresets">
+                      <button type="button" class="btn btn-outline-secondary btn-xs py-0 px-2" onclick="window.setPresetUnits(26)">26 วัน</button>
+                      <button type="button" class="btn btn-outline-secondary btn-xs py-0 px-2" onclick="window.setPresetUnits(30)">30 วัน</button>
+                      <button type="button" class="btn btn-outline-secondary btn-xs py-0 px-2" onclick="window.setPresetUnits(4)">4 สัปดาห์</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <h6 class="fw-bold text-success border-bottom pb-1"><i class="bi bi-plus-circle me-1"></i> รายได้ (Earnings)</h6>
+                <div class="mb-2">
+                  <label class="form-label fs-8 fw-semibold" id="editBaseSalaryLabel">ฐานเงินได้งวดนี้ (คำนวณอัตโนมัติ)</label>
+                  <input type="number" id="editBaseSalary" class="form-control form-control-sm fw-bold text-success" required />
+                </div>
+                <div class="row g-2 mb-2">
+                  <div class="col-6">
+                    <label class="form-label fs-8 fw-semibold">ชั่วโมง OT</label>
+                    <input type="number" id="editOtHours" class="form-control form-control-sm" />
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label fs-8 fw-semibold">เงิน OT รวม</label>
+                    <input type="number" id="editOtAmount" class="form-control form-control-sm" />
+                  </div>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label fs-8 fw-semibold">เบี้ยขยัน</label>
+                  <input type="number" id="editDiligence" class="form-control form-control-sm" />
+                </div>
+                <div class="mb-2">
+                  <label class="form-label fs-8 fw-semibold">เงินประจำตำแหน่ง</label>
+                  <input type="number" id="editPositionAllow" class="form-control form-control-sm" />
+                </div>
+                <div class="mb-2">
+                  <label class="form-label fs-8 fw-semibold">โบนัส</label>
+                  <input type="number" id="editBonus" class="form-control form-control-sm" />
+                </div>
+                <div class="mb-2">
+                  <label class="form-label fs-8 fw-semibold">รายรับอื่นๆ</label>
+                  <input type="number" id="editOtherEarnings" class="form-control form-control-sm" />
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <h6 class="fw-bold text-danger border-bottom pb-1"><i class="bi bi-dash-circle me-1"></i> รายการหัก (Deductions)</h6>
+                <div class="mb-2">
+                  <label class="form-label fs-8 fw-semibold">ประกันสังคม</label>
+                  <input type="number" id="editSocialSecurity" class="form-control form-control-sm" />
+                </div>
+                <div class="mb-2">
+                  <label class="form-label fs-8 fw-semibold">ภาษี หัก ณ ที่จ่าย</label>
+                  <input type="number" id="editTax" class="form-control form-control-sm" />
+                </div>
+                <div class="mb-2">
+                  <label class="form-label fs-8 fw-semibold">หักมาสาย</label>
+                  <input type="number" id="editLateDeduct" class="form-control form-control-sm" />
+                </div>
+                <div class="mb-2">
+                  <label class="form-label fs-8 fw-semibold">หักขาดงาน</label>
+                  <input type="number" id="editAbsenceDeduct" class="form-control form-control-sm" />
+                </div>
+                <div class="mb-2">
+                  <label class="form-label fs-8 fw-semibold">หักลาเกินสิทธิ์</label>
+                  <input type="number" id="editLeaveDeduct" class="form-control form-control-sm" />
+                </div>
+                <div class="mb-2">
+                  <label class="form-label fs-8 fw-semibold">รายการหักอื่นๆ</label>
+                  <input type="number" id="editOtherDeduct" class="form-control form-control-sm" />
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label fs-8 fw-semibold">หมายเหตุการปรับปรุง</label>
+                <input type="text" id="editRemarks" class="form-control form-control-sm" placeholder="เช่น ปรับเบี้ยขยันพิเศษ, หักคืนเงินยืม..." />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="submit" class="btn btn-warning rounded-pill px-4 fw-bold">บันทึกการเปลี่ยนแปลง</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Firebase & Authentication Core -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+    import { getFirestore, initializeFirestore, doc, onSnapshot, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+    import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+
+    fetch('firebase-applet-config.json')
+      .then(res => res.json())
+      .then(config => {
+        window.firebaseConfig = config;
+        window.floraFirebaseConfig = config;
+        const app = initializeApp(config);
+        const dbId = config.firestoreDatabaseId;
+        if (dbId && dbId !== "(default)") {
+          window.db = initializeFirestore(app, {}, dbId);
+        } else {
+          window.db = getFirestore(app);
+        }
+        window.auth = getAuth(app);
+        
+        window.floraFirebaseBridge = {
+          db: window.db,
+          doc,
+          onSnapshot,
+          getDoc,
+          setDoc
+        };
+        window.dispatchEvent(new CustomEvent('flora-firebase-ready'));
+        if (typeof window.connectGlobalLogoFirestore === 'function') {
+          window.connectGlobalLogoFirestore(window.floraFirebaseBridge);
+        }
+        if (typeof window.connectOrgTreeFirestore === 'function') {
+          window.connectOrgTreeFirestore(window.floraFirebaseBridge);
+        }
+        if (typeof window.updateAllFloraTitles === 'function') {
+          window.updateAllFloraTitles();
+        }
+
+        onAuthStateChanged(window.auth, (user) => {
+          if (user) {
+            window.currentUserRole = 'ADMIN';
+            const roleEl = document.getElementById('currentRoleText');
+            if (roleEl) roleEl.textContent = user.displayName || user.email?.split('@')[0] || 'Admin';
+            const avatarEl = document.getElementById('navUserAvatar');
+            if (avatarEl && user.photoURL) avatarEl.src = user.photoURL;
+          }
+          if (window.payrollModule?.loadPayrollPeriods) {
+            window.payrollModule.loadPayrollPeriods();
+          }
+        });
+      })
+      .catch(err => console.error('Firebase config load error in payroll:', err));
+
+    window.handleSignOut = function() {
+      if (window.auth) {
+        signOut(window.auth).then(() => {
+          window.location.href = 'index.html';
+        });
+      }
+    };
+  </script>
+
+  <script type="module" src="/global_logo.js"></script>
+  <script type="module" src="org_tree.js"></script>
+  <script src="payroll_system.js"></script>
+</body>
+</html>

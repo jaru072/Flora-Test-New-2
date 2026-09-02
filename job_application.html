@@ -39,7 +39,7 @@
           </div>
         </a>
         <div>
-          <h1 class="fs-6 fw-bold text-white mb-0 lh-1" data-flora-project-title>โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา</h1>
+          <h1 class="fs-6 fw-bold text-white mb-0 lh-1 brand-master-title" data-flora-project-title id="navbarMasterBrandTitle">โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา</h1>
           <small class="text-warning fw-semibold fs-8"><i class="bi bi-file-earmark-person-fill me-1"></i>ระบบรับสมัครงาน & ตัวออกแบบฟอร์ม (Job Application System)</small>
         </div>
       </div>
@@ -69,6 +69,10 @@
 
       <!-- Quick Switch Links to other modules -->
       <div class="d-flex align-items-center gap-2">
+        <a href="payroll.html" class="btn btn-outline-warning btn-sm rounded-pill px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-xs" title="ไปที่ระบบเงินเดือน">
+          <i class="bi bi-cash-coin text-warning"></i>
+          <span class="d-none d-md-inline">ระบบเงินเดือน</span>
+        </a>
         <a href="org_chart.html" class="btn btn-outline-light btn-sm rounded-pill px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-xs" title="ไปที่ศูนย์ผังองค์กรและสารบบบุคลากร">
           <i class="bi bi-diagram-3-fill text-warning"></i>
           <span class="d-none d-md-inline">ผังองค์กร & บุคลากร</span>
@@ -97,7 +101,7 @@
             </div>
             <h2 class="fw-bold text-dark mb-2" id="applicantFormTitle">ใบสมัครงาน (Job Application Form)</h2>
             <p class="text-muted fs-7 mx-auto mb-0" style="max-width: 680px;" id="applicantFormDesc">
-              โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา - กรุณากรอกข้อมูลตามความเป็นจริงเพื่อประกอบการพิจารณาคัดเลือกเข้าปฏิบัติงาน
+              <span data-flora-project-title id="applicantFormProjectName">โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา</span> - กรุณากรอกข้อมูลตามความเป็นจริงเพื่อประกอบการพิจารณาคัดเลือกเข้าปฏิบัติงาน
             </p>
           </div>
 
@@ -491,6 +495,7 @@
 
   <!-- Global Logo & Application Scripts -->
   <script type="module" src="/global_logo.js"></script>
+  <script type="module" src="org_tree.js"></script>
   <script type="module" src="/job_application.js"></script>
 
   <script>

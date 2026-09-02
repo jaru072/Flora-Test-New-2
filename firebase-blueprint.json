@@ -43,15 +43,26 @@
     },
     "Attendance": {
       "title": "Attendance",
-      "description": "ประวัติการลงเวลาเข้างาน/เลิกงาน/แจ้งลา",
+      "description": "ประวัติการลงเวลาเข้างาน/เลิกงาน/แจ้งลา พร้อมพิกัด GPS",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "employeeId": { "type": "string" },
         "employeeName": { "type": "string" },
+        "employeeCode": { "type": "string" },
+        "department": { "type": "string" },
+        "role": { "type": "string" },
         "status": { "type": "string" },
         "time": { "type": "string" },
-        "date": { "type": "string" }
+        "date": { "type": "string" },
+        "dateKey": { "type": "string" },
+        "note": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "source": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "accuracy": { "type": "number" },
+        "locationAddress": { "type": "string" }
       }
     },
     "User": {
@@ -143,9 +154,85 @@
         "updatedAt": { "type": "string" },
         "updatedBy": { "type": "string" }
       }
+    },
+    "PayrollPeriod": {
+      "title": "PayrollPeriod",
+      "description": "รอบงวดการจ่ายเงินเดือนและสรุปภาพรวม",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "month": { "type": "number" },
+        "year": { "type": "number" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "payDate": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "processing", "approved", "paid"] },
+        "totalEmployees": { "type": "number" },
+        "totalBaseSalary": { "type": "number" },
+        "totalOt": { "type": "number" },
+        "totalAllowances": { "type": "number" },
+        "totalDeductions": { "type": "number" },
+        "totalSocialSecurity": { "type": "number" },
+        "totalTax": { "type": "number" },
+        "totalNetPay": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["id", "title", "month", "year", "status"]
+    },
+    "PayrollRecord": {
+      "title": "PayrollRecord",
+      "description": "ใบสรุปและสลิปเงินเดือนรายบุคคลสำหรับแต่ละงวด",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "periodId": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "employeeCode": { "type": "string" },
+        "employeeName": { "type": "string" },
+        "department": { "type": "string" },
+        "position": { "type": "string" },
+        "bankName": { "type": "string" },
+        "bankAccount": { "type": "string" },
+        "baseSalary": { "type": "number" },
+        "dailyRate": { "type": "number" },
+        "otHours": { "type": "number" },
+        "otRate": { "type": "number" },
+        "otAmount": { "type": "number" },
+        "diligenceAllowance": { "type": "number" },
+        "positionAllowance": { "type": "number" },
+        "bonus": { "type": "number" },
+        "otherEarnings": { "type": "number" },
+        "totalEarnings": { "type": "number" },
+        "lateMinutes": { "type": "number" },
+        "lateDeduction": { "type": "number" },
+        "absenceDays": { "type": "number" },
+        "absenceDeduction": { "type": "number" },
+        "leaveDeduction": { "type": "number" },
+        "socialSecurity": { "type": "number" },
+        "tax": { "type": "number" },
+        "otherDeductions": { "type": "number" },
+        "totalDeductions": { "type": "number" },
+        "netPay": { "type": "number" },
+        "status": { "type": "string" },
+        "remarks": { "type": "string" },
+        "attendanceSummary": { "type": "object" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "periodId", "employeeId", "employeeName", "netPay"]
     }
   },
   "firestore": {
+    "/payroll_periods/{periodId}": {
+      "schema": { "$ref": "#/entities/PayrollPeriod" },
+      "description": "คอลเลกชันงวดการคำนวณเงินเดือน"
+    },
+    "/payroll_records/{recordId}": {
+      "schema": { "$ref": "#/entities/PayrollRecord" },
+      "description": "คอลเลกชันสลิปและข้อมูลคำนวณเงินเดือนรายบุคคล"
+    },
     "/system_settings/{settingId}": {
       "schema": { "$ref": "#/entities/SystemSettings" },
       "description": "คอลเลกชันการตั้งค่าระบบส่วนกลาง (general)"

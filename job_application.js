@@ -232,6 +232,24 @@ export async function initJobApplicationFirebase() {
   }
 
   window.jobAppDb = db;
+  window.floraFirebaseBridge = {
+    db,
+    doc,
+    onSnapshot,
+    getDoc,
+    setDoc
+  };
+  window.dispatchEvent(new CustomEvent('flora-firebase-ready'));
+  if (typeof window.connectGlobalLogoFirestore === 'function') {
+    window.connectGlobalLogoFirestore(window.floraFirebaseBridge);
+  }
+  if (typeof window.connectOrgTreeFirestore === 'function') {
+    window.connectOrgTreeFirestore(window.floraFirebaseBridge);
+  }
+  if (typeof window.updateAllFloraTitles === 'function') {
+    window.updateAllFloraTitles();
+  }
+
   return { app, db };
 }
 
@@ -552,8 +570,20 @@ export function renderApplicantForm() {
   // Set Title & Description
   const titleEl = document.getElementById("applicantFormTitle");
   const descEl = document.getElementById("applicantFormDesc");
+  const currentProjTitle = (typeof window.getFloraProjectTitle === "function" ? window.getFloraProjectTitle() : "") || "โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา";
   if (titleEl) titleEl.textContent = currentSchema.title || "ใบสมัครงาน";
-  if (descEl) descEl.textContent = currentSchema.description || "";
+  if (descEl) {
+    let descText = currentSchema.description || "";
+    if (!descText || descText.includes(" - กรุณากรอกข้อมูล") || descText.includes("โครงการ") || descText.includes("รัตนบุปผา")) {
+      const remainder = descText.includes(" - ") ? descText.split(" - ")[1] : "กรุณากรอกข้อมูลตามความเป็นจริงเพื่อประกอบการพิจารณาคัดเลือกเข้าปฏิบัติงาน";
+      descEl.innerHTML = `<span data-flora-project-title id="applicantFormProjectName">${escapeHtml(currentProjTitle)}</span> - ${escapeHtml(remainder)}`;
+    } else {
+      descEl.textContent = descText;
+    }
+  }
+
+  const navEl = document.getElementById("jobAppNavProjectTitle");
+  if (navEl) navEl.textContent = currentProjTitle;
 
   container.innerHTML = "";
 
@@ -1194,6 +1224,36 @@ document.addEventListener("DOMContentLoaded", async () => {
   await initJobApplicationFirebase();
   await loadFormSchema();
   listenToApplicants();
+
+  window.addEventListener("flora-project-title-changed", (e) => {
+    const newTitle = e.detail?.title || (typeof window.getFloraProjectTitle === "function" ? window.getFloraProjectTitle() : "");
+    if (newTitle) {
+      const el = document.getElementById("applicantFormProjectName");
+      if (el) el.textContent = newTitle;
+      const navEl = document.getElementById("jobAppNavProjectTitle");
+      if (navEl) navEl.textContent = newTitle;
+      const builderDesc = document.getElementById("builderFormDesc");
+      if (builderDesc && builderDesc.value && builderDesc.value.includes(" - ")) {
+        const suffix = builderDesc.value.split(" - ")[1];
+        builderDesc.value = `${newTitle} - ${suffix}`;
+      }
+    }
+  });
+
+  window.addEventListener("flora-org-tree-changed", (e) => {
+    const tree = e.detail?.tree;
+    if (tree && tree.name) {
+      const el = document.getElementById("applicantFormProjectName");
+      if (el) el.textContent = tree.name;
+      const navEl = document.getElementById("jobAppNavProjectTitle");
+      if (navEl) navEl.textContent = tree.name;
+      const builderDesc = document.getElementById("builderFormDesc");
+      if (builderDesc && builderDesc.value && builderDesc.value.includes(" - ")) {
+        const suffix = builderDesc.value.split(" - ")[1];
+        builderDesc.value = `${tree.name} - ${suffix}`;
+      }
+    }
+  });
 
   // Attach search & filter events
   const searchInput = document.getElementById("hrSearchApplicantInput");
