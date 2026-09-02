@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบรับสมัครงานและออกแบบฟอร์มใบสมัคร - โครงการรัตนบุปผา</title>
+  
+  <!-- App Icons -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="favicon.png">
+
+  <!-- Google Fonts: Prompt & Sarabun -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Bootstrap 5 CSS & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  
+  <!-- QRCode.js Library -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="job_application.css">
+  <link rel="stylesheet" href="global_logo.css">
+</head>
+<body>
+
+  <!-- ==================== TOP NAVIGATION BAR ==================== -->
+  <header class="job-app-header py-2.5 px-3 px-md-4">
+    <div class="container-fluid d-flex flex-wrap align-items-center justify-content-between gap-3">
+      
+      <!-- Brand & Project Title -->
+      <div class="d-flex align-items-center gap-3">
+        <a href="index.html" class="d-flex align-items-center text-decoration-none" title="กลับหน้าหลัก">
+          <div class="d-inline-flex align-items-center justify-content-center p-1.5 bg-white bg-opacity-10 rounded-circle shadow-sm" data-flora-logo="badge" data-logo-size="40">
+            <i class="bi bi-flower1 fs-4 text-warning"></i>
+          </div>
+        </a>
+        <div>
+          <h1 class="fs-6 fw-bold text-white mb-0 lh-1" data-flora-project-title>โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา</h1>
+          <small class="text-warning fw-semibold fs-8"><i class="bi bi-file-earmark-person-fill me-1"></i>ระบบรับสมัครงาน & ตัวออกแบบฟอร์ม (Job Application System)</small>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs (Applicant / Form Builder / HR Review) -->
+      <ul class="nav nav-pills nav-pills-custom gap-1 bg-black bg-opacity-25 p-1 rounded-pill" id="jobAppMainTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active d-flex align-items-center gap-1.5" id="tab-apply-btn" data-bs-toggle="pill" data-bs-target="#tab-apply" type="button" role="tab">
+            <i class="bi bi-pencil-square"></i>
+            <span>กรอกใบสมัคร</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link d-flex align-items-center gap-1.5" id="tab-builder-btn" data-bs-toggle="pill" data-bs-target="#tab-builder" type="button" role="tab">
+            <i class="bi bi-sliders"></i>
+            <span>ออกแบบฟอร์ม (HR)</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link d-flex align-items-center gap-1.5" id="tab-review-btn" data-bs-toggle="pill" data-bs-target="#tab-review" type="button" role="tab">
+            <i class="bi bi-people-fill"></i>
+            <span>รายการผู้สมัคร</span>
+            <span class="badge bg-danger rounded-pill px-1.5 py-0.5 fs-9" id="hrStatTotal">0</span>
+          </button>
+        </li>
+      </ul>
+
+      <!-- Quick Switch Links to other modules -->
+      <div class="d-flex align-items-center gap-2">
+        <a href="org_chart.html" class="btn btn-outline-light btn-sm rounded-pill px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-xs" title="ไปที่ศูนย์ผังองค์กรและสารบบบุคลากร">
+          <i class="bi bi-diagram-3-fill text-warning"></i>
+          <span class="d-none d-md-inline">ผังองค์กร & บุคลากร</span>
+        </a>
+        <a href="index.html" class="btn btn-warning btn-sm rounded-pill px-3 fw-bold text-dark d-flex align-items-center gap-1.5 shadow-xs" title="ไปที่คลังอุปกรณ์">
+          <i class="bi bi-box-seam-fill text-dark"></i>
+          <span class="d-none d-md-inline">คลังอุปกรณ์</span>
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT BODY ==================== -->
+  <main class="container py-4">
+    <div class="tab-content" id="jobAppMainTabsContent">
+      
+      <!-- ==================== TAB 1: APPLICANT FORM (หน้ากรอกใบสมัคร) ==================== -->
+      <div class="tab-pane fade show active" id="tab-apply" role="tabpanel">
+        <div class="applicant-form-container">
+          
+          <!-- Form Header Card -->
+          <div class="app-card p-4 p-md-5 mb-4 text-center" style="border-top: 5px solid #2e7d32;">
+            <div class="d-inline-flex align-items-center justify-content-center p-2 bg-success bg-opacity-10 rounded-circle mb-3">
+              <i class="bi bi-file-earmark-text-fill text-success fs-1"></i>
+            </div>
+            <h2 class="fw-bold text-dark mb-2" id="applicantFormTitle">ใบสมัครงาน (Job Application Form)</h2>
+            <p class="text-muted fs-7 mx-auto mb-0" style="max-width: 680px;" id="applicantFormDesc">
+              โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา - กรุณากรอกข้อมูลตามความเป็นจริงเพื่อประกอบการพิจารณาคัดเลือกเข้าปฏิบัติงาน
+            </p>
+          </div>
+
+          <!-- Applicant Form Body -->
+          <form id="applicantMainForm" class="app-card p-4 p-md-5">
+            <!-- Dynamic Fields Rendered by JS -->
+            <div id="applicantFormDynamicFields">
+              <div class="text-center py-5 text-muted">
+                <div class="spinner-border text-success mb-2" role="status"></div>
+                <div>กำลังโหลดโครงสร้างแบบฟอร์ม...</div>
+              </div>
+            </div>
+
+            <!-- Submit Button & Disclaimer -->
+            <div class="mt-4 pt-3 border-top text-center">
+              <p class="text-muted fs-8 mb-3">
+                <i class="bi bi-shield-check text-success me-1"></i>
+                ข้อมูลที่ท่านกรอกจะถูกจัดเก็บรักษาเป็นความลับเพื่อใช้ในกระบวนการสรรหาและคัดเลือกบุคลากรของโครงการเท่านั้น
+              </p>
+              <button type="submit" id="btnSubmitApplication" class="btn btn-success btn-lg rounded-pill px-5 fw-bold shadow">
+                <i class="bi bi-send-fill me-2"></i> ยืนยันและส่งใบสมัครงาน
+              </button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+
+      <!-- ==================== TAB 2: FORM BUILDER (ตัวออกแบบฟอร์ม HR) ==================== -->
+      <div class="tab-pane fade" id="tab-builder" role="tabpanel">
+        <div class="row g-4">
+          
+          <!-- Left Column: Settings & Actions -->
+          <div class="col-12 col-lg-4">
+            
+            <!-- General Settings Card -->
+            <div class="app-card p-4 mb-4">
+              <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-gear-fill text-primary"></i> ตั้งค่าหัวแบบฟอร์ม
+              </h5>
+              <div class="mb-3">
+                <label class="form-label fw-semibold fs-8" for="builderFormTitle">ชื่อหัวแบบฟอร์ม</label>
+                <input type="text" id="builderFormTitle" class="form-control rounded-3" value="ใบสมัครงาน (Job Application Form)">
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold fs-8" for="builderFormDesc">คำอธิบาย / รายละเอียดโครงการ</label>
+                <textarea id="builderFormDesc" class="form-control rounded-3" rows="3">โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา - กรุณากรอกข้อมูลตามความเป็นจริงเพื่อประกอบการพิจารณาคัดเลือกเข้าปฏิบัติงาน</textarea>
+              </div>
+              <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold" onclick="window.saveFormHeaderSettings()">
+                <i class="bi bi-check2-circle me-1"></i> บันทึกหัวแบบฟอร์ม
+              </button>
+            </div>
+
+            <!-- Management Tools & Templates Card -->
+            <div class="app-card p-4">
+              <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-tools text-warning"></i> เครื่องมือจัดการแม่แบบ
+              </h5>
+              
+              <div class="d-grid gap-2">
+                <button type="button" class="btn btn-outline-success rounded-pill fw-semibold fs-8 text-start d-flex align-items-center justify-content-between p-2.5" onclick="window.openShareLinkModal()">
+                  <span><i class="bi bi-share-fill me-2"></i>คัดลอกลิงก์ & QR Code ใบสมัคร</span>
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+                <button type="button" class="btn btn-outline-primary rounded-pill fw-semibold fs-8 text-start d-flex align-items-center justify-content-between p-2.5" onclick="window.exportFormSchemaJson()">
+                  <span><i class="bi bi-download me-2"></i>ส่งออกโครงสร้างแบบฟอร์ม (.JSON)</span>
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+                <label class="btn btn-outline-secondary rounded-pill fw-semibold fs-8 text-start d-flex align-items-center justify-content-between p-2.5 mb-0" style="cursor: pointer;">
+                  <span><i class="bi bi-upload me-2"></i>นำเข้าโครงสร้างแบบฟอร์ม (.JSON)</span>
+                  <i class="bi bi-chevron-right"></i>
+                  <input type="file" accept=".json" class="d-none" onchange="window.importFormSchemaJson(this)">
+                </label>
+                <button type="button" class="btn btn-outline-danger rounded-pill fw-semibold fs-8 text-start d-flex align-items-center justify-content-between p-2.5" onclick="window.resetFormSchemaToDefault()">
+                  <span><i class="bi bi-arrow-counterclockwise me-2"></i>คืนค่าเป็นแบบฟอร์มมาตรฐานเริ่มต้น</span>
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right Column: Form Fields List & Editor -->
+          <div class="col-12 col-lg-8">
+            <div class="app-card p-4">
+              
+              <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom pb-3 mb-3">
+                <div>
+                  <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-list-check text-success"></i> รายการช่องกรอกข้อมูลในแบบฟอร์ม
+                  </h5>
+                  <small class="text-muted fs-8">สามารถลากเพื่อสลับลำดับ หรือกดแก้ไข/ลบคำถามได้ตามต้องการ</small>
+                </div>
+                <button type="button" class="btn btn-success rounded-pill px-3 py-1.5 fw-bold fs-8 shadow-sm d-flex align-items-center gap-1.5" onclick="window.openAddFieldModal()">
+                  <i class="bi bi-plus-circle-fill"></i>
+                  <span>เพิ่มช่องกรอกข้อมูลใหม่</span>
+                </button>
+              </div>
+
+              <!-- Draggable Fields Container -->
+              <div id="formBuilderFieldsList">
+                <div class="text-center py-4 text-muted">
+                  <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                  กำลังโหลดรายการคำถาม...
+                </div>
+              </div>
+
+              <!-- Add Field Quick Button Bottom -->
+              <div class="text-center pt-3 mt-3 border-top">
+                <button type="button" class="btn btn-outline-success rounded-pill px-4 py-2 fw-semibold fs-8" onclick="window.openAddFieldModal()">
+                  <i class="bi bi-plus-lg me-1"></i> เพิ่มช่องกรอกข้อมูลใหม่
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ==================== TAB 3: HR APPLICANTS REVIEW (สารบบผู้สมัครงาน) ==================== -->
+      <div class="tab-pane fade" id="tab-review" role="tabpanel">
+        
+        <!-- Summary Stats Cards -->
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-md-3">
+            <div class="app-card p-3 d-flex align-items-center gap-3">
+              <div class="rounded-circle p-2.5 bg-primary bg-opacity-10 text-primary fs-4">
+                <i class="bi bi-people-fill"></i>
+              </div>
+              <div>
+                <div class="fs-4 fw-bold text-dark lh-1" id="hrStatTotal">0</div>
+                <small class="text-muted fs-8">ผู้สมัครทั้งหมด</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="app-card p-3 d-flex align-items-center gap-3">
+              <div class="rounded-circle p-2.5 bg-warning bg-opacity-10 text-warning fs-4">
+                <i class="bi bi-hourglass-split"></i>
+              </div>
+              <div>
+                <div class="fs-4 fw-bold text-warning-emphasis lh-1" id="hrStatPending">0</div>
+                <small class="text-muted fs-8">รอพิจารณา</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="app-card p-3 d-flex align-items-center gap-3">
+              <div class="rounded-circle p-2.5 bg-info bg-opacity-10 text-info fs-4">
+                <i class="bi bi-calendar-event-fill"></i>
+              </div>
+              <div>
+                <div class="fs-4 fw-bold text-info lh-1" id="hrStatInterview">0</div>
+                <small class="text-muted fs-8">นัดสัมภาษณ์</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="app-card p-3 d-flex align-items-center gap-3">
+              <div class="rounded-circle p-2.5 bg-success bg-opacity-10 text-success fs-4">
+                <i class="bi bi-check-circle-fill"></i>
+              </div>
+              <div>
+                <div class="fs-4 fw-bold text-success lh-1" id="hrStatApproved">0</div>
+                <small class="text-muted fs-8">ผ่านการคัดเลือก</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="app-card p-3 mb-4">
+          <div class="row g-2 align-items-center justify-content-between">
+            <div class="col-12 col-md-6 col-lg-5">
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" id="hrSearchApplicantInput" class="form-control border-start-0 ps-0" placeholder="ค้นหาชื่อ, ตำแหน่ง, เบอร์โทร หรือรหัสใบสมัคร...">
+              </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-7 d-flex flex-wrap align-items-center justify-content-md-end gap-2">
+              <select id="hrFilterStatusSelect" class="form-select form-select-sm w-auto rounded-pill fw-semibold">
+                <option value="all">สถานะทั้งหมด</option>
+                <option value="รอพิจารณา">⏳ รอพิจารณา</option>
+                <option value="นัดสัมภาษณ์">📅 นัดสัมภาษณ์</option>
+                <option value="approved">✅ ผ่านการคัดเลือก</option>
+                <option value="ไม่ผ่าน">❌ ไม่ผ่าน</option>
+                <option value="สละสิทธิ์">🚫 สละสิทธิ์</option>
+              </select>
+              <button type="button" class="btn btn-outline-success btn-sm rounded-pill fw-semibold px-3 d-flex align-items-center gap-1" onclick="window.exportApplicantsToCSV()">
+                <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+                <span>ส่งออก Excel/CSV</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Applicants Table Card -->
+        <div class="app-card p-0 overflow-hidden">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light border-bottom">
+                <tr class="fs-8 text-muted text-uppercase">
+                  <th class="text-center" style="width: 50px;">#</th>
+                  <th>ผู้สมัครงาน</th>
+                  <th>ตำแหน่งที่สมัคร</th>
+                  <th>ข้อมูลติดต่อ</th>
+                  <th>วันที่ยื่น</th>
+                  <th>สถานะ</th>
+                  <th class="text-end pe-3" style="width: 220px;">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="hrApplicantsTableBody">
+                <tr>
+                  <td colspan="7" class="text-center py-5 text-muted">
+                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                    กำลังโหลดข้อมูลผู้สมัคร...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- 1. Add / Edit Field Modal -->
+  <div class="modal fade" id="formFieldModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content rounded-4 border-0 shadow-lg">
+        <div class="modal-header bg-light border-bottom p-3">
+          <h5 class="modal-title fw-bold text-dark" id="fieldModalTitle">เพิ่มช่องกรอกข้อมูลใหม่</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="fieldForm" onsubmit="event.preventDefault(); window.saveFieldFromModal();">
+            <input type="hidden" id="fieldEditIndex" value="-1">
+
+            <div class="row g-3">
+              <!-- Field Type -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-bold fs-8" for="fieldTypeSelect">ประเภทช่องข้อมูล <span class="text-danger">*</span></label>
+                <select class="form-select rounded-3" id="fieldTypeSelect" onchange="window.onFieldTypeChange()" required>
+                  <option value="text">ข้อความสั้น (Single line text)</option>
+                  <option value="textarea">ข้อความยาว / ย่อหน้า (Paragraph text)</option>
+                  <option value="number">ตัวเลข (Number)</option>
+                  <option value="email">อีเมล (Email)</option>
+                  <option value="tel">เบอร์โทรศัพท์ (Phone)</option>
+                  <option value="date">วันที่ (Date)</option>
+                  <option value="select">ตัวเลือกแบบ Dropdown</option>
+                  <option value="radio">เลือกข้อเดียว (Radio)</option>
+                  <option value="checkbox">เลือกได้หลายข้อ (Checkbox)</option>
+                  <option value="file">แนบไฟล์ / รูปถ่าย (File / Photo)</option>
+                  <option value="section_header">📌 หัวข้อแบ่งส่วน (Section Header)</option>
+                </select>
+              </div>
+
+              <!-- Field Label -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-bold fs-8" for="fieldLabelInput">ชื่อคำถาม / ป้ายข้อความ (Label) <span class="text-danger">*</span></label>
+                <input type="text" class="form-control rounded-3" id="fieldLabelInput" placeholder="เช่น เงินเดือนที่คาดหวัง, ประวัติการทำงาน" required>
+              </div>
+
+              <!-- Placeholder -->
+              <div class="col-12 col-md-6" id="fieldPlaceholderBox">
+                <label class="form-label fw-bold fs-8" for="fieldPlaceholderInput">ข้อความตัวอย่างในช่อง (Placeholder)</label>
+                <input type="text" class="form-control rounded-3" id="fieldPlaceholderInput" placeholder="เช่น ระบุจำนวนเงิน (บาท)">
+              </div>
+
+              <!-- Help text / description -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-bold fs-8" for="fieldHelpTextInput">คำอธิบายเพิ่มเติมใต้ช่อง (Help text)</label>
+                <input type="text" class="form-control rounded-3" id="fieldHelpTextInput" placeholder="คำแนะนำสำหรับผู้สมัคร">
+              </div>
+
+              <!-- Options Box (For Select / Radio / Checkbox) -->
+              <div class="col-12 d-none" id="fieldOptionsContainer">
+                <label class="form-label fw-bold fs-8" for="fieldOptionsTextarea">รายการตัวเลือก (พิมพ์แยกบรรทัดละ 1 ตัวเลือก) <span class="text-danger">*</span></label>
+                <textarea class="form-control rounded-3" id="fieldOptionsTextarea" rows="4" placeholder="ตัวเลือก 1&#10;ตัวเลือก 2&#10;ตัวเลือก 3"></textarea>
+              </div>
+
+              <!-- File Accept Box -->
+              <div class="col-12 d-none" id="fieldFileOptionsContainer">
+                <label class="form-label fw-bold fs-8" for="fieldAcceptInput">ชนิดไฟล์ที่ยอมรับ (Accept extensions)</label>
+                <input type="text" class="form-control rounded-3" id="fieldAcceptInput" placeholder="เช่น image/* หรือ .pdf,.doc,.docx">
+              </div>
+
+              <!-- Required Checkbox -->
+              <div class="col-12" id="fieldRequiredBox">
+                <div class="form-check form-switch mt-2">
+                  <input class="form-check-input" type="checkbox" role="switch" id="fieldRequiredCheck">
+                  <label class="form-check-label fw-semibold fs-8 text-dark" for="fieldRequiredCheck">จำเป็นต้องกรอก (Required)</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-top text-end d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">ยกเลิก</button>
+              <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">บันทึกช่องข้อมูล</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Submission Success Modal -->
+  <div class="modal fade" id="submissionSuccessModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow-lg text-center p-4">
+        <div class="mx-auto mb-3 text-success">
+          <i class="bi bi-check-circle-fill" style="font-size: 4rem;"></i>
+        </div>
+        <h4 class="fw-bold text-dark mb-1">ส่งใบสมัครงานเรียบร้อยแล้ว!</h4>
+        <p class="text-muted fs-7 mb-3">ทางฝ่ายบุคคลได้รับข้อมูลใบสมัครของท่านเข้าสู่ระบบเรียบร้อยแล้ว</p>
+        
+        <div class="bg-light p-3 rounded-4 border text-start mb-4">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-muted fs-8">รหัสอ้างอิงใบสมัคร:</span>
+            <span class="fw-bold text-primary fs-7" id="submitSuccessCode">-</span>
+          </div>
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-muted fs-8">ชื่อผู้สมัคร:</span>
+            <span class="fw-bold text-dark fs-7" id="submitSuccessName">-</span>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span class="text-muted fs-8">ตำแหน่งที่สมัคร:</span>
+            <span class="fw-bold text-success fs-7" id="submitSuccessPosition">-</span>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-center gap-2">
+          <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">
+            ตกลง / ปิดหน้าต่าง
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. View Applicant Detail Modal -->
+  <div class="modal fade" id="applicantDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+      <div class="modal-content rounded-4 border-0 shadow-lg">
+        <div class="modal-header bg-light border-bottom p-3">
+          <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2">
+            <i class="bi bi-person-lines-fill text-primary"></i> ข้อมูลใบสมัครงานฉบับเต็ม
+          </h5>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-outline-dark btn-sm rounded-pill px-3 fw-semibold" onclick="window.print()">
+              <i class="bi bi-printer-fill me-1"></i>พิมพ์
+            </button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+        <div class="modal-body p-4" id="applicantDetailModalBody">
+          <!-- Dynamic details injected here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Share Link & QR Code Modal -->
+  <div class="modal fade" id="shareLinkModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow-lg text-center p-4">
+        <h5 class="fw-bold text-dark mb-2"><i class="bi bi-qr-code-scan text-success me-1"></i> ลิงก์ & QR Code สำหรับผู้สมัครงาน</h5>
+        <p class="text-muted fs-8 mb-3">สามารถแชร์ลิงก์หรือพิมพ์ QR Code นี้เพื่อให้ผู้สมัครสแกนเข้ากรอกใบสมัครได้ทันที</p>
+        
+        <div id="shareQrCodeContainer" class="d-flex justify-content-center my-3"></div>
+
+        <div class="input-group my-3">
+          <input type="text" id="shareFormUrlInput" class="form-control form-control-sm rounded-start-pill ps-3" readonly>
+          <button class="btn btn-success btn-sm rounded-end-pill px-3 fw-bold" onclick="window.copyShareFormUrl()">
+            <i class="bi bi-clipboard-check me-1"></i> คัดลอก
+          </button>
+        </div>
+
+        <button type="button" class="btn btn-secondary rounded-pill px-4 mt-2" data-bs-dismiss="modal">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Global Logo & Application Scripts -->
+  <script type="module" src="/global_logo.js"></script>
+  <script type="module" src="/job_application.js"></script>
+
+  <script>
+    // QR Code & Share modal helpers
+    window.openShareLinkModal = function() {
+      const url = window.location.href.split('#')[0];
+      const input = document.getElementById("shareFormUrlInput");
+      if (input) input.value = url;
+
+      const qrContainer = document.getElementById("shareQrCodeContainer");
+      if (qrContainer) {
+        qrContainer.innerHTML = "";
+        if (typeof QRCode !== "undefined") {
+          new QRCode(qrContainer, {
+            text: url,
+            width: 180,
+            height: 180,
+            colorDark : "#0d2258",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+          });
+        }
+      }
+
+      const modal = new bootstrap.Modal(document.getElementById("shareLinkModal"));
+      modal.show();
+    };
+
+    window.copyShareFormUrl = function() {
+      const input = document.getElementById("shareFormUrlInput");
+      if (input) {
+        input.select();
+        navigator.clipboard.writeText(input.value);
+        alert("คัดลอกลิงก์ใบสมัครงานแล้ว สามารถนำไปแชร์ให้ผู้สมัครได้ทันที");
+      }
+    };
+  </script>
+</body>
+</html>

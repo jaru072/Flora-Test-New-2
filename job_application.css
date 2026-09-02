@@ -1,0 +1,198 @@
+/* ==================== JOB APPLICATION & FORM BUILDER CSS ==================== */
+:root {
+  --font-main: 'Prompt', 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif;
+  --primary-navy: #0d2258;
+  --primary-navy-dark: #08183d;
+  --flora-green: #1b4332;
+  --flora-green-light: #2d6a4f;
+  --flora-accent: #40916c;
+  --gold-accent: #d4af37;
+  --gold-light: #fff3cd;
+  --bg-app: #f8fafc;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: var(--font-main);
+}
+
+body {
+  background-color: var(--bg-app);
+  color: #1e293b;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.fs-7 { font-size: 0.875rem !important; }
+.fs-8 { font-size: 0.775rem !important; }
+.fs-9 { font-size: 0.7rem !important; }
+
+/* Top Header Bar */
+.job-app-header {
+  background: linear-gradient(135deg, #0d2258 0%, #1b4332 100%);
+  border-bottom: 2.5px solid var(--gold-accent);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+}
+
+/* Nav Tabs Custom Styling */
+.nav-pills-custom .nav-link {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 8px 18px;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+.nav-pills-custom .nav-link:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+.nav-pills-custom .nav-link.active {
+  background-color: var(--gold-accent);
+  color: #08183d;
+  font-weight: 700;
+  box-shadow: 0 3px 10px rgba(212, 175, 55, 0.4);
+}
+
+/* Card Styling */
+.app-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s ease;
+}
+.app-card:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Form Builder Draggable Field Items */
+.builder-field-item {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+.builder-field-item:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 3px 12px rgba(59, 130, 246, 0.1);
+}
+.builder-field-item.dragging {
+  opacity: 0.4;
+  border: 2px dashed #3b82f6;
+}
+.builder-field-item.section-header-item {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #86efac;
+}
+
+.drag-handle {
+  cursor: grab;
+  color: #94a3b8;
+  transition: color 0.15s ease;
+}
+.drag-handle:hover {
+  color: #3b82f6;
+}
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Status Badges */
+.status-badge-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+.status-badge-interview {
+  background-color: #e0f2fe;
+  color: #075985;
+  border: 1px solid #bae6fd;
+}
+.status-badge-approved {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+.status-badge-rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+.status-badge-withdrawn {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+/* Form Preview & Applicant Form */
+.applicant-form-container {
+  max-width: 860px;
+  margin: 0 auto;
+}
+.form-section-title {
+  color: #0d2258;
+  font-weight: 700;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-top: 24px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.form-section-title i {
+  color: #2e7d32;
+}
+
+/* Photo Upload Box */
+.photo-upload-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.photo-upload-zone:hover {
+  border-color: #2e7d32;
+  background: #f0fdf4;
+}
+.photo-preview-avatar {
+  width: 110px;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid #d4af37;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Print View Styles */
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+  .job-app-header,
+  .no-print,
+  .btn,
+  .nav-pills-custom {
+    display: none !important;
+  }
+  .app-card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .printable-application {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+}

@@ -12,6 +12,7 @@ export default defineConfig(() => ({
       input: {
         main: path.resolve(__dirname, 'index.html'),
         org_chart: path.resolve(__dirname, 'org_chart.html'),
+        job_application: path.resolve(__dirname, 'job_application.html'),
       },
     },
   },

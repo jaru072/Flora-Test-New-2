@@ -507,14 +507,53 @@ async function main() {
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: 'spa',
+      appType: 'custom',
     });
     app.use(vite.middlewares);
+
+    app.get(['/org_chart', '/org_chart.html'], async (req, res, next) => {
+      try {
+        const filePath = path.resolve(process.cwd(), 'org_chart.html');
+        let html = fs.readFileSync(filePath, 'utf-8');
+        html = await vite.transformIndexHtml(req.originalUrl || req.url, html);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
+
+    app.get(['/job_application', '/job_application.html'], async (req, res, next) => {
+      try {
+        const filePath = path.resolve(process.cwd(), 'job_application.html');
+        let html = fs.readFileSync(filePath, 'utf-8');
+        html = await vite.transformIndexHtml(req.originalUrl || req.url, html);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
+
+    app.get('*', async (req, res, next) => {
+      try {
+        const filePath = path.resolve(process.cwd(), 'index.html');
+        let html = fs.readFileSync(filePath, 'utf-8');
+        html = await vite.transformIndexHtml(req.originalUrl || req.url, html);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get(['/org_chart.html', '/org_chart'], (req, res) => {
       res.sendFile(path.join(distPath, 'org_chart.html'));
+    });
+    app.get(['/job_application.html', '/job_application'], (req, res) => {
+      res.sendFile(path.join(distPath, 'job_application.html'));
     });
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
