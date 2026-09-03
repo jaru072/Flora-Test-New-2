@@ -258,12 +258,19 @@
     const orgHeaderTitle = document.getElementById('orgProjectHeaderTitle');
     if (orgHeaderTitle) orgHeaderTitle.textContent = projectTitle;
 
+    // Update Chat Hub and Procurement elements
+    const chatTitleEl = document.getElementById('floraChatProjectNameText');
+    if (chatTitleEl) chatTitleEl.textContent = projectTitle;
+
     // Also update builder description if it contains default wording
     const builderDesc = document.getElementById('builderFormDesc');
     if (builderDesc && builderDesc.value && builderDesc.value.includes(' - ')) {
       const suffix = builderDesc.value.split(' - ')[1] || 'กรุณากรอกข้อมูลตามความเป็นจริงเพื่อประกอบการพิจารณาคัดเลือกเข้าปฏิบัติงาน';
       builderDesc.value = `${projectTitle} - ${suffix}`;
     }
+
+    // Notify other components like Chat Hub and Procurement
+    window.dispatchEvent(new CustomEvent('flora-project-title-changed', { detail: { title: projectTitle } }));
 
     updateAllRenderedNotes();
   }

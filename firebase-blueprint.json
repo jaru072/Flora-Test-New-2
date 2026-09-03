@@ -320,6 +320,24 @@
         "createdAt": { "type": "string" }
       },
       "required": ["id", "code", "name"]
+    },
+    "TeamChatMessage": {
+      "title": "TeamChatMessage",
+      "description": "ข้อความการสนทนาระหว่างบุคลากรและเพื่อนร่วมงานในองค์กร",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "senderRole": { "type": "string" },
+        "senderAvatar": { "type": "string" },
+        "text": { "type": "string" },
+        "tag": { "type": "string" },
+        "channel": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "senderName", "text", "timestamp"]
     }
   },
   "firestore": {
@@ -390,6 +408,10 @@
     "/audit_logs/{auditLogId}": {
       "schema": { "$ref": "#/entities/AuditLog" },
       "description": "คอลเลกชันประวัติการเพิ่ม แก้ไข ลบ ข้อมูลในระบบ"
+    },
+    "/team_chat_messages/{messageId}": {
+      "schema": { "$ref": "#/entities/TeamChatMessage" },
+      "description": "คอลเลกชันข้อความสนทนาของบุคลากรและทีมงาน"
     }
   }
 }

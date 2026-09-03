@@ -39,6 +39,33 @@
     return `${hh}:${mm} น.`;
   }
 
+  // Get project title dynamically from Org Tree / Global Settings
+  function getActiveProjectTitle() {
+    if (typeof window.getFloraProjectTitle === 'function') {
+      try {
+        const t = window.getFloraProjectTitle();
+        if (t && String(t).trim()) return String(t).trim();
+      } catch (e) {}
+    }
+    if (typeof window.getFloraOrgTree === 'function') {
+      try {
+        const tree = window.getFloraOrgTree();
+        if (tree && tree.name) return String(tree.name).trim();
+      } catch (e) {}
+    }
+    try {
+      const storedTree = localStorage.getItem("flora_org_tree_v2");
+      if (storedTree) {
+        const parsed = JSON.parse(storedTree);
+        const root = parsed.tree || parsed;
+        if (root && root.name && String(root.name).trim()) return String(root.name).trim();
+      }
+      const stored = localStorage.getItem("flora_global_project_title");
+      if (stored && stored.trim()) return stored.trim();
+    } catch (e) {}
+    return "โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา";
+  }
+
   function showToast(msg) {
     if (typeof window.showToast === 'function') {
       window.showToast(msg);
@@ -833,10 +860,12 @@
       </tr>
     `).join('');
 
+    const activeProjTitle = getActiveProjectTitle();
+
     area.innerHTML = `
       <div style="font-family: 'Sarabun', sans-serif; color: #000; padding: 20px; max-width: 800px; margin: 0 auto;">
         <div style="text-align: center; margin-bottom: 20px;">
-          <h2 style="margin: 0; font-weight: bold; color: #0d2258;">โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา</h2>
+          <h2 style="margin: 0; font-weight: bold; color: #0d2258;">${esc(activeProjTitle)}</h2>
           <h3 style="margin: 5px 0 0 0; font-weight: bold; color: #0f766e;">ใบสั่งซื้อ / สั่งจ้าง (PURCHASE ORDER)</h3>
         </div>
 
