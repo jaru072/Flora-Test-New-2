@@ -124,6 +124,9 @@
       if (typeof window.connectGlobalLogoFirestore === 'function') {
         window.connectGlobalLogoFirestore(window.floraFirebaseBridge);
       }
+      if (typeof window.connectOrgTreeFirestore === 'function') {
+        window.connectOrgTreeFirestore(window.floraFirebaseBridge);
+      }
       if (typeof window.updateAllFloraTitles === 'function') {
         window.updateAllFloraTitles();
       }
@@ -1124,7 +1127,10 @@
       });
     }
 
-    // Initial Data Fetch
+    // Initial Data Fetch & Title Sync
+    if (typeof window.updateAllFloraTitles === 'function') {
+      window.updateAllFloraTitles();
+    }
     loadPayrollPeriods();
 
     // Listen for Firebase Bridge or Auth Ready

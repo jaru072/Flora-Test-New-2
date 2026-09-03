@@ -33,5 +33,5 @@
   อัปเดตการตั้งค่า storageBucket ในทุกไฟล์ (firebase-applet-config.json, script.js, backup_restore.js, server.ts) ให้ชี้ตรงไปยัง Bucket pai-meditation
   เพิ่มระบบ Direct Server-side Image Migration (/api/migrate-image) ที่ช่วยดาวน์โหลดและอัปโหลดรูปภาพเข้าสู่ Storage Bucket ใหม่ได้โดยตรงโดยไม่ติดปัญหา CORS และประมวลผลได้อย่างรวดเร็ว
 
-*** หมายเหตุ Flora Garden Test กับ Flora Garden New 1 ใช้ฐานข้อมูล Firebase Firestore ร่วมกัน
+*** หมายเหตุ Flora Garden Test กับ Flora Test New 1 ใช้ฐานข้อมูล Firebase Firestore ร่วมกัน
     และทั้งคู่ เปลี่ยนไปใช้ Bucket ใหม่: pai-meditation.firebasestorage.app

@@ -690,12 +690,9 @@
             } finally {
               applyingRemote = false;
             }
-          } else {
-            firestoreBridge.write(tree);
           }
         }).catch(err => {
           console.warn("Tree Firestore initial fetch notice:", err);
-          firestoreBridge.write(tree);
         });
       }
 
@@ -709,8 +706,6 @@
             dispatchChange("remote");
           } catch(error) { console.warn("Tree Firestore data:", error); }
           finally { applyingRemote = false; }
-        } else if (!snapshot.exists()) {
-          firestoreBridge.write(tree);
         }
       }, error => console.warn("Tree Firestore listener:", error));
     }

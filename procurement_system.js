@@ -1135,4 +1135,29 @@
     refreshData
   };
 
+  // Listen for project title / org tree changes
+  window.addEventListener('flora-project-title-changed', (e) => {
+    const newTitle = e.detail?.title || getActiveProjectTitle();
+    if (newTitle) {
+      const navBrandTitle = $('navbarMasterBrandTitle');
+      if (navBrandTitle) navBrandTitle.textContent = newTitle;
+      const modalHeaderTitle = $('poPrintProjectTitle');
+      if (modalHeaderTitle) modalHeaderTitle.textContent = newTitle;
+    }
+  });
+
+  window.addEventListener('flora-org-tree-changed', (e) => {
+    const tree = e.detail?.tree;
+    if (tree && tree.name) {
+      const navBrandTitle = $('navbarMasterBrandTitle');
+      if (navBrandTitle) navBrandTitle.textContent = tree.name;
+    }
+  });
+
+  window.addEventListener('flora-firebase-ready', () => {
+    if (typeof window.updateAllFloraTitles === 'function') {
+      window.updateAllFloraTitles();
+    }
+  });
+
 })();
