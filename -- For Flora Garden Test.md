@@ -14,3 +14,22 @@
    👉 ai-studio-floragardenv2-c509b5a5-f4a3-4546-bbae-c5f21564ba7d
 
 3. ทำการ compile_applet ให้เรียบร้อย
+
+---- สำหรับโปรเจ็กต์ที่ Add Bucket ใหม่ ----
+
+4. รบกวนช่วยอัปเดตการตั้งค่า Firebase Storage Bucket ของโปรเจกต์นี้ และช่วย คัดลอกรูปภาพเดิมทั้งหมดมาไว้ใน Bucket ใหม่ ดังนี้ครับ:
+  การตั้งค่า Storage Bucket ใหม่:
+  เปลี่ยนไปใช้ Bucket ใหม่: pai-meditation.firebasestorage.app ตามชื่อ Bucket gs://pai-meditation
+  อัปเดตใน firebase-applet-config.json, script.js และ backup_restore.js
+  การคัดลอกรูปภาพเดิม (Image Migration / Copy Assets):
+  สร้างฟังก์ชันหรือปุ่มคำสั่งสำหรับ คัดลอกรูปภาพทั้งหมด (รูปอุปกรณ์ และรูปพนักงาน) ที่กำลังใช้งานอยู่ในฐานข้อมูลปัจจุบัน โดยดาวน์โหลดจาก URL เดิมใน Bucket เก่า แล้วนำไปอัปโหลดขึ้น Bucket ใหม่ (pai-meditation)
+  อัปเดต URL รูปภาพใหม่กลับเข้าไปในเอกสาร Firestore ของแต่ละรายการให้อัตโนมัติ เพื่อให้รูปภาพทั้งหมดกลายเป็นของ Bucket ใหม่อย่างสมบูรณ์ 100%
+  ยืนยันว่ารูปภาพทั้งหมดใน Bucket เดิมจะไม่ถูกลบหรือได้รับผลกระทบใดๆ ทั้งสิ้น
+
+  สาเหตุ: ชื่อ Bucket จริงในระบบ Google Cloud Storage / Firebase ของโปรเจกต์คือ pai-meditation (หรือ gs://pai-meditation) ซึ่งเมื่อระบุเป็น pai-meditation.firebasestorage.app ทำให้ Firebase API ส่งสถานะ 404 Not Found กลับมาและทำให้กระบวนการรอเชื่อมต่อไปเรื่อยๆ
+    การแก้ไข:
+  อัปเดตการตั้งค่า storageBucket ในทุกไฟล์ (firebase-applet-config.json, script.js, backup_restore.js, server.ts) ให้ชี้ตรงไปยัง Bucket pai-meditation
+  เพิ่มระบบ Direct Server-side Image Migration (/api/migrate-image) ที่ช่วยดาวน์โหลดและอัปโหลดรูปภาพเข้าสู่ Storage Bucket ใหม่ได้โดยตรงโดยไม่ติดปัญหา CORS และประมวลผลได้อย่างรวดเร็ว
+
+*** หมายเหตุ Flora Garden Test กับ Flora Garden New 1 ใช้ฐานข้อมูล Firebase Firestore ร่วมกัน
+    และทั้งคู่ เปลี่ยนไปใช้ Bucket ใหม่: pai-meditation.firebasestorage.app

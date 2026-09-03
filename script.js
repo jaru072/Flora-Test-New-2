@@ -273,8 +273,7 @@
       
       try {
         const fsSettings = {
-          experimentalForceLongPolling: true,
-          experimentalAutoDetectLongPolling: false
+          experimentalAutoDetectLongPolling: true
         };
         const customDbId = (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== "(default)")
           ? firebaseConfig.firestoreDatabaseId
@@ -17750,7 +17749,6 @@
         const getDbInstance = (dbId) => {
           try {
             const fsSettings = {
-              experimentalForceLongPolling: true,
               experimentalAutoDetectLongPolling: true
             };
             if (!dbId || dbId === "(default)") {

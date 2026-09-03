@@ -25,6 +25,14 @@ let applicantList = [];
 let unsubscribeApplicants = null;
 let currentViewingApplicant = null;
 
+// Camera controller state for Job Application
+let liveCameraStream = null;
+let liveCameraCapturedBase64 = null;
+let liveCameraFacing = "user"; // 'user' (selfie/front) or 'environment' (back/document)
+let activeCameraTargetFieldId = null;
+let activeCameraContext = "form"; // 'form' or 'applicant_detail'
+let activeApplicantDetailId = null;
+
 // Default Application Form Schema Template (Standard Thai Job Application)
 export const DEFAULT_FORM_SCHEMA = {
   title: "ใบสมัครงาน (Job Application Form)",
@@ -83,6 +91,7 @@ export const DEFAULT_FORM_SCHEMA = {
       id: "birthdate",
       type: "date",
       label: "วัน/เดือน/ปี เกิด (Date of Birth)",
+      helpText: "ระบุ วัน/เดือน/ปีพุทธศักราช (พ.ศ.)",
       required: true
     },
     {
@@ -175,6 +184,7 @@ export const DEFAULT_FORM_SCHEMA = {
       id: "available_start_date",
       type: "date",
       label: "วันที่พร้อมเริ่มงาน (Available Start Date)",
+      helpText: "ระบุ วัน/เดือน/ปีพุทธศักราช (พ.ศ.) ที่พร้อมเริ่มงาน",
       required: true
     },
     {
@@ -619,7 +629,6 @@ export function renderApplicantForm() {
       case "number":
       case "email":
       case "tel":
-      case "date":
         fieldGroup.innerHTML = `
           <label class="form-label fw-semibold text-dark fs-7" for="${field.id}">
             ${escapeHtml(field.label)} ${reqBadge}
@@ -629,6 +638,81 @@ export function renderApplicantForm() {
           ${helpMarkup}
         `;
         break;
+
+      case "date": {
+        const isBirthdate = field.id.includes("birth") || (field.label && field.label.includes("เกิด"));
+        const currentYearBE = new Date().getFullYear() + 543;
+
+        let daysOptions = '<option value="">-- วัน --</option>';
+        for (let d = 1; d <= 31; d++) {
+          daysOptions += `<option value="${d}">${d}</option>`;
+        }
+
+        const thaiMonths = [
+          "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+          "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+        ];
+        let monthsOptions = '<option value="">-- เดือน --</option>';
+        thaiMonths.forEach((mName, idx) => {
+          monthsOptions += `<option value="${idx + 1}">${idx + 1}. ${mName}</option>`;
+        });
+
+        let yearsOptions = '<option value="">-- ปี พ.ศ. --</option>';
+        if (isBirthdate) {
+          for (let y = currentYearBE; y >= 2480; y--) {
+            yearsOptions += `<option value="${y}">พ.ศ. ${y} (${y - 543})</option>`;
+          }
+        } else {
+          for (let y = currentYearBE + 5; y >= 2550; y--) {
+            yearsOptions += `<option value="${y}">พ.ศ. ${y} (${y - 543})</option>`;
+          }
+        }
+
+        fieldGroup.innerHTML = `
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-1 mb-1.5">
+            <label class="form-label fw-semibold text-dark fs-7 mb-0" for="${field.id}">
+              ${escapeHtml(field.label)} ${reqBadge}
+            </label>
+            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-9 fw-bold">
+              <i class="bi bi-calendar3 me-1"></i>วัน/เดือน/ปี พุทธศักราช (พ.ศ.)
+            </span>
+          </div>
+
+          <div class="row g-2 align-items-center">
+            <div class="col-4 col-sm-3">
+              <select class="form-select rounded-3 fw-medium" id="${field.id}_day" onchange="window.syncThaiDate('${field.id}')" ${isRequired ? 'required' : ''}>
+                ${daysOptions}
+              </select>
+            </div>
+            <div class="col-4 col-sm-4">
+              <select class="form-select rounded-3 fw-medium" id="${field.id}_month" onchange="window.syncThaiDate('${field.id}')" ${isRequired ? 'required' : ''}>
+                ${monthsOptions}
+              </select>
+            </div>
+            <div class="col-4 col-sm-3">
+              <select class="form-select rounded-3 fw-medium" id="${field.id}_year" onchange="window.syncThaiDate('${field.id}')" ${isRequired ? 'required' : ''}>
+                ${yearsOptions}
+              </select>
+            </div>
+            <div class="col-12 col-sm-2">
+              <button type="button" class="btn btn-outline-success w-100 rounded-3 py-1.5 px-2 fs-8 fw-semibold d-inline-flex align-items-center justify-content-center gap-1 shadow-sm" onclick="window.openThaiCalendarPicker('${field.id}')" title="คลิกเพื่อเลือกจากตารางปฏิทิน พ.ศ.">
+                <i class="bi bi-calendar3 text-success"></i>
+                <span class="d-inline d-sm-none d-md-inline">ตารางปฏิทิน</span>
+              </button>
+            </div>
+          </div>
+
+          <input type="hidden" id="${field.id}" name="${field.id}" value="">
+
+          <div class="mt-1.5 px-2.5 py-1.5 rounded-2 bg-light border border-light-subtle d-flex align-items-center justify-content-between fs-8" id="${field.id}_display_badge">
+            <div id="${field.id}_text_summary">
+              <span class="text-muted"><i class="bi bi-info-circle me-1"></i>ระบุ วัน/เดือน/ปี (พ.ศ.) เกิด</span>
+            </div>
+          </div>
+          ${helpMarkup}
+        `;
+        break;
+      }
 
       case "textarea":
         fieldGroup.innerHTML = `
@@ -694,21 +778,89 @@ export function renderApplicantForm() {
             <label class="form-label fw-semibold text-dark fs-7 d-block">
               ${escapeHtml(field.label)} ${reqBadge}
             </label>
-            <div class="d-flex align-items-center gap-3">
-              <img id="${field.id}_preview" src="https://placehold.co/110x130/e2e8f0/64748b?text=รูปถ่าย" class="photo-preview-avatar" alt="รูปถ่าย">
-              <div>
-                <input type="file" class="form-control rounded-3" id="${field.id}" name="${field.id}" accept="${field.accept || 'image/*'}" onchange="window.previewApplicantPhoto(this, '${field.id}_preview')" ${isRequired ? 'required' : ''}>
-                ${helpMarkup}
+            <div class="p-3 bg-light rounded-4 border">
+              <div class="d-flex flex-column flex-sm-row align-items-center gap-3">
+                <div class="position-relative text-center">
+                  <img id="${field.id}_preview" src="https://placehold.co/110x130/e2e8f0/64748b?text=รูปถ่าย" class="photo-preview-avatar rounded-3 shadow-sm border border-2 border-warning" alt="รูปถ่าย">
+                  <div id="${field.id}_badge_box" class="mt-1">
+                    <span class="badge bg-secondary rounded-pill px-2 py-0.5 fs-9" id="${field.id}_status_badge">ยังไม่มีรูปถ่าย</span>
+                  </div>
+                </div>
+                <div class="flex-grow-1 text-center text-sm-start w-100">
+                  <div class="d-flex flex-wrap gap-2 mb-2 justify-content-center justify-content-sm-start">
+                    <button type="button" class="btn btn-success btn-sm rounded-pill fw-bold px-3 py-1.5 shadow-sm d-inline-flex align-items-center gap-1.5" onclick="window.triggerApplicantCamera('${field.id}', 'user')" title="เปิดกล้องถ่ายภาพทันทีโดยไม่ต้องเลือกจากไฟล์">
+                      <i class="bi bi-camera-fill fs-6"></i>
+                      <span>ถ่ายด้วยกล้องมือถือ</span>
+                    </button>
+                    <button type="button" class="btn btn-dark btn-sm rounded-pill fw-bold px-3 py-1.5 shadow-sm d-inline-flex align-items-center gap-1.5" onclick="window.openJobAppLiveCamera('${field.id}', 'user', 'form')" title="สำหรับคอมพิวเตอร์ ที่มีกล้อง">
+                      <i class="bi bi-camera-video-fill text-warning fs-6"></i>
+                      <span>ถ่ายกล้องคอมพิวเตอร์</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill fw-semibold px-3 py-1.5 d-inline-flex align-items-center gap-1" onclick="document.getElementById('${field.id}').click()" title="เลือกไฟล์จากเครื่องหรือคลังภาพ">
+                      <i class="bi bi-upload"></i>
+                      <span>เลือกไฟล์รูป</span>
+                    </button>
+                    <button type="button" id="${field.id}_clear_btn" class="btn btn-outline-danger btn-sm rounded-pill px-2.5 py-1.5 d-none" onclick="window.clearApplicantFile('${field.id}')" title="ลบรูปถ่ายเพื่อถ่ายใหม่">
+                      <i class="bi bi-trash-fill"></i>
+                    </button>
+                  </div>
+                  <!-- Hidden file & camera inputs -->
+                  <input type="file" id="${field.id}" name="${field.id}" accept="${field.accept || 'image/*'}" class="d-none" onchange="window.handleApplicantFileSelected(this, '${field.id}')">
+                  <input type="file" id="${field.id}_camera_input" accept="image/*" capture="user" class="d-none" onchange="window.handleApplicantFileSelected(this, '${field.id}')">
+                  <input type="file" id="${field.id}_camera_back_input" accept="image/*" capture="environment" class="d-none" onchange="window.handleApplicantFileSelected(this, '${field.id}')">
+                  <input type="hidden" id="${field.id}_dataurl" value="">
+
+                  <div class="fs-8 text-muted">
+                    <i class="bi bi-camera text-success me-1"></i> กดปุ่ม <b>"ถ่ายด้วยกล้องมือถือ"</b> เพื่อเปิดกล้องถ่ายรูปได้ทันทีโดยไม่ต้องเลือกจากไฟล์
+                  </div>
+                  ${helpMarkup}
+                </div>
               </div>
             </div>
           `;
         } else {
           fieldGroup.innerHTML = `
-            <label class="form-label fw-semibold text-dark fs-7" for="${field.id}">
+            <label class="form-label fw-semibold text-dark fs-7 d-block">
               ${escapeHtml(field.label)} ${reqBadge}
             </label>
-            <input type="file" class="form-control rounded-3" id="${field.id}" name="${field.id}" accept="${field.accept || '*/*'}" ${isRequired ? 'required' : ''}>
-            ${helpMarkup}
+            <div class="p-3 bg-light rounded-4 border">
+              <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <button type="button" class="btn btn-success btn-sm rounded-pill fw-bold px-3 py-1.5 shadow-sm d-inline-flex align-items-center gap-1.5" onclick="window.triggerApplicantCamera('${field.id}', 'environment')" title="เปิดกล้องถ่ายเอกสาร/ผลงานทันที">
+                  <i class="bi bi-camera-fill fs-6"></i>
+                  <span>ถ่ายรูปเอกสารด้วยกล้อง</span>
+                </button>
+                <button type="button" class="btn btn-dark btn-sm rounded-pill fw-bold px-3 py-1.5 shadow-sm d-inline-flex align-items-center gap-1.5" onclick="window.openJobAppLiveCamera('${field.id}', 'environment', 'form')" title="ถ่ายกล้องคอมพิวเตอร์">
+                  <i class="bi bi-camera-video-fill text-warning fs-6"></i>
+                  <span>ถ่ายกล้องคอมพิวเตอร์</span>
+                </button>
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill fw-semibold px-3 py-1.5 d-inline-flex align-items-center gap-1" onclick="document.getElementById('${field.id}').click()" title="เลือกไฟล์จากเครื่อง">
+                  <i class="bi bi-paperclip"></i>
+                  <span>เลือกไฟล์เอกสาร/PDF/รูป</span>
+                </button>
+                <button type="button" id="${field.id}_clear_btn" class="btn btn-outline-danger btn-sm rounded-pill px-2.5 py-1.5 d-none" onclick="window.clearApplicantFile('${field.id}')" title="ลบไฟล์เพื่อเลือกใหม่">
+                  <i class="bi bi-trash-fill"></i>
+                </button>
+              </div>
+
+              <!-- Preview box for captured/chosen document -->
+              <div id="${field.id}_preview_box" class="d-none my-2 p-2 bg-white rounded-3 border d-flex align-items-center gap-2">
+                <img id="${field.id}_preview" src="" class="rounded border d-none" style="width: 50px; height: 50px; object-fit: cover;" alt="เอกสาร">
+                <div class="flex-grow-1 overflow-hidden">
+                  <div class="fw-bold fs-8 text-dark text-truncate" id="${field.id}_filename_label">-</div>
+                  <small class="text-success fs-9" id="${field.id}_filesize_label">พร้อมส่ง</small>
+                </div>
+              </div>
+
+              <input type="file" id="${field.id}" name="${field.id}" accept="${field.accept || '*/*'}" class="d-none" onchange="window.handleApplicantFileSelected(this, '${field.id}')">
+              <input type="file" id="${field.id}_camera_input" accept="image/*" capture="environment" class="d-none" onchange="window.handleApplicantFileSelected(this, '${field.id}')">
+              <input type="file" id="${field.id}_camera_back_input" accept="image/*" capture="environment" class="d-none" onchange="window.handleApplicantFileSelected(this, '${field.id}')">
+              <input type="hidden" id="${field.id}_dataurl" value="">
+
+              <div class="fs-8 text-muted">
+                <i class="bi bi-camera text-primary me-1"></i> สามารถใช้กล้องถ่ายรูปเอกสาร หรือแนบไฟล์เอกสารจากอุปกรณ์ได้
+              </div>
+              ${helpMarkup}
+            </div>
           `;
         }
         break;
@@ -723,6 +875,375 @@ export function renderApplicantForm() {
     container.appendChild(fieldGroup);
   });
 }
+
+// Helper: Image Compression using Canvas
+export async function compressImageToBlobOrBase64(fileOrBlob, maxDimension = 1400, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(fileOrBlob);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let width = img.width;
+      let height = img.height;
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const base64 = canvas.toDataURL("image/jpeg", quality);
+      canvas.toBlob((blob) => {
+        resolve({ blob, base64, width, height });
+      }, "image/jpeg", quality);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("อ่านไฟล์รูปภาพไม่สำเร็จ"));
+    };
+    img.src = url;
+  });
+}
+
+// ----------------------------------------------------
+// Camera Capture Controller for Job Applications
+// ----------------------------------------------------
+
+// 1. Trigger Native Mobile Camera (Direct snapshot without file browsing)
+window.triggerApplicantCamera = function(fieldId, facingMode = 'user') {
+  const inputId = facingMode === 'environment' ? `${fieldId}_camera_back_input` : `${fieldId}_camera_input`;
+  const el = document.getElementById(inputId) || document.getElementById(`${fieldId}_camera_input`) || document.getElementById(fieldId);
+  if (el) el.click();
+};
+
+// 2. Open Live Video Stream Camera Modal
+window.openJobAppLiveCamera = function(targetFieldId, facingMode = 'user', context = 'form', applicantId = null) {
+  activeCameraTargetFieldId = targetFieldId;
+  activeCameraContext = context;
+  activeApplicantDetailId = applicantId;
+  liveCameraFacing = facingMode;
+
+  const titleEl = document.getElementById("jobAppCameraModalTitle");
+  const subTitleEl = document.getElementById("jobAppCameraModalSubtitle");
+  if (titleEl) {
+    if (context === 'applicant_detail') {
+      titleEl.textContent = "ถ่ายรูปผู้สมัครสด (HR Interview Photo)";
+    } else if (facingMode === 'environment') {
+      titleEl.textContent = "เปิดกล้องถ่ายเอกสาร / ผลงานสด";
+    } else {
+      titleEl.textContent = "เปิดกล้องถ่ายรูปหน้าตรงผู้สมัครสด";
+    }
+  }
+  if (subTitleEl) {
+    subTitleEl.textContent = "จัดตำแหน่งภาพให้อยู่ในกรอบ แล้วกดปุ่มถ่ายภาพ";
+  }
+
+  const modalEl = document.getElementById("jobAppCameraModal");
+  if (modalEl) {
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+    window.startJobAppCameraStream(facingMode);
+  }
+};
+
+// 3. Start MediaStream
+window.startJobAppCameraStream = async function(facing = 'user') {
+  const video = document.getElementById("jobAppCameraVideo");
+  const errBox = document.getElementById("jobAppCameraError");
+  const snapBtn = document.getElementById("btnJobAppSnapPhoto");
+  const retakeBtn = document.getElementById("btnJobAppRetakePhoto");
+  const useBtn = document.getElementById("btnJobAppUsePhoto");
+  const previewImg = document.getElementById("jobAppCameraPreview");
+
+  if (errBox) errBox.classList.add("d-none");
+  if (previewImg) previewImg.classList.add("d-none");
+  if (video) video.classList.remove("d-none");
+  if (snapBtn) snapBtn.classList.remove("d-none");
+  if (retakeBtn) retakeBtn.classList.add("d-none");
+  if (useBtn) useBtn.classList.add("d-none");
+
+  // Stop any active stream
+  if (liveCameraStream) {
+    liveCameraStream.getTracks().forEach(t => t.stop());
+    liveCameraStream = null;
+  }
+
+  liveCameraFacing = facing;
+
+  try {
+    const constraints = {
+      video: {
+        facingMode: facing,
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    };
+
+    liveCameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+    if (video) {
+      video.srcObject = liveCameraStream;
+      await video.play();
+    }
+  } catch (err) {
+    console.error("Camera access error:", err);
+    if (errBox) {
+      errBox.classList.remove("d-none");
+    }
+  }
+};
+
+// 4. Switch Camera Front / Back
+window.switchJobAppCamera = function() {
+  const newFacing = liveCameraFacing === 'user' ? 'environment' : 'user';
+  window.startJobAppCameraStream(newFacing);
+};
+
+// 5. Take Photo from Live Stream
+window.takeJobAppCameraPhoto = function() {
+  const video = document.getElementById("jobAppCameraVideo");
+  const canvas = document.getElementById("jobAppCameraCanvas");
+  const previewImg = document.getElementById("jobAppCameraPreview");
+  const snapBtn = document.getElementById("btnJobAppSnapPhoto");
+  const retakeBtn = document.getElementById("btnJobAppRetakePhoto");
+  const useBtn = document.getElementById("btnJobAppUsePhoto");
+
+  if (!video || !canvas) return;
+
+  const width = video.videoWidth || 640;
+  const height = video.videoHeight || 480;
+
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0, width, height);
+
+  liveCameraCapturedBase64 = canvas.toDataURL("image/jpeg", 0.88);
+
+  if (previewImg) {
+    previewImg.src = liveCameraCapturedBase64;
+    previewImg.classList.remove("d-none");
+  }
+  if (video) video.classList.add("d-none");
+
+  if (snapBtn) snapBtn.classList.add("d-none");
+  if (retakeBtn) retakeBtn.classList.remove("d-none");
+  if (useBtn) useBtn.classList.remove("d-none");
+};
+
+// 6. Retake Photo
+window.retakeJobAppCameraPhoto = function() {
+  const video = document.getElementById("jobAppCameraVideo");
+  const previewImg = document.getElementById("jobAppCameraPreview");
+  const snapBtn = document.getElementById("btnJobAppSnapPhoto");
+  const retakeBtn = document.getElementById("btnJobAppRetakePhoto");
+  const useBtn = document.getElementById("btnJobAppUsePhoto");
+
+  liveCameraCapturedBase64 = null;
+  if (previewImg) previewImg.classList.add("d-none");
+  if (video) video.classList.remove("d-none");
+  if (snapBtn) snapBtn.classList.remove("d-none");
+  if (retakeBtn) retakeBtn.classList.add("d-none");
+  if (useBtn) useBtn.classList.add("d-none");
+};
+
+// 7. Use Photo in Target Form Field or HR Modal
+window.useJobAppCameraPhoto = function() {
+  if (!liveCameraCapturedBase64) return;
+
+  if (activeCameraContext === 'form' && activeCameraTargetFieldId) {
+    const fieldId = activeCameraTargetFieldId;
+    const hiddenDataUrl = document.getElementById(`${fieldId}_dataurl`);
+    const previewImg = document.getElementById(`${fieldId}_preview`);
+    const statusBadge = document.getElementById(`${fieldId}_status_badge`);
+    const clearBtn = document.getElementById(`${fieldId}_clear_btn`);
+    const previewBox = document.getElementById(`${fieldId}_preview_box`);
+    const fileNameLabel = document.getElementById(`${fieldId}_filename_label`);
+    const fileSizeLabel = document.getElementById(`${fieldId}_filesize_label`);
+
+    if (hiddenDataUrl) hiddenDataUrl.value = liveCameraCapturedBase64;
+    if (previewImg) {
+      previewImg.src = liveCameraCapturedBase64;
+      previewImg.classList.remove("d-none");
+    }
+    if (statusBadge) {
+      statusBadge.className = "badge bg-success rounded-pill px-2 py-0.5 fs-9";
+      statusBadge.textContent = "ถ่ายภาพสดแล้ว (" + Math.round(liveCameraCapturedBase64.length * 0.75 / 1024) + " KB)";
+    }
+    if (previewBox) previewBox.classList.remove("d-none");
+    if (fileNameLabel) fileNameLabel.textContent = "รูปถ่ายสดจากกล้อง (" + new Date().toLocaleTimeString('th-TH') + ")";
+    if (fileSizeLabel) fileSizeLabel.textContent = "ขนาด " + Math.round(liveCameraCapturedBase64.length * 0.75 / 1024) + " KB (พร้อมส่ง)";
+    if (clearBtn) clearBtn.classList.remove("d-none");
+  } else if (activeCameraContext === 'applicant_detail' && activeApplicantDetailId) {
+    window.updateApplicantPhotoDirect(activeApplicantDetailId, liveCameraCapturedBase64);
+  }
+
+  window.closeJobAppLiveCamera();
+};
+
+// 8. Close Live Camera
+window.closeJobAppLiveCamera = function() {
+  if (liveCameraStream) {
+    liveCameraStream.getTracks().forEach(t => t.stop());
+    liveCameraStream = null;
+  }
+  const modalEl = document.getElementById("jobAppCameraModal");
+  if (modalEl) {
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+  }
+};
+
+// 9. Handle File Selected (From standard file picker or mobile camera input)
+window.handleApplicantFileSelected = async function(input, fieldId) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const previewImg = document.getElementById(`${fieldId}_preview`);
+  const statusBadge = document.getElementById(`${fieldId}_status_badge`);
+  const hiddenDataUrl = document.getElementById(`${fieldId}_dataurl`);
+  const clearBtn = document.getElementById(`${fieldId}_clear_btn`);
+  const previewBox = document.getElementById(`${fieldId}_preview_box`);
+  const fileNameLabel = document.getElementById(`${fieldId}_filename_label`);
+  const fileSizeLabel = document.getElementById(`${fieldId}_filesize_label`);
+
+  if (file.type.startsWith("image/")) {
+    try {
+      const comp = await compressImageToBlobOrBase64(file, 1600, 0.85);
+      if (hiddenDataUrl) hiddenDataUrl.value = comp.base64;
+      if (previewImg) {
+        previewImg.src = comp.base64;
+        previewImg.classList.remove("d-none");
+      }
+      if (statusBadge) {
+        statusBadge.className = "badge bg-success rounded-pill px-2 py-0.5 fs-9";
+        statusBadge.textContent = "ถ่าย/เลือกภาพแล้ว (" + Math.round(comp.base64.length * 0.75 / 1024) + " KB)";
+      }
+      if (previewBox) previewBox.classList.remove("d-none");
+      if (fileNameLabel) fileNameLabel.textContent = file.name || "รูปภาพจากกล้อง";
+      if (fileSizeLabel) fileSizeLabel.textContent = "ขนาด " + Math.round(comp.base64.length * 0.75 / 1024) + " KB (พร้อมส่ง)";
+      if (clearBtn) clearBtn.classList.remove("d-none");
+    } catch (err) {
+      console.warn("Image compression fallback:", err);
+      const base64 = await fileToBase64(file);
+      if (hiddenDataUrl) hiddenDataUrl.value = base64;
+      if (previewImg) {
+        previewImg.src = base64;
+        previewImg.classList.remove("d-none");
+      }
+      if (statusBadge) {
+        statusBadge.className = "badge bg-success rounded-pill px-2 py-0.5 fs-9";
+        statusBadge.textContent = "พร้อมส่ง";
+      }
+      if (clearBtn) clearBtn.classList.remove("d-none");
+    }
+  } else {
+    // Non-image file (PDF, Doc, etc.)
+    const base64 = await fileToBase64(file);
+    if (hiddenDataUrl) hiddenDataUrl.value = base64;
+    if (previewBox) previewBox.classList.remove("d-none");
+    if (fileNameLabel) fileNameLabel.textContent = file.name;
+    if (fileSizeLabel) fileSizeLabel.textContent = "ขนาด " + Math.round(file.size / 1024) + " KB (พร้อมส่ง)";
+    if (clearBtn) clearBtn.classList.remove("d-none");
+  }
+};
+
+// 10. Clear Applicant File
+window.clearApplicantFile = function(fieldId) {
+  const input = document.getElementById(fieldId);
+  const cameraInput = document.getElementById(`${fieldId}_camera_input`);
+  const cameraBackInput = document.getElementById(`${fieldId}_camera_back_input`);
+  const hiddenDataUrl = document.getElementById(`${fieldId}_dataurl`);
+  const previewImg = document.getElementById(`${fieldId}_preview`);
+  const statusBadge = document.getElementById(`${fieldId}_status_badge`);
+  const clearBtn = document.getElementById(`${fieldId}_clear_btn`);
+  const previewBox = document.getElementById(`${fieldId}_preview_box`);
+
+  if (input) input.value = "";
+  if (cameraInput) cameraInput.value = "";
+  if (cameraBackInput) cameraBackInput.value = "";
+  if (hiddenDataUrl) hiddenDataUrl.value = "";
+  if (previewImg) {
+    previewImg.src = "https://placehold.co/110x130/e2e8f0/64748b?text=รูปถ่าย";
+    if (previewBox) previewImg.classList.add("d-none");
+  }
+  if (statusBadge) {
+    statusBadge.className = "badge bg-secondary rounded-pill px-2 py-0.5 fs-9";
+    statusBadge.textContent = "ยังไม่มีรูปถ่าย";
+  }
+  if (previewBox) previewBox.classList.add("d-none");
+  if (clearBtn) clearBtn.classList.add("d-none");
+};
+
+// 11. HR Update Applicant Photo Directly (via live camera or mobile camera)
+window.triggerApplicantDetailMobileCamera = function(applicantId) {
+  activeApplicantDetailId = applicantId;
+  const input = document.getElementById("applicantDetailMobileCameraInput");
+  if (input) input.click();
+};
+
+window.handleApplicantDetailCameraSelected = async function(input) {
+  if (!input.files || !input.files[0] || !activeApplicantDetailId) return;
+  const file = input.files[0];
+  try {
+    const comp = await compressImageToBlobOrBase64(file, 1400, 0.85);
+    await window.updateApplicantPhotoDirect(activeApplicantDetailId, comp.base64);
+  } catch (err) {
+    console.error("Error compressing HR detail photo:", err);
+    const base64 = await fileToBase64(file);
+    await window.updateApplicantPhotoDirect(activeApplicantDetailId, base64);
+  }
+  input.value = "";
+};
+
+window.updateApplicantPhotoDirect = async function(applicantId, photoDataUrl) {
+  if (!db) await initJobApplicationFirebase();
+  try {
+    const docRef = doc(db, "job_applications", applicantId);
+    await updateDoc(docRef, {
+      photoUrl: photoDataUrl,
+      "fieldsData.applicant_photo": {
+        fileName: "photo_" + Date.now() + ".jpg",
+        fileSize: Math.round(photoDataUrl.length * 0.75),
+        fileType: "image/jpeg",
+        dataUrl: photoDataUrl
+      },
+      photoUpdatedAt: serverTimestamp()
+    });
+
+    // Update local list
+    const app = applicantList.find(a => a.id === applicantId);
+    if (app) {
+      app.photoUrl = photoDataUrl;
+      if (!app.fieldsData) app.fieldsData = {};
+      app.fieldsData.applicant_photo = {
+        fileName: "photo_" + Date.now() + ".jpg",
+        fileSize: Math.round(photoDataUrl.length * 0.75),
+        fileType: "image/jpeg",
+        dataUrl: photoDataUrl
+      };
+    }
+
+    // Update image in modal
+    const detailImg = document.getElementById("applicantDetailModalAvatar");
+    if (detailImg) detailImg.src = photoDataUrl;
+
+    renderApplicantTable();
+    alert("บันทึกรูปถ่ายผู้สมัครเรียบร้อยแล้ว");
+  } catch (err) {
+    console.error("Failed to update applicant photo:", err);
+    alert("ไม่สามารถบันทึกรูปถ่ายได้: " + err.message);
+  }
+};
 
 window.previewApplicantPhoto = function(input, previewImgId) {
   if (input.files && input.files[0]) {
@@ -744,6 +1265,373 @@ function fileToBase64(file) {
     reader.onerror = error => reject(error);
   });
 }
+
+// ----------------------------------------------------
+// Thai Buddhist Era (พ.ศ.) Date Utilities
+// ----------------------------------------------------
+const THAI_MONTH_NAMES = [
+  "", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+  "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+];
+
+// Helper: Format any date string to Thai Buddhist Era display
+export function formatThaiDateBE(dateStr) {
+  if (!dateStr || typeof dateStr !== "string") return dateStr || "-";
+  const str = dateStr.trim();
+  if (!str) return "-";
+
+  // Match DD/MM/YYYY or D/M/YYYY
+  const slashParts = str.split("/");
+  if (slashParts.length === 3) {
+    let d = parseInt(slashParts[0], 10);
+    let m = parseInt(slashParts[1], 10);
+    let y = parseInt(slashParts[2], 10);
+
+    // Swap if US format MM/DD/YYYY (e.g. 08/30/2026)
+    if (d <= 12 && m > 12) {
+      const temp = d;
+      d = m;
+      m = temp;
+    }
+
+    if (!isNaN(d) && !isNaN(m) && !isNaN(y) && d >= 1 && d <= 31 && m >= 1 && m <= 12) {
+      const yBE = y < 2400 ? y + 543 : y;
+      const mName = THAI_MONTH_NAMES[m] || `เดือนที่ ${m}`;
+      return `${d} ${mName} พ.ศ. ${yBE}`;
+    }
+  }
+
+  // Match ISO YYYY-MM-DD
+  const dashParts = str.split("-");
+  if (dashParts.length === 3) {
+    const y = parseInt(dashParts[0], 10);
+    const m = parseInt(dashParts[1], 10);
+    const d = parseInt(dashParts[2], 10);
+    if (!isNaN(d) && !isNaN(m) && !isNaN(y) && d >= 1 && d <= 31 && m >= 1 && m <= 12) {
+      const yBE = y < 2400 ? y + 543 : y;
+      const mName = THAI_MONTH_NAMES[m] || `เดือนที่ ${m}`;
+      return `${d} ${mName} พ.ศ. ${yBE}`;
+    }
+  }
+
+  return str;
+}
+window.formatThaiDateBE = formatThaiDateBE;
+
+// Helper: Calculate age from date string (supports BE and CE)
+export function calculateAgeFromDateStr(dateStr) {
+  if (!dateStr || typeof dateStr !== "string") return null;
+  const str = dateStr.trim();
+  let d, m, y;
+
+  const slashParts = str.split("/");
+  if (slashParts.length === 3) {
+    d = parseInt(slashParts[0], 10);
+    m = parseInt(slashParts[1], 10);
+    y = parseInt(slashParts[2], 10);
+    if (d <= 12 && m > 12) {
+      const temp = d;
+      d = m;
+      m = temp;
+    }
+  } else {
+    const dashParts = str.split("-");
+    if (dashParts.length === 3) {
+      y = parseInt(dashParts[0], 10);
+      m = parseInt(dashParts[1], 10);
+      d = parseInt(dashParts[2], 10);
+    }
+  }
+
+  if (!d || !m || !y || isNaN(d) || isNaN(m) || isNaN(y)) return null;
+
+  const yearCE = y >= 2400 ? y - 543 : y;
+  const today = new Date();
+  let age = today.getFullYear() - yearCE;
+  const mDiff = (today.getMonth() + 1) - m;
+  if (mDiff < 0 || (mDiff === 0 && today.getDate() < d)) {
+    age--;
+  }
+
+  if (age >= 0 && age <= 120) return age;
+  return null;
+}
+window.calculateAgeFromDateStr = calculateAgeFromDateStr;
+
+// Synchronize Thai Date dropdowns to hidden field and live badge
+window.syncThaiDate = function(fieldId) {
+  const dayEl = document.getElementById(`${fieldId}_day`);
+  const monthEl = document.getElementById(`${fieldId}_month`);
+  const yearEl = document.getElementById(`${fieldId}_year`);
+  const hiddenInput = document.getElementById(fieldId);
+  const summaryEl = document.getElementById(`${fieldId}_text_summary`);
+  const nativePicker = document.getElementById(`${fieldId}_native`);
+
+  if (!dayEl || !monthEl || !yearEl || !hiddenInput) return;
+
+  const d = parseInt(dayEl.value, 10);
+  const m = parseInt(monthEl.value, 10);
+  const yBE = parseInt(yearEl.value, 10);
+
+  if (d && m && yBE) {
+    const paddedD = String(d).padStart(2, '0');
+    const paddedM = String(m).padStart(2, '0');
+    const monthName = THAI_MONTH_NAMES[m] || "";
+
+    // Store as DD/MM/YYYY (พ.ศ.)
+    hiddenInput.value = `${paddedD}/${paddedM}/${yBE}`;
+
+    // Age calculation
+    let ageText = "";
+    const isBirth = fieldId.includes("birth") || fieldId.includes("เกิด");
+    if (isBirth || yBE <= 2569) {
+      const yearCE = yBE - 543;
+      const today = new Date();
+      let age = today.getFullYear() - yearCE;
+      const mDiff = (today.getMonth() + 1) - m;
+      if (mDiff < 0 || (mDiff === 0 && today.getDate() < d)) {
+        age--;
+      }
+      if (age >= 0 && age <= 120) {
+        ageText = ` <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 ms-1.5 fw-bold">อายุ ${age} ปี</span>`;
+      }
+    }
+
+    if (summaryEl) {
+      summaryEl.innerHTML = `
+        <span class="text-success fw-bold">
+          <i class="bi bi-check-circle-fill me-1"></i>${d} ${monthName} พ.ศ. ${yBE}
+          <span class="text-muted fw-normal fs-9 ms-1">(ค.ศ. ${yBE - 543})</span>
+        </span>
+        ${ageText}
+      `;
+    }
+
+    // Sync to hidden native picker
+    if (nativePicker) {
+      const yearCE = yBE - 543;
+      if (yearCE >= 1900 && yearCE <= 2100) {
+        nativePicker.value = `${yearCE}-${paddedM}-${paddedD}`;
+      }
+    }
+  } else {
+    hiddenInput.value = "";
+    if (summaryEl) {
+      summaryEl.innerHTML = `<span class="text-muted"><i class="bi bi-info-circle me-1"></i>ระบุ วัน/เดือน/ปี (พ.ศ.) เกิด</span>`;
+    }
+  }
+};
+
+// Interactive Thai Buddhist Era Calendar State & Handlers
+let activeThaiCalendarFieldId = null;
+let currentThaiCalMonth = new Date().getMonth() + 1; // 1-12
+let currentThaiCalYearBE = new Date().getFullYear() + 543; // e.g. 2569
+let selectedThaiCalDay = null;
+
+// Open interactive Thai calendar modal
+window.openThaiCalendarPicker = function(fieldId) {
+  activeThaiCalendarFieldId = fieldId;
+  const modalEl = document.getElementById("thaiDatePickerModal");
+  if (!modalEl) return;
+
+  const dayEl = document.getElementById(`${fieldId}_day`);
+  const monthEl = document.getElementById(`${fieldId}_month`);
+  const yearEl = document.getElementById(`${fieldId}_year`);
+
+  const curD = dayEl && dayEl.value ? parseInt(dayEl.value, 10) : null;
+  const curM = monthEl && monthEl.value ? parseInt(monthEl.value, 10) : (new Date().getMonth() + 1);
+  const curY = yearEl && yearEl.value ? parseInt(yearEl.value, 10) : (new Date().getFullYear() + 543);
+
+  currentThaiCalMonth = curM || (new Date().getMonth() + 1);
+  currentThaiCalYearBE = curY || (new Date().getFullYear() + 543);
+  selectedThaiCalDay = curD || null;
+
+  // Populate month select
+  const monthSelect = document.getElementById("thaiCalSelectMonth");
+  if (monthSelect) {
+    let mHtml = "";
+    for (let m = 1; m <= 12; m++) {
+      mHtml += `<option value="${m}">${m}. ${THAI_MONTH_NAMES[m]}</option>`;
+    }
+    monthSelect.innerHTML = mHtml;
+    monthSelect.value = currentThaiCalMonth;
+  }
+
+  // Populate year select
+  const yearSelect = document.getElementById("thaiCalSelectYear");
+  if (yearSelect) {
+    const isBirthdate = fieldId.includes("birth") || fieldId.includes("เกิด");
+    const maxYear = (new Date().getFullYear() + 543) + (isBirthdate ? 0 : 5);
+    const minYear = 2480;
+    let yHtml = "";
+    for (let y = maxYear; y >= minYear; y--) {
+      yHtml += `<option value="${y}">พ.ศ. ${y} (${y - 543})</option>`;
+    }
+    yearSelect.innerHTML = yHtml;
+    yearSelect.value = currentThaiCalYearBE;
+  }
+
+  // Update modal title
+  const titleEl = document.getElementById("thaiDatePickerModalTitle");
+  const fieldLabel = document.querySelector(`label[for="${fieldId}"]`);
+  if (titleEl && fieldLabel) {
+    titleEl.textContent = `เลือกวันที่: ${fieldLabel.innerText.replace('*', '').trim()}`;
+  }
+
+  window.renderThaiCalendarGrid();
+
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
+};
+
+window.renderThaiCalendarGrid = function() {
+  const monthSelect = document.getElementById("thaiCalSelectMonth");
+  const yearSelect = document.getElementById("thaiCalSelectYear");
+  if (monthSelect) currentThaiCalMonth = parseInt(monthSelect.value, 10);
+  if (yearSelect) currentThaiCalYearBE = parseInt(yearSelect.value, 10);
+
+  // Update header text
+  const headerEl = document.getElementById("thaiCalCurrentMonthYearHeader");
+  if (headerEl) {
+    headerEl.textContent = `${THAI_MONTH_NAMES[currentThaiCalMonth]} พ.ศ. ${currentThaiCalYearBE}`;
+  }
+
+  // Calculate days in month and start day of week
+  const yearCE = currentThaiCalYearBE - 543;
+  const firstDayOfWeek = new Date(yearCE, currentThaiCalMonth - 1, 1).getDay(); // 0 = Sun, 6 = Sat
+  const daysInMonth = new Date(yearCE, currentThaiCalMonth, 0).getDate();
+
+  const today = new Date();
+  const isCurrentMonthThisMonth = (today.getFullYear() === yearCE && (today.getMonth() + 1) === currentThaiCalMonth);
+  const todayDate = today.getDate();
+
+  const gridEl = document.getElementById("thaiCalDaysGrid");
+  if (!gridEl) return;
+
+  let gridHtml = "";
+
+  // Leading empty blanks for previous month
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    gridHtml += `<div class="p-1 opacity-0 pointer-events-none"></div>`;
+  }
+
+  // Days in month
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isSelected = (selectedThaiCalDay === d);
+    const isToday = isCurrentMonthThisMonth && (todayDate === d);
+
+    let btnClass = "btn btn-sm p-1 rounded-3 fw-semibold w-100 fs-7 transition-all ";
+    if (isSelected) {
+      btnClass += "btn-success text-white shadow-sm fw-bold border-2";
+    } else if (isToday) {
+      btnClass += "btn-outline-success border border-success-subtle bg-success bg-opacity-10 text-success fw-bold";
+    } else {
+      btnClass += "btn-light text-dark hover-bg-success-light border border-transparent";
+    }
+
+    gridHtml += `
+      <div class="d-flex align-items-center justify-content-center p-0.5">
+        <button type="button" class="${btnClass}" onclick="window.selectThaiCalDay(${d})" style="height: 38px;">
+          ${d}
+        </button>
+      </div>
+    `;
+  }
+
+  gridEl.innerHTML = gridHtml;
+  window.updateThaiCalSelectedDisplay();
+};
+
+window.selectThaiCalDay = function(day) {
+  selectedThaiCalDay = day;
+  window.renderThaiCalendarGrid();
+};
+
+window.navThaiCalMonth = function(delta) {
+  currentThaiCalMonth += delta;
+  if (currentThaiCalMonth > 12) {
+    currentThaiCalMonth = 1;
+    currentThaiCalYearBE++;
+  } else if (currentThaiCalMonth < 1) {
+    currentThaiCalMonth = 12;
+    currentThaiCalYearBE--;
+  }
+
+  const monthSelect = document.getElementById("thaiCalSelectMonth");
+  const yearSelect = document.getElementById("thaiCalSelectYear");
+  if (monthSelect) monthSelect.value = currentThaiCalMonth;
+  if (yearSelect) yearSelect.value = currentThaiCalYearBE;
+
+  window.renderThaiCalendarGrid();
+};
+
+window.setThaiCalToToday = function() {
+  const today = new Date();
+  currentThaiCalMonth = today.getMonth() + 1;
+  currentThaiCalYearBE = today.getFullYear() + 543;
+  selectedThaiCalDay = today.getDate();
+
+  const monthSelect = document.getElementById("thaiCalSelectMonth");
+  const yearSelect = document.getElementById("thaiCalSelectYear");
+  if (monthSelect) monthSelect.value = currentThaiCalMonth;
+  if (yearSelect) yearSelect.value = currentThaiCalYearBE;
+
+  window.renderThaiCalendarGrid();
+};
+
+window.updateThaiCalSelectedDisplay = function() {
+  const displayEl = document.getElementById("thaiCalSelectedDateDisplay");
+  if (!displayEl) return;
+  if (selectedThaiCalDay) {
+    displayEl.innerHTML = `<span class="text-success fw-bold">${selectedThaiCalDay} ${THAI_MONTH_NAMES[currentThaiCalMonth]} พ.ศ. ${currentThaiCalYearBE}</span>`;
+  } else {
+    displayEl.innerHTML = `<span class="text-muted">ยังไม่ได้เลือกวัน</span>`;
+  }
+};
+
+window.confirmThaiCalendarSelection = function() {
+  if (!activeThaiCalendarFieldId) return;
+  if (!selectedThaiCalDay) {
+    alert("กรุณาคลิกเลือกวันที่ในตารางปฏิทินก่อนยืนยัน");
+    return;
+  }
+
+  const dayEl = document.getElementById(`${activeThaiCalendarFieldId}_day`);
+  const monthEl = document.getElementById(`${activeThaiCalendarFieldId}_month`);
+  const yearEl = document.getElementById(`${activeThaiCalendarFieldId}_year`);
+
+  if (dayEl) dayEl.value = selectedThaiCalDay;
+  if (monthEl) monthEl.value = currentThaiCalMonth;
+  if (yearEl) yearEl.value = currentThaiCalYearBE;
+
+  window.syncThaiDate(activeThaiCalendarFieldId);
+
+  const modalEl = document.getElementById("thaiDatePickerModal");
+  if (modalEl) {
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+  }
+};
+
+window.resetAllThaiDateFields = function() {
+  if (!currentSchema || !currentSchema.fields) return;
+  currentSchema.fields.forEach(field => {
+    if (field.type === "date") {
+      const dayEl = document.getElementById(`${field.id}_day`);
+      const monthEl = document.getElementById(`${field.id}_month`);
+      const yearEl = document.getElementById(`${field.id}_year`);
+      const hiddenInput = document.getElementById(field.id);
+      const summaryEl = document.getElementById(`${field.id}_text_summary`);
+      if (dayEl) dayEl.value = "";
+      if (monthEl) monthEl.value = "";
+      if (yearEl) yearEl.value = "";
+      if (hiddenInput) hiddenInput.value = "";
+      if (summaryEl) {
+        summaryEl.innerHTML = `<span class="text-muted"><i class="bi bi-info-circle me-1"></i>ระบุ วัน/เดือน/ปี (พ.ศ.) เกิด</span>`;
+      }
+    }
+  });
+};
 
 // Handle Form Submission
 export async function submitApplicantForm(e) {
@@ -785,9 +1673,35 @@ export async function submitApplicantForm(e) {
         formDataObj.fieldsData[field.id] = checkedBoxes;
       } else if (field.type === "file") {
         const fileInput = document.getElementById(field.id);
-        if (fileInput && fileInput.files && fileInput.files[0]) {
+        const dataUrlHidden = document.getElementById(field.id + "_dataurl");
+        const capturedDataUrl = dataUrlHidden ? dataUrlHidden.value : "";
+
+        if (capturedDataUrl) {
+          const isImg = capturedDataUrl.startsWith("data:image");
+          formDataObj.fieldsData[field.id] = {
+            fileName: `${field.id}_camera_${Date.now()}.jpg`,
+            fileSize: Math.round(capturedDataUrl.length * 0.75),
+            fileType: "image/jpeg",
+            dataUrl: capturedDataUrl
+          };
+          if (field.id.includes("photo") || isImg) {
+            if (!formDataObj.photoUrl || field.id.includes("photo")) {
+              formDataObj.photoUrl = capturedDataUrl;
+            }
+          }
+        } else if (fileInput && fileInput.files && fileInput.files[0]) {
           const file = fileInput.files[0];
-          const base64 = await fileToBase64(file);
+          let base64 = "";
+          if (file.type.startsWith("image/")) {
+            try {
+              const comp = await compressImageToBlobOrBase64(file, 1600, 0.85);
+              base64 = comp.base64;
+            } catch (err) {
+              base64 = await fileToBase64(file);
+            }
+          } else {
+            base64 = await fileToBase64(file);
+          }
           formDataObj.fieldsData[field.id] = {
             fileName: file.name,
             fileSize: file.size,
@@ -795,9 +1709,23 @@ export async function submitApplicantForm(e) {
             dataUrl: base64
           };
           if (field.id.includes("photo") || file.type.startsWith("image/")) {
-            formDataObj.photoUrl = base64;
+            if (!formDataObj.photoUrl || field.id.includes("photo")) {
+              formDataObj.photoUrl = base64;
+            }
           }
         }
+      } else if (field.type === "date") {
+        const hiddenEl = document.getElementById(field.id);
+        let dateVal = hiddenEl ? hiddenEl.value.trim() : "";
+        if (!dateVal) {
+          const dayEl = document.getElementById(`${field.id}_day`);
+          const monthEl = document.getElementById(`${field.id}_month`);
+          const yearEl = document.getElementById(`${field.id}_year`);
+          if (dayEl?.value && monthEl?.value && yearEl?.value) {
+            dateVal = `${String(dayEl.value).padStart(2, '0')}/${String(monthEl.value).padStart(2, '0')}/${yearEl.value}`;
+          }
+        }
+        formDataObj.fieldsData[field.id] = dateVal;
       } else {
         const el = document.getElementById(field.id);
         formDataObj.fieldsData[field.id] = el ? el.value.trim() : "";
@@ -823,10 +1751,24 @@ export async function submitApplicantForm(e) {
     const successModal = new bootstrap.Modal(document.getElementById("submissionSuccessModal"));
     successModal.show();
 
-    // Reset Form
+    // Reset Form & Clear Previews
     form.reset();
+    if (typeof window.resetAllThaiDateFields === "function") {
+      window.resetAllThaiDateFields();
+    }
     const photoPreviews = form.querySelectorAll(".photo-preview-avatar");
     photoPreviews.forEach(p => p.src = "https://placehold.co/110x130/e2e8f0/64748b?text=รูปถ่าย");
+    const hiddenDataUrls = form.querySelectorAll("input[type='hidden'][id$='_dataurl']");
+    hiddenDataUrls.forEach(h => h.value = "");
+    const statusBadges = form.querySelectorAll("[id$='_status_badge']");
+    statusBadges.forEach(b => {
+      b.className = "badge bg-secondary rounded-pill px-2 py-0.5 fs-9";
+      b.textContent = "ยังไม่มีรูปถ่าย";
+    });
+    const previewBoxes = form.querySelectorAll("[id$='_preview_box']");
+    previewBoxes.forEach(pb => pb.classList.add("d-none"));
+    const clearBtns = form.querySelectorAll("[id$='_clear_btn']");
+    clearBtns.forEach(cb => cb.classList.add("d-none"));
 
   } catch (err) {
     console.error("Submission Error:", err);
@@ -993,6 +1935,14 @@ window.viewApplicantDetail = function(applicantId) {
           displayVal = val.join(", ");
         } else if (typeof val === "object" && val.fileName) {
           displayVal = `<a href="${val.dataUrl}" download="${escapeHtml(val.fileName)}" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill"><i class="bi bi-file-earmark-arrow-down-fill me-1"></i>ดาวน์โหลด ${escapeHtml(val.fileName)}</a>`;
+        } else if (field.type === "date" || field.id.includes("date") || field.id.includes("birth")) {
+          displayVal = formatThaiDateBE(String(val));
+          if (field.id.includes("birth") || (field.label && field.label.includes("เกิด"))) {
+            const age = calculateAgeFromDateStr(String(val));
+            if (age !== null && age >= 0 && age <= 120) {
+              displayVal += ` <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 ms-1.5 fw-bold">อายุ ${age} ปี</span>`;
+            }
+          }
         } else {
           displayVal = escapeHtml(String(val));
         }
@@ -1017,7 +1967,19 @@ window.viewApplicantDetail = function(applicantId) {
     <div class="p-2">
       <!-- Top Card Header -->
       <div class="d-flex flex-wrap align-items-center gap-3 bg-light p-3 rounded-4 border mb-3">
-        <img src="${photoSrc}" class="photo-preview-avatar rounded-3 border" style="width: 100px; height: 120px;" alt="รูปผู้สมัคร">
+        <div class="text-center">
+          <img id="applicantDetailModalAvatar" src="${photoSrc}" class="photo-preview-avatar rounded-3 border shadow-sm" style="width: 105px; height: 125px; object-fit: cover;" alt="รูปผู้สมัคร">
+          <div class="mt-2 d-flex flex-wrap gap-1 justify-content-center">
+            <button type="button" class="btn btn-success btn-sm rounded-pill px-2 py-1 fs-9 fw-bold d-inline-flex align-items-center gap-1" onclick="window.triggerApplicantDetailMobileCamera('${applicant.id}')" title="เปิดกล้องถ่ายภาพผู้สมัครทันทีโดยไม่ต้องเลือกจากไฟล์">
+              <i class="bi bi-camera-fill"></i>
+              <span>ถ่ายด้วยมือถือ</span>
+            </button>
+            <button type="button" class="btn btn-dark btn-sm rounded-pill px-2 py-1 fs-9 fw-bold d-inline-flex align-items-center gap-1" onclick="window.openJobAppLiveCamera(null, 'user', 'applicant_detail', '${applicant.id}')" title="สำหรับคอมพิวเตอร์ ที่มีกล้อง">
+              <i class="bi bi-camera-video-fill text-warning"></i>
+              <span>กล้องสด</span>
+            </button>
+          </div>
+        </div>
         <div class="flex-grow-1">
           <div class="d-flex align-items-center gap-2 mb-1">
             <h5 class="fw-bold text-dark mb-0">${escapeHtml(applicant.applicantName || "ไม่ระบุชื่อ")}</h5>

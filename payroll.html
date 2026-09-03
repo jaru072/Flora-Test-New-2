@@ -100,44 +100,37 @@
         </div>
       </a>
 
-      <!-- Central 3-System Switcher Dropdown -->
+      <!-- Central System Switcher Dropdown -->
       <div class="dropdown mx-auto my-1" id="navSystemSwitcherDropdown">
         <button class="btn btn-sm rounded-pill px-3.5 py-1.5 fw-bold shadow-sm dropdown-toggle d-flex align-items-center gap-2 border hover-scale" type="button" id="systemSwitcherBtn" data-bs-toggle="dropdown" aria-expanded="false" style="background: rgba(30, 58, 138, 0.4); border-color: rgba(147, 197, 253, 0.6); color: #eff6ff;" title="คลิกเพื่อสลับระบบงาน">
           <span class="p-1 bg-warning rounded-circle shadow-xs animate-pulse"></span>
-          <i class="bi bi-cash-coin text-warning fs-6"></i>
-          <span class="fs-7 fw-bold text-white">ระบบเงินเดือน (Payroll)</span>
+          <i class="bi bi-cash-coin text-warning fs-6 me-1"></i>
+          <span class="fs-7 fw-bold text-white">ระบบเงินเดือน</span>
         </button>
 
-        <ul class="dropdown-menu dropdown-menu-center shadow-lg border-0 rounded-4 mt-2 p-1.5" style="min-width: 250px; background: #ffffff;" aria-labelledby="systemSwitcherBtn">
-          <li><span class="dropdown-header text-uppercase fs-9 fw-bold text-muted px-3">เลือกระบบงาน</span></li>
-          <!-- 1. ระบบพัสดุ-อุปกรณ์ -->
+        <ul class="dropdown-menu dropdown-menu-center shadow-lg border-0 rounded-4 mt-2 p-1.5" style="min-width: 240px; background: #ffffff;" aria-labelledby="systemSwitcherBtn">
           <li>
-            <a class="dropdown-item py-2.5 px-3 d-flex align-items-center gap-2.5 rounded-3 text-dark fw-semibold" href="index.html">
-              <i class="bi bi-box-seam-fill fs-5 text-success"></i>
-              <div>
-                <div class="fs-7 fw-bold text-dark">1. ระบบพัสดุ-อุปกรณ์</div>
-                <small class="text-muted fs-8">คลังพัสดุ เบิก-จ่าย-ยืม-คืน</small>
-              </div>
+            <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-3 rounded-3 text-dark fw-semibold" href="index.html">
+              <i class="bi bi-box-seam-fill fs-5 text-success text-center" style="width: 24px;"></i>
+              <span class="fs-7">ระบบพัสดุ-อุปกรณ์</span>
             </a>
           </li>
-          <!-- 2. ระบบงานบุคคล -->
           <li class="mt-1">
-            <a class="dropdown-item py-2.5 px-3 d-flex align-items-center gap-2.5 rounded-3 text-dark fw-semibold" href="org_chart.html">
-              <i class="bi bi-people-fill fs-5 text-primary"></i>
-              <div>
-                <div class="fs-7 fw-bold text-dark">2. ระบบงานบุคคล</div>
-                <small class="text-muted fs-8">ผังองค์กร สารบรรณ ลงเวลา/การลา</small>
-              </div>
+            <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-3 rounded-3 text-dark fw-semibold" href="org_chart.html">
+              <i class="bi bi-people-fill fs-5 text-primary text-center" style="width: 24px;"></i>
+              <span class="fs-7">ระบบงานบุคคล</span>
             </a>
           </li>
-          <!-- 3. ระบบเงินเดือน -->
           <li class="mt-1">
-            <a class="dropdown-item py-2.5 px-3 d-flex align-items-center gap-2.5 rounded-3 active bg-warning bg-opacity-25 text-dark fw-bold border-start border-4 border-warning" href="payroll.html">
-              <i class="bi bi-cash-coin fs-5 text-warning"></i>
-              <div>
-                <div class="fs-7 fw-bold text-dark">3. ระบบเงินเดือน</div>
-                <small class="text-dark-50 fs-8">คำนวณเงินเดือน สลิป ประกันสังคม ภาษี</small>
-              </div>
+            <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-3 rounded-3 active bg-warning bg-opacity-25 text-dark fw-bold border-start border-4 border-warning" href="payroll.html">
+              <i class="bi bi-cash-coin fs-5 text-warning text-center" style="width: 24px;"></i>
+              <span class="fs-7">ระบบเงินเดือน</span>
+            </a>
+          </li>
+          <li class="mt-1">
+            <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-3 rounded-3 text-dark fw-semibold" href="procurement.html">
+              <i class="bi bi-cart-check-fill fs-5 text-teal text-center" style="width: 24px; color: #0f766e;"></i>
+              <span class="fs-7">ระบบจัดซื้อ-จัดจ้าง</span>
             </a>
           </li>
         </ul>

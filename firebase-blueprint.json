@@ -222,9 +222,123 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["id", "periodId", "employeeId", "employeeName", "netPay"]
+    },
+    "PurchaseRequisition": {
+      "title": "PurchaseRequisition",
+      "description": "ใบขอซื้อ/ขอจ้าง (PR) สำหรับแต่ละแผนก",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "prNumber": { "type": "string" },
+        "department": { "type": "string" },
+        "requesterName": { "type": "string" },
+        "requesterEmail": { "type": "string" },
+        "objective": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "pending", "approved", "rejected", "po_created"] },
+        "priority": { "type": "string", "enum": ["normal", "urgent", "critical"] },
+        "items": { "type": "array" },
+        "totalAmount": { "type": "number" },
+        "approvedBy": { "type": "string" },
+        "approvedDate": { "type": "string" },
+        "rejectionReason": { "type": "string" },
+        "createdDate": { "type": "string" },
+        "createdTime": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "prNumber", "department", "requesterName", "status", "totalAmount"]
+    },
+    "PurchaseOrder": {
+      "title": "PurchaseOrder",
+      "description": "ใบสั่งซื้อ/สั่งจ้าง (PO) อย่างเป็นทางการ",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "poNumber": { "type": "string" },
+        "prId": { "type": "string" },
+        "prNumber": { "type": "string" },
+        "vendorId": { "type": "string" },
+        "vendorName": { "type": "string" },
+        "vendorTaxId": { "type": "string" },
+        "vendorPhone": { "type": "string" },
+        "vendorAddress": { "type": "string" },
+        "department": { "type": "string" },
+        "status": { "type": "string", "enum": ["issued", "receiving", "completed", "cancelled"] },
+        "paymentTerms": { "type": "string" },
+        "expectedDeliveryDate": { "type": "string" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "vatAmount": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdDate": { "type": "string" },
+        "createdTime": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "poNumber", "vendorName", "status", "totalAmount"]
+    },
+    "GoodsReceipt": {
+      "title": "GoodsReceipt",
+      "description": "ใบตรวจรับพัสดุและงานจ้าง (GR) ตรวจสอบความถูกต้อง 3 ด้าน",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "grNumber": { "type": "string" },
+        "poId": { "type": "string" },
+        "poNumber": { "type": "string" },
+        "receiverName": { "type": "string" },
+        "receiverEmail": { "type": "string" },
+        "receiptDate": { "type": "string" },
+        "receiptTime": { "type": "string" },
+        "invoiceNumber": { "type": "string" },
+        "deliveryNoteNumber": { "type": "string" },
+        "inspectionStatus": { "type": "string", "enum": ["pass", "partial", "rejected"] },
+        "itemsReceived": { "type": "array" },
+        "attachedPhotos": { "type": "array" },
+        "inspectionNotes": { "type": "string" },
+        "createdDate": { "type": "string" },
+        "createdTime": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "grNumber", "poNumber", "receiverName", "inspectionStatus"]
+    },
+    "Vendor": {
+      "title": "Vendor",
+      "description": "รายชื่อผู้ขาย คู่ค้า และผู้รับจ้าง",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "taxId": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "bankAccount": { "type": "string" },
+        "rating": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "code", "name"]
     }
   },
   "firestore": {
+    "/purchase_requisitions/{prId}": {
+      "schema": { "$ref": "#/entities/PurchaseRequisition" },
+      "description": "คอลเลกชันใบขอซื้อ/ขอจ้าง (PR)"
+    },
+    "/purchase_orders/{poId}": {
+      "schema": { "$ref": "#/entities/PurchaseOrder" },
+      "description": "คอลเลกชันใบสั่งซื้อ/สั่งจ้าง (PO)"
+    },
+    "/goods_receipts/{grId}": {
+      "schema": { "$ref": "#/entities/GoodsReceipt" },
+      "description": "คอลเลกชันใบตรวจรับพัสดุ (GR)"
+    },
+    "/vendors/{vendorId}": {
+      "schema": { "$ref": "#/entities/Vendor" },
+      "description": "คอลเลกชันข้อมูลผู้ขายและคู่ค้า"
+    },
     "/payroll_periods/{periodId}": {
       "schema": { "$ref": "#/entities/PayrollPeriod" },
       "description": "คอลเลกชันงวดการคำนวณเงินเดือน"

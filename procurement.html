@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบจัดซื้อ-จัดจ้าง - โครงการรัตนบุปผา</title>
+  <meta name="description" content="ระบบบริหารงานจัดซื้อ-จัดจ้างมาตรฐาน ตรวจสอบความถูกต้องและควบคุมงบประมาณ โครงการรัตนบุปผา">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+
+  <!-- Bootstrap 5 CSS & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --flora-navy: #0d2258;
+      --flora-gold: #d4af37;
+      --flora-green: #10b981;
+      --flora-teal: #0f766e;
+      --flora-bg: #f8fafc;
+    }
+
+    body {
+      font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--flora-bg);
+      color: #1e293b;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .navbar-flora {
+      background: linear-gradient(135deg, #0d2258 0%, #08183d 100%);
+      border-bottom: 2px solid #d4af37;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+    .brand-master-title {
+      letter-spacing: 0.2px;
+      font-size: 1.05rem;
+    }
+
+    .proc-card-metric {
+      border: 0;
+      border-radius: 16px;
+      background: #ffffff;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .proc-card-metric:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    .status-badge {
+      font-size: 0.75rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 50rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .table-modern thead th {
+      background-color: #f1f5f9;
+      color: #334155;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 0.85rem 1rem;
+      border: 0;
+    }
+    .table-modern tbody td {
+      padding: 0.95rem 1rem;
+      vertical-align: middle;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.88rem;
+    }
+
+    .nav-pills-proc .nav-link {
+      color: #475569;
+      font-weight: 600;
+      border-radius: 12px;
+      padding: 0.6rem 1.25rem;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+    }
+    .nav-pills-proc .nav-link.active {
+      background: #0f766e;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25);
+    }
+
+    .btn-proc-primary {
+      background: #0f766e;
+      border-color: #0f766e;
+      color: #ffffff;
+      font-weight: 600;
+      border-radius: 10px;
+    }
+    .btn-proc-primary:hover {
+      background: #115e59;
+      border-color: #115e59;
+      color: #ffffff;
+    }
+
+    /* Print styling for Purchase Orders */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printDocumentArea, #printDocumentArea * {
+        visibility: visible;
+      }
+      #printDocumentArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 20px;
+        background: #ffffff;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Master Top Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark navbar-flora sticky-top no-print">
+    <div class="container-fluid px-3 px-md-4">
+      <!-- Brand & Project Title -->
+      <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="procurement.html">
+        <div class="d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" data-flora-logo="navbar" data-logo-size="34" style="width: 34px; height: 34px;">
+          <i class="bi bi-cart-check-fill fs-3 text-warning"></i>
+        </div>
+        <div class="d-flex flex-column">
+          <div class="lh-1 fs-5 text-white brand-master-title" data-flora-project-title id="navbarMasterBrandTitle">โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา</div>
+          <small class="text-warning fw-normal fs-9 mt-1">ระบบจัดซื้อ-จัดจ้างมาตรฐานและการตรวจรับพัสดุ</small>
+        </div>
+      </a>
+
+      <!-- Central System Switcher Dropdown -->
+      <div class="dropdown mx-auto my-1" id="navSystemSwitcherDropdown">
+        <button class="btn btn-sm rounded-pill px-3.5 py-1.5 fw-bold shadow-sm dropdown-toggle d-flex align-items-center gap-2 border" type="button" id="systemSwitcherBtn" data-bs-toggle="dropdown" aria-expanded="false" style="background: rgba(15, 118, 110, 0.35); border-color: rgba(45, 212, 191, 0.6); color: #ccfbf1;" title="คลิกเพื่อสลับระบบงาน">
+          <span class="p-1 bg-warning rounded-circle shadow-xs animate-pulse"></span>
+          <i class="bi bi-cart-check-fill text-warning fs-6 me-1"></i>
+          <span class="fs-7 fw-bold text-white">ระบบจัดซื้อ-จัดจ้าง</span>
+        </button>
+
+        <ul class="dropdown-menu dropdown-menu-center shadow-lg border-0 rounded-4 mt-2 p-1.5" style="min-width: 240px; background: #ffffff;" aria-labelledby="systemSwitcherBtn">
+          <li>
+            <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-3 rounded-3 text-dark fw-semibold" href="index.html">
+              <i class="bi bi-box-seam-fill fs-5 text-success text-center" style="width: 24px;"></i>
+              <span class="fs-7">ระบบพัสดุ-อุปกรณ์</span>
+            </a>
+          </li>
+          <li class="mt-1">
+            <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-3 rounded-3 text-dark fw-semibold" href="org_chart.html">
+              <i class="bi bi-people-fill fs-5 text-primary text-center" style="width: 24px;"></i>
+              <span class="fs-7">ระบบงานบุคคล</span>
+            </a>
+          </li>
+          <li class="mt-1">
+            <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-3 rounded-3 text-dark fw-semibold" href="payroll.html">
+              <i class="bi bi-cash-coin fs-5 text-warning text-center" style="width: 24px;"></i>
+              <span class="fs-7">ระบบเงินเดือน</span>
+            </a>
+          </li>
+          <li class="mt-1">
+            <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-3 rounded-3 active bg-teal bg-opacity-25 text-dark fw-bold border-start border-4 border-teal" style="background: rgba(15, 118, 110, 0.12);" href="procurement.html">
+              <i class="bi bi-cart-check-fill fs-5 text-teal text-center" style="width: 24px; color: #0f766e;"></i>
+              <span class="fs-7">ระบบจัดซื้อ-จัดจ้าง</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- User Info & Action -->
+      <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+        <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 py-1 fw-bold text-dark d-flex align-items-center gap-1.5 shadow-sm" onclick="window.procurementModule.openNewRequisitionModal()">
+          <i class="bi bi-plus-circle-fill"></i>
+          <span>สร้างใบขอซื้อ (PR)</span>
+        </button>
+
+        <div class="dropdown" id="topNavSettingsDropdown">
+          <button class="btn btn-outline-light btn-sm rounded-pill px-2.5 py-1 fw-semibold d-flex align-items-center gap-1.5 shadow-sm dropdown-toggle" type="button" id="settingsAccountDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="บัญชีผู้ใช้">
+            <img id="navUserAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" class="rounded-circle border border-light shadow-xs" style="width: 22px; height: 22px; object-fit: cover;" />
+            <span id="currentRoleText" class="fw-bold fs-8 font-monospace">เจ้าหน้าที่จัดซื้อ</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-2 py-2" style="min-width: 220px;">
+            <li>
+              <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-3" href="index.html">
+                <i class="bi bi-box-seam-fill text-success fs-5 text-center" style="width: 24px;"></i>
+                <span class="fs-7">ระบบพัสดุ-อุปกรณ์</span>
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-3" href="org_chart.html">
+                <i class="bi bi-people-fill text-primary fs-5 text-center" style="width: 24px;"></i>
+                <span class="fs-7">ระบบงานบุคคล</span>
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-3" href="payroll.html">
+                <i class="bi bi-cash-coin text-warning fs-5 text-center" style="width: 24px;"></i>
+                <span class="fs-7">ระบบเงินเดือน</span>
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <button type="button" class="dropdown-item py-2 px-3 d-flex align-items-center gap-2.5 text-danger fw-semibold" onclick="handleSignOut()">
+                <i class="bi bi-box-arrow-right"></i>
+                <span class="fs-7">ออกจากระบบ</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="container-fluid px-3 px-md-4 py-4">
+
+    <!-- Top Summary Statistics -->
+    <div class="row g-3 mb-4 no-print">
+      <div class="col-6 col-lg-3">
+        <div class="proc-card-metric p-3 p-md-4 h-100">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="text-muted fs-8 fw-semibold">ใบขอซื้อรออนุมัติ</span>
+            <div class="p-2 rounded-3 bg-warning bg-opacity-10 text-warning">
+              <i class="bi bi-file-earmark-text-fill fs-5"></i>
+            </div>
+          </div>
+          <div class="h3 fw-bold mb-1 text-dark" id="statPendingPR">0</div>
+          <small class="text-muted fs-8"><i class="bi bi-clock-history me-1"></i>รอการตรวจสอบและอนุมัติ</small>
+        </div>
+      </div>
+
+      <div class="col-6 col-lg-3">
+        <div class="proc-card-metric p-3 p-md-4 h-100">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="text-muted fs-8 fw-semibold">ใบสั่งซื้อที่เปิดอยู่</span>
+            <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+              <i class="bi bi-cart-check-fill fs-5"></i>
+            </div>
+          </div>
+          <div class="h3 fw-bold mb-1 text-dark" id="statActivePO">0</div>
+          <small class="text-muted fs-8"><i class="bi bi-truck me-1"></i>รอจัดส่งและตรวจรับ</small>
+        </div>
+      </div>
+
+      <div class="col-6 col-lg-3">
+        <div class="proc-card-metric p-3 p-md-4 h-100">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="text-muted fs-8 fw-semibold">ตรวจรับพัสดุสำเร็จ</span>
+            <div class="p-2 rounded-3 bg-success bg-opacity-10 text-success">
+              <i class="bi bi-clipboard2-check-fill fs-5"></i>
+            </div>
+          </div>
+          <div class="h3 fw-bold mb-1 text-dark" id="statCompletedGR">0</div>
+          <small class="text-muted fs-8"><i class="bi bi-check-circle-fill text-success me-1"></i>ตรวจรับสมบูรณ์ 3 ด้าน</small>
+        </div>
+      </div>
+
+      <div class="col-6 col-lg-3">
+        <div class="proc-card-metric p-3 p-md-4 h-100">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="text-muted fs-8 fw-semibold">มูลค่าจัดซื้อรวม</span>
+            <div class="p-2 rounded-3 bg-info bg-opacity-10 text-info">
+              <i class="bi bi-currency-exchange fs-5"></i>
+            </div>
+          </div>
+          <div class="h3 fw-bold mb-1 text-teal" style="color: #0f766e;" id="statTotalSpend">฿0.00</div>
+          <small class="text-muted fs-8"><i class="bi bi-shield-check text-success me-1"></i>งบประมาณควบคุมได้</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs for Modules -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden no-print">
+      <div class="card-header bg-white border-bottom p-3">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+          <ul class="nav nav-pills nav-pills-proc flex-nowrap overflow-x-auto pb-1 pb-md-0" id="procTab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active d-flex align-items-center gap-2" id="tab-pr-btn" data-bs-toggle="pill" data-bs-target="#tab-pr" type="button" role="tab">
+                <i class="bi bi-file-earmark-text"></i>
+                <span>1. ใบขอซื้อ/ขอจ้าง (PR)</span>
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link d-flex align-items-center gap-2" id="tab-po-btn" data-bs-toggle="pill" data-bs-target="#tab-po" type="button" role="tab">
+                <i class="bi bi-receipt"></i>
+                <span>2. ใบสั่งซื้อ/สั่งจ้าง (PO)</span>
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link d-flex align-items-center gap-2" id="tab-gr-btn" data-bs-toggle="pill" data-bs-target="#tab-gr" type="button" role="tab">
+                <i class="bi bi-box-seam"></i>
+                <span>3. ตรวจรับพัสดุ (GR)</span>
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link d-flex align-items-center gap-2" id="tab-vendor-btn" data-bs-toggle="pill" data-bs-target="#tab-vendor" type="button" role="tab">
+                <i class="bi bi-shop"></i>
+                <span>4. ทะเบียนคู่ค้า/ผู้ขาย</span>
+              </button>
+            </li>
+          </ul>
+
+          <div class="d-flex align-items-center gap-2">
+            <div class="input-group input-group-sm" style="max-width: 260px;">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+              <input type="text" class="form-control bg-light border-start-0" id="procSearchInput" placeholder="ค้นหาเลขที่, แผนก, ผู้ขาย..." oninput="window.procurementModule.onSearchChange(this.value)">
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="window.procurementModule.refreshData()">
+              <i class="bi bi-arrow-clockwise me-1"></i>รีเฟรช
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="tab-content" id="procTabContent">
+
+          <!-- TAB 1: Purchase Requisitions (PR) -->
+          <div class="tab-pane fade show active" id="tab-pr" role="tabpanel">
+            <div class="table-responsive">
+              <table class="table table-modern table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>เลขที่ PR</th>
+                    <th>วันที่/เวลาสร้าง</th>
+                    <th>แผนก / ผู้ขอซื้อ</th>
+                    <th>วัตถุประสงค์</th>
+                    <th>จำนวนรายการ</th>
+                    <th class="text-end">ยอดรวมสุทธิ</th>
+                    <th class="text-center">ระดับความสำคัญ</th>
+                    <th class="text-center">สถานะ</th>
+                    <th class="text-end">การกระทำ</th>
+                  </tr>
+                </thead>
+                <tbody id="prTableBody">
+                  <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                      <div class="spinner-border spinner-border-sm text-teal me-2" role="status"></div>กำลังโหลดข้อมูลใบขอซื้อ...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB 2: Purchase Orders (PO) -->
+          <div class="tab-pane fade" id="tab-po" role="tabpanel">
+            <div class="table-responsive">
+              <table class="table table-modern table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>เลขที่ PO</th>
+                    <th>อ้างอิง PR</th>
+                    <th>วันที่ออกเอกสาร</th>
+                    <th>ชื่อผู้ขาย / คู่ค้า</th>
+                    <th>กำหนดส่งมอบ</th>
+                    <th class="text-end">ยอดรวมสุทธิ</th>
+                    <th class="text-center">สถานะ</th>
+                    <th class="text-end">การกระทำ</th>
+                  </tr>
+                </thead>
+                <tbody id="poTableBody">
+                  <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">กำลังโหลดข้อมูลใบสั่งซื้อ...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB 3: Goods Receipts (GR) -->
+          <div class="tab-pane fade" id="tab-gr" role="tabpanel">
+            <div class="p-3 bg-light border-bottom d-flex align-items-center justify-content-between">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-shield-lock-fill text-success fs-5"></i>
+                <span class="fs-8 fw-bold text-dark">ระบบตรวจสอบ 3 ด้าน (3-Way Matching: PO - ใบส่งของ - ของที่ได้รับจริง)</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-success rounded-pill px-3" onclick="window.procurementModule.openNewGoodsReceiptModal()">
+                <i class="bi bi-plus-circle me-1"></i>บันทึกการตรวจรับพัสดุ
+              </button>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-modern table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>เลขที่ตรวจรับ (GR)</th>
+                    <th>อ้างอิงใบสั่งซื้อ (PO)</th>
+                    <th>วันที่/เวลาตรวจรับ</th>
+                    <th>ผู้ตรวจรับ</th>
+                    <th>เลขที่ใบส่งของ/ใบแจ้งหนี้</th>
+                    <th class="text-center">ผลการตรวจสอบ</th>
+                    <th class="text-center">หลักฐานรูปถ่าย</th>
+                    <th class="text-end">การกระทำ</th>
+                  </tr>
+                </thead>
+                <tbody id="grTableBody">
+                  <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">กำลังโหลดข้อมูลการตรวจรับ...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB 4: Vendors / Suppliers Directory -->
+          <div class="tab-pane fade" id="tab-vendor" role="tabpanel">
+            <div class="p-3 bg-light border-bottom d-flex align-items-center justify-content-between">
+              <span class="fs-8 fw-semibold text-muted">รายชื่อผู้ขายและคู่ค้าที่ผ่านการรับรอง</span>
+              <button type="button" class="btn btn-sm btn-outline-teal rounded-pill px-3 btn-proc-primary" onclick="window.procurementModule.openNewVendorModal()">
+                <i class="bi bi-plus-circle me-1"></i>เพิ่มคู่ค้าใหม่
+              </button>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-modern table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>รหัสคู่ค้า</th>
+                    <th>ชื่อบริษัท / ร้านค้า</th>
+                    <th>ประเภทธุรกิจ</th>
+                    <th>เบอร์โทรศัพท์</th>
+                    <th>อีเมล</th>
+                    <th>เลขประจำตัวผู้เสียภาษี</th>
+                    <th class="text-center">สถานะ</th>
+                    <th class="text-end">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="vendorTableBody">
+                  <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">กำลังโหลดรายชื่อคู่ค้า...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: Create New Purchase Requisition (PR) -->
+  <div class="modal fade" id="newPRModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content rounded-4 border-0 shadow-lg">
+        <div class="modal-header bg-teal text-white py-3 px-4" style="background: #0f766e;">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-file-earmark-plus-fill fs-5"></i>
+            <h6 class="modal-title fw-bold mb-0">สร้างใบขอซื้อ/ขอจ้างใหม่ (PR)</h6>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="newPRForm" onsubmit="window.procurementModule.saveNewRequisition(event)">
+          <div class="modal-body p-4">
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label fs-8 fw-bold text-dark">แผนกที่ขอซื้อ <span class="text-danger">*</span></label>
+                <select class="form-select rounded-3" id="prDepartment" required>
+                  <option value="">-- เลือกแผนก --</option>
+                  <option value="แผนกผลิตดอกไม้และแปลงเกษตร">แผนกผลิตดอกไม้และแปลงเกษตร</option>
+                  <option value="แผนกซ่อมบำรุงและเครื่องจักร">แผนกซ่อมบำรุงและเครื่องจักร</option>
+                  <option value="แผนกคลังพัสดุและจัดซื้อ">แผนกคลังพัสดุและจัดซื้อ</option>
+                  <option value="แผนกบริหารและบัญชีการเงิน">แผนกบริหารและบัญชีการเงิน</option>
+                  <option value="แผนกบุคคลและธุรการ">แผนกบุคคลและธุรการ</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fs-8 fw-bold text-dark">ชื่อผู้ตั้งเรื่องขอซื้อ <span class="text-danger">*</span></label>
+                <input type="text" class="form-control rounded-3" id="prRequesterName" required placeholder="ระบุชื่อ-นามสกุล">
+              </div>
+              <div class="col-md-8">
+                <label class="form-label fs-8 fw-bold text-dark">วัตถุประสงค์ในการขอซื้อ <span class="text-danger">*</span></label>
+                <input type="text" class="form-control rounded-3" id="prObjective" required placeholder="เช่น จัดซื้อปุ๋ยบำรุงดอกไม้สำหรับแปลงผลิตที่ 2">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fs-8 fw-bold text-dark">ระดับความเร่งด่วน</label>
+                <select class="form-select rounded-3" id="prPriority">
+                  <option value="normal">ปกติ</option>
+                  <option value="urgent">เร่งด่วน</option>
+                  <option value="critical">ฉุกเฉิน / สำคัญมาก</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Items Table in PR -->
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="fs-8 fw-bold text-dark"><i class="bi bi-list-check me-1"></i>รายการสิ่งของ/งานจ้างที่ต้องการ</span>
+              <button type="button" class="btn btn-sm btn-outline-teal rounded-pill px-3" onclick="window.procurementModule.addPRItemRow()">
+                <i class="bi bi-plus me-1"></i>เพิ่มรายการ
+              </button>
+            </div>
+
+            <div class="table-responsive border rounded-3 mb-3 bg-light">
+              <table class="table table-sm align-middle mb-0" id="prItemsTable">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 40px;" class="text-center">#</th>
+                    <th>รายการสิ่งของ / รายละเอียด</th>
+                    <th style="width: 110px;">จำนวน</th>
+                    <th style="width: 100px;">หน่วยนับ</th>
+                    <th style="width: 130px;">ราคาประเมิน/หน่วย</th>
+                    <th style="width: 130px;" class="text-end">รวมเป็นเงิน</th>
+                    <th style="width: 50px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="prItemsTableBody">
+                  <!-- Row 1 Default -->
+                  <tr>
+                    <td class="text-center fw-bold">1</td>
+                    <td><input type="text" class="form-control form-control-sm pr-item-name" required placeholder="ชื่อรายการ"></td>
+                    <td><input type="number" class="form-control form-control-sm pr-item-qty" min="1" value="1" required oninput="window.procurementModule.calcPRTotals()"></td>
+                    <td><input type="text" class="form-control form-control-sm pr-item-unit" value="ชิ้น" required></td>
+                    <td><input type="number" class="form-control form-control-sm pr-item-price" min="0" step="0.01" value="0" required oninput="window.procurementModule.calcPRTotals()"></td>
+                    <td class="text-end fw-bold pr-item-total">฿0.00</td>
+                    <td class="text-center"><button type="button" class="btn btn-sm text-danger p-0" onclick="window.procurementModule.removePRItemRow(this)"><i class="bi bi-trash"></i></button></td>
+                  </tr>
+                </tbody>
+                <tfoot class="table-light">
+                  <tr>
+                    <td colspan="5" class="text-end fw-bold fs-8">ยอดเงินรวมประเมินทั้งสิ้น:</td>
+                    <td class="text-end fw-bold text-teal fs-7" id="prGrandTotalDisplay" style="color: #0f766e;">฿0.00</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div class="alert alert-info py-2 px-3 fs-9 d-flex align-items-center gap-2 mb-0">
+              <i class="bi bi-info-circle-fill fs-6"></i>
+              <span>เมื่อกดส่ง ระบบจะตรวจสอบความถูกต้อง บันทึกวัน/เดือน/ปีพุทธศักราช และส่งต่อไปยังขั้นตอนการอนุมัติ</span>
+            </div>
+          </div>
+          <div class="modal-footer bg-light py-2.5 px-4">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="submit" class="btn btn-sm btn-proc-primary rounded-pill px-4 fw-bold">
+              <i class="bi bi-send-check-fill me-1"></i>บันทึกและส่งขออนุมัติ
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Convert PR to PO (Create Purchase Order) -->
+  <div class="modal fade" id="createPOModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content rounded-4 border-0 shadow-lg">
+        <div class="modal-header bg-primary text-white py-3 px-4">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-receipt-cutoff fs-5"></i>
+            <h6 class="modal-title fw-bold mb-0">ออกใบสั่งซื้อ/สั่งจ้างอย่างเป็นทางการ (PO)</h6>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="createPOForm" onsubmit="window.procurementModule.saveNewPO(event)">
+          <div class="modal-body p-4">
+            <input type="hidden" id="poRefPRId">
+            <div class="p-3 bg-light rounded-3 border mb-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="fs-8 fw-bold text-dark">อ้างอิงใบขอซื้อ (PR): <span id="poDisplayPRNumber" class="text-primary">-</span></span>
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" id="poDisplayPRDept">-</span>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label fs-8 fw-bold text-dark">เลือกคู่ค้า / ผู้ขาย <span class="text-danger">*</span></label>
+                <select class="form-select rounded-3" id="poVendorSelect" required onchange="window.procurementModule.onVendorSelectChange(this.value)">
+                  <option value="">-- เลือกคู่ค้าที่ผ่านการรับรอง --</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fs-8 fw-bold text-dark">กำหนดส่งมอบสินค้า <span class="text-danger">*</span></label>
+                <input type="date" class="form-control rounded-3" id="poDeliveryDate" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fs-8 fw-bold text-dark">เงื่อนไขการชำระเงิน</label>
+                <select class="form-select rounded-3" id="poPaymentTerms">
+                  <option value="เครดิต 30 วัน">เครดิต 30 วัน</option>
+                  <option value="เงินสดเมื่อส่งมอบ">เงินสดเมื่อส่งมอบ</option>
+                  <option value="มัดจำ 30% ที่เหลือหลังตรวจรับ">มัดจำ 30% ที่เหลือหลังตรวจรับ</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fs-8 fw-bold text-dark">ภาษีมูลค่าเพิ่ม (VAT 7%)</label>
+                <select class="form-select rounded-3" id="poVatType" onchange="window.procurementModule.recalcPOTotals()">
+                  <option value="include">รวมภาษีมูลค่าเพิ่ม 7%</option>
+                  <option value="exclude">ไม่รวมภาษีมูลค่าเพิ่ม</option>
+                  <option value="none">ไม่มีภาษีมูลค่าเพิ่ม (ยกเว้น)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Item list for PO -->
+            <span class="fs-8 fw-bold text-dark mb-2 d-block">รายการสิ่งของที่จะสั่งซื้อ</span>
+            <div class="table-responsive border rounded-3 mb-3">
+              <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>รายการ</th>
+                    <th style="width: 100px;">จำนวน</th>
+                    <th style="width: 90px;">หน่วย</th>
+                    <th style="width: 130px;">ราคาต่อหน่วย</th>
+                    <th style="width: 130px;" class="text-end">ยอดรวม</th>
+                  </tr>
+                </thead>
+                <tbody id="poItemsReviewBody">
+                </tbody>
+                <tfoot class="table-light">
+                  <tr>
+                    <td colspan="4" class="text-end fw-semibold fs-8">ยอดก่อนภาษี:</td>
+                    <td class="text-end fw-bold" id="poSubtotalDisplay">฿0.00</td>
+                  </tr>
+                  <tr>
+                    <td colspan="4" class="text-end fw-semibold fs-8">ภาษีมูลค่าเพิ่ม:</td>
+                    <td class="text-end fw-bold" id="poVatDisplay">฿0.00</td>
+                  </tr>
+                  <tr>
+                    <td colspan="4" class="text-end fw-bold fs-7">ยอดรวมสุทธิทั้งสิ้น:</td>
+                    <td class="text-end fw-bold text-primary fs-6" id="poGrandTotalDisplay">฿0.00</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+          </div>
+          <div class="modal-footer bg-light py-2.5 px-4">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold">
+              <i class="bi bi-file-earmark-check-fill me-1"></i>ออกใบสั่งซื้อ (PO)
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Record Goods Receipt (GR) -->
+  <div class="modal fade" id="newGRModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content rounded-4 border-0 shadow-lg">
+        <div class="modal-header bg-success text-white py-3 px-4">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-clipboard2-check-fill fs-5"></i>
+            <h6 class="modal-title fw-bold mb-0">บันทึกผลการตรวจรับพัสดุ (GR)</h6>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="newGRForm" onsubmit="window.procurementModule.saveGoodsReceipt(event)">
+          <div class="modal-body p-4">
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label fs-8 fw-bold text-dark">เลือกใบสั่งซื้อที่ต้องการตรวจรับ <span class="text-danger">*</span></label>
+                <select class="form-select rounded-3" id="grPOSelect" required onchange="window.procurementModule.onPOSelectForGR(this.value)">
+                  <option value="">-- เลือกใบสั่งซื้อ (PO) --</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fs-8 fw-bold text-dark">ชื่อผู้ทำการตรวจรับพัสดุ <span class="text-danger">*</span></label>
+                <input type="text" class="form-control rounded-3" id="grReceiverName" required placeholder="ระบุชื่อผู้ตรวจรับ">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fs-8 fw-bold text-dark">เลขที่ใบส่งของ / ใบกำกับภาษีของผู้ขาย <span class="text-danger">*</span></label>
+                <input type="text" class="form-control rounded-3" id="grInvoiceNumber" required placeholder="เช่น INV-2026/089">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fs-8 fw-bold text-dark">ผลการตรวจสอบพัสดุ <span class="text-danger">*</span></label>
+                <select class="form-select rounded-3 fw-bold text-success border-success" id="grInspectionStatus">
+                  <option value="pass">ถูกต้องครบถ้วน สมบูรณ์ 100%</option>
+                  <option value="partial">รับของบางส่วน (ส่งไม่ครบ)</option>
+                  <option value="rejected">ปฏิเสธการรับ (ของชำรุดหรือไม่ตรงสเปก)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Items Check in GR -->
+            <span class="fs-8 fw-bold text-dark mb-2 d-block">ตรวจสอบจำนวนที่ได้รับจริงเทียบกับใบสั่งซื้อ</span>
+            <div class="table-responsive border rounded-3 mb-3">
+              <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>รายการ</th>
+                    <th style="width: 100px;" class="text-center">สั่งซื้อ</th>
+                    <th style="width: 120px;" class="text-center">รับจริง</th>
+                    <th style="width: 90px;">หน่วย</th>
+                    <th>หมายเหตุสภาพสิ่งของ</th>
+                  </tr>
+                </thead>
+                <tbody id="grItemsCheckBody">
+                  <tr>
+                    <td colspan="5" class="text-center py-3 text-muted">กรุณาเลือกใบสั่งซื้อด้านบน</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fs-8 fw-bold text-dark">บันทึกเพิ่มเติมจากคณะกรรมการตรวจรับ</label>
+              <textarea class="form-control rounded-3" id="grNotes" rows="2" placeholder="ระบุสภาพของกล่องพัสดุ การทดสอบใช้งานเบื้องต้น หรือข้อสังเกต"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer bg-light py-2.5 px-4">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="submit" class="btn btn-sm btn-success rounded-pill px-4 fw-bold">
+              <i class="bi bi-check-all me-1"></i>ยืนยันผลการตรวจรับพัสดุ
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Add New Vendor -->
+  <div class="modal fade" id="newVendorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow-lg">
+        <div class="modal-header bg-dark text-white py-3 px-4">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-shop fs-5 text-warning"></i>
+            <h6 class="modal-title fw-bold mb-0">เพิ่มข้อมูลคู่ค้า / ผู้ขายใหม่</h6>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="newVendorForm" onsubmit="window.procurementModule.saveNewVendor(event)">
+          <div class="modal-body p-4">
+            <div class="mb-3">
+              <label class="form-label fs-8 fw-bold text-dark">ชื่อบริษัท / ร้านค้า <span class="text-danger">*</span></label>
+              <input type="text" class="form-control rounded-3" id="vendorName" required placeholder="เช่น บจก. เกษตรภัณฑ์ไทย">
+            </div>
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                <label class="form-label fs-8 fw-bold text-dark">ประเภทสินค้า/บริการ</label>
+                <input type="text" class="form-control rounded-3" id="vendorCategory" placeholder="เช่น ปุ๋ยและสารชีวภัณฑ์">
+              </div>
+              <div class="col-6">
+                <label class="form-label fs-8 fw-bold text-dark">เบอร์โทรศัพท์</label>
+                <input type="tel" class="form-control rounded-3" id="vendorPhone" placeholder="02-xxx-xxxx">
+              </div>
+            </div>
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                <label class="form-label fs-8 fw-bold text-dark">อีเมล</label>
+                <input type="email" class="form-control rounded-3" id="vendorEmail" placeholder="sales@vendor.com">
+              </div>
+              <div class="col-6">
+                <label class="form-label fs-8 fw-bold text-dark">เลขผู้เสียภาษี 13 หลัก</label>
+                <input type="text" class="form-control rounded-3" id="vendorTaxId" placeholder="01055xxxxxxxx">
+              </div>
+            </div>
+            <div class="mb-2">
+              <label class="form-label fs-8 fw-bold text-dark">ที่อยู่</label>
+              <textarea class="form-control rounded-3" id="vendorAddress" rows="2" placeholder="ที่อยู่ตามใบกำกับภาษี"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer bg-light py-2.5 px-4">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="submit" class="btn btn-sm btn-proc-primary rounded-pill px-4 fw-bold">บันทึกข้อมูลคู่ค้า</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- AREA FOR PRINTING FORM (PO DOCUMENT) -->
+  <div id="printDocumentArea" class="d-none">
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
+    <div id="procToast" class="toast align-items-center text-white bg-dark border-0 rounded-3 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body d-flex align-items-center gap-2" id="procToastBody">
+          <i class="bi bi-check-circle-fill text-success fs-5"></i>
+          <span id="procToastText">บันทึกข้อมูลเรียบร้อย</span>
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Toast Helper -->
+  <script>
+    window.showToast = function(msg) {
+      const toastEl = document.getElementById('procToast');
+      const textEl = document.getElementById('procToastText');
+      if (toastEl && textEl) {
+        textEl.textContent = msg;
+        const toast = bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 3500 });
+        toast.show();
+      } else {
+        alert(msg);
+      }
+    };
+  </script>
+
+  <!-- Firebase Initializer -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, initializeFirestore, collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    fetch('/firebase-applet-config.json')
+      .then(res => res.json())
+      .then((config) => {
+        window.firebaseConfig = config;
+        window.floraFirebaseConfig = config;
+        const app = initializeApp(config);
+
+        const fsSettings = { experimentalAutoDetectLongPolling: true };
+        const dbId = (config.firestoreDatabaseId && config.firestoreDatabaseId !== "(default)")
+          ? config.firestoreDatabaseId
+          : undefined;
+
+        try {
+          window.db = dbId ? initializeFirestore(app, fsSettings, dbId) : initializeFirestore(app, fsSettings);
+        } catch (eFs) {
+          console.warn("Procurement firestore init warning:", eFs);
+          window.db = dbId ? getFirestore(app, dbId) : getFirestore(app);
+        }
+
+        window.auth = getAuth(app);
+
+        window.floraFirebaseBridge = {
+          db: window.db,
+          auth: window.auth,
+          collection,
+          getDocs,
+          doc,
+          setDoc,
+          addDoc,
+          updateDoc,
+          deleteDoc,
+          onSnapshot,
+          query,
+          orderBy
+        };
+
+        if (typeof window.connectGlobalLogoFirestore === 'function') {
+          window.connectGlobalLogoFirestore(window.floraFirebaseBridge);
+        }
+        if (typeof window.updateAllFloraTitles === 'function') {
+          window.updateAllFloraTitles();
+        }
+
+        onAuthStateChanged(window.auth, (user) => {
+          if (user) {
+            const roleEl = document.getElementById('currentRoleText');
+            if (roleEl) roleEl.textContent = user.displayName || user.email?.split('@')[0] || 'Admin';
+            const avatarEl = document.getElementById('navUserAvatar');
+            if (avatarEl && user.photoURL) avatarEl.src = user.photoURL;
+          }
+          if (window.procurementModule?.init) {
+            window.procurementModule.init();
+          }
+        });
+
+        // Initialize immediately if procurementModule is loaded
+        if (window.procurementModule?.init) {
+          window.procurementModule.init();
+        }
+      })
+      .catch(err => console.error('Firebase config load error in procurement:', err));
+
+    window.handleSignOut = function() {
+      if (window.auth) {
+        signOut(window.auth).then(() => {
+          window.location.href = 'index.html';
+        });
+      }
+    };
+  </script>
+
+  <script type="module" src="/global_logo.js"></script>
+  <script src="procurement_system.js"></script>
+</body>
+</html>

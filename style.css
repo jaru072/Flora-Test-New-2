@@ -19,6 +19,24 @@ body {
   box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2);
 }
 
+/* System Switcher & Navigation Menu Icon Spacing */
+#navSystemSwitcherDropdown .dropdown-item,
+#orgSystemSwitcherDropdown .dropdown-item,
+#topNavSettingsDropdown .dropdown-item {
+  display: flex !important;
+  align-items: center !important;
+}
+
+#navSystemSwitcherDropdown .dropdown-item i,
+#orgSystemSwitcherDropdown .dropdown-item i,
+#topNavSettingsDropdown .dropdown-item i {
+  min-width: 24px !important;
+  width: 24px !important;
+  text-align: center !important;
+  margin-right: 12px !important;
+  flex-shrink: 0 !important;
+}
+
 /* Blinking Text Effect for Main Title */
 @keyframes titleBlink {
   0%, 100% {

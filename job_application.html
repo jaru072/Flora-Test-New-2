@@ -69,17 +69,21 @@
 
       <!-- Quick Switch Links to other modules -->
       <div class="d-flex align-items-center gap-2">
+        <a href="procurement.html" class="btn btn-outline-light btn-sm rounded-pill px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-xs" title="ไปที่ระบบจัดซื้อ-จัดจ้าง">
+          <i class="bi bi-cart-check-fill text-warning"></i>
+          <span class="d-none d-md-inline">ระบบจัดซื้อ-จัดจ้าง</span>
+        </a>
         <a href="payroll.html" class="btn btn-outline-warning btn-sm rounded-pill px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-xs" title="ไปที่ระบบเงินเดือน">
           <i class="bi bi-cash-coin text-warning"></i>
           <span class="d-none d-md-inline">ระบบเงินเดือน</span>
         </a>
-        <a href="org_chart.html" class="btn btn-outline-light btn-sm rounded-pill px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-xs" title="ไปที่ศูนย์ผังองค์กรและสารบบบุคลากร">
-          <i class="bi bi-diagram-3-fill text-warning"></i>
-          <span class="d-none d-md-inline">ผังองค์กร & บุคลากร</span>
+        <a href="org_chart.html" class="btn btn-outline-light btn-sm rounded-pill px-3 fw-semibold d-flex align-items-center gap-1.5 shadow-xs" title="ไปที่ระบบงานบุคคล">
+          <i class="bi bi-people-fill text-warning"></i>
+          <span class="d-none d-md-inline">ระบบงานบุคคล</span>
         </a>
-        <a href="index.html" class="btn btn-warning btn-sm rounded-pill px-3 fw-bold text-dark d-flex align-items-center gap-1.5 shadow-xs" title="ไปที่คลังอุปกรณ์">
+        <a href="index.html" class="btn btn-warning btn-sm rounded-pill px-3 fw-bold text-dark d-flex align-items-center gap-1.5 shadow-xs" title="ไปที่ระบบพัสดุ-อุปกรณ์">
           <i class="bi bi-box-seam-fill text-dark"></i>
-          <span class="d-none d-md-inline">คลังอุปกรณ์</span>
+          <span class="d-none d-md-inline">ระบบพัสดุ-อุปกรณ์</span>
         </a>
       </div>
 
@@ -355,7 +359,7 @@
                   <option value="number">ตัวเลข (Number)</option>
                   <option value="email">อีเมล (Email)</option>
                   <option value="tel">เบอร์โทรศัพท์ (Phone)</option>
-                  <option value="date">วันที่ (Date)</option>
+                  <option value="date">วันที่ วัน/เดือน/ปี พ.ศ. (Date)</option>
                   <option value="select">ตัวเลือกแบบ Dropdown</option>
                   <option value="radio">เลือกข้อเดียว (Radio)</option>
                   <option value="checkbox">เลือกได้หลายข้อ (Checkbox)</option>
@@ -447,6 +451,86 @@
     </div>
   </div>
 
+  <!-- 2.5 Thai Buddhist Era Interactive Calendar Picker Modal -->
+  <div class="modal fade" id="thaiDatePickerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+      <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+        <div class="modal-header bg-success text-white py-3 px-3">
+          <div class="d-flex align-items-center gap-2">
+            <div class="rounded-circle bg-white bg-opacity-20 p-1.5 d-flex align-items-center justify-content-center" style="width:34px;height:34px;">
+              <i class="bi bi-calendar-heart-fill fs-5 text-white"></i>
+            </div>
+            <div>
+              <h6 class="modal-title fw-bold mb-0 lh-1" id="thaiDatePickerModalTitle">เลือกวันที่ (พุทธศักราช)</h6>
+              <small class="text-white-75 fs-9" id="thaiDatePickerModalSubtitle">คลิกเลือกวัน เดือน ปี พ.ศ.</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body p-3 p-md-4">
+          <!-- Month and Year Selectors -->
+          <div class="row g-2 mb-3 align-items-center">
+            <div class="col-7">
+              <label class="form-label text-muted fs-8 fw-semibold mb-1">เดือน</label>
+              <select class="form-select form-select-sm rounded-3 fw-bold text-dark border-success-subtle" id="thaiCalSelectMonth" onchange="window.renderThaiCalendarGrid()">
+              </select>
+            </div>
+            <div class="col-5">
+              <label class="form-label text-muted fs-8 fw-semibold mb-1">ปี พ.ศ.</label>
+              <select class="form-select form-select-sm rounded-3 fw-bold text-dark border-success-subtle" id="thaiCalSelectYear" onchange="window.renderThaiCalendarGrid()">
+              </select>
+            </div>
+          </div>
+
+          <!-- Quick Navigation Header -->
+          <div class="d-flex align-items-center justify-content-between mb-2 px-1">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 fs-8" onclick="window.navThaiCalMonth(-1)">
+              <i class="bi bi-chevron-left me-1"></i>เดือนก่อน
+            </button>
+            <div class="fw-bold text-success fs-7" id="thaiCalCurrentMonthYearHeader">-</div>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 fs-8" onclick="window.navThaiCalMonth(1)">
+              เดือนถัดไป<i class="bi bi-chevron-right ms-1"></i>
+            </button>
+          </div>
+
+          <!-- Day Names Header (Sun - Sat) -->
+          <div class="d-grid mb-1" style="grid-template-columns: repeat(7, 1fr); text-align: center;">
+            <div class="fs-9 fw-bold text-danger py-1">อา</div>
+            <div class="fs-9 fw-bold text-muted py-1">จ</div>
+            <div class="fs-9 fw-bold text-muted py-1">อ</div>
+            <div class="fs-9 fw-bold text-muted py-1">พ</div>
+            <div class="fs-9 fw-bold text-muted py-1">พฤ</div>
+            <div class="fs-9 fw-bold text-muted py-1">ศ</div>
+            <div class="fs-9 fw-bold text-primary py-1">ส</div>
+          </div>
+
+          <!-- Days Grid -->
+          <div id="thaiCalDaysGrid" class="d-grid gap-1 mb-3" style="grid-template-columns: repeat(7, 1fr); text-align: center; min-height: 210px;">
+          </div>
+
+          <!-- Selected Preview Info -->
+          <div class="p-2.5 rounded-3 bg-light border border-light-subtle d-flex align-items-center justify-content-between">
+            <div>
+              <small class="text-muted d-block fs-9">วันที่เลือกขณะนี้:</small>
+              <span class="fw-bold text-dark fs-7" id="thaiCalSelectedDateDisplay">ยังไม่ได้เลือก</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold" onclick="window.setThaiCalToToday()">
+              <i class="bi bi-geo-fill me-1"></i>วันนี้
+            </button>
+          </div>
+        </div>
+
+        <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-sm btn-success rounded-pill px-4 fw-bold shadow-sm" onclick="window.confirmThaiCalendarSelection()">
+            <i class="bi bi-check-circle-fill me-1"></i> ยืนยันการเลือก
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 3. View Applicant Detail Modal -->
   <div class="modal fade" id="applicantDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
@@ -465,6 +549,8 @@
         <div class="modal-body p-4" id="applicantDetailModalBody">
           <!-- Dynamic details injected here -->
         </div>
+        <!-- Hidden input for HR taking applicant photo directly via mobile camera -->
+        <input type="file" id="applicantDetailMobileCameraInput" accept="image/*" capture="user" class="d-none" onchange="window.handleApplicantDetailCameraSelected(this)">
       </div>
     </div>
   </div>
@@ -486,6 +572,55 @@
         </div>
 
         <button type="button" class="btn btn-secondary rounded-pill px-4 mt-2" data-bs-dismiss="modal">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Live Camera Capture Modal for Job Application -->
+  <div class="modal fade" id="jobAppCameraModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+        <div class="modal-header bg-dark text-white p-3">
+          <div class="d-flex align-items-center gap-2">
+            <div class="bg-warning bg-opacity-25 text-warning p-1.5 rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+              <i class="bi bi-camera-video-fill"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold fs-6 mb-0" id="jobAppCameraModalTitle">เปิดกล้องถ่ายสด (Live Camera)</h5>
+              <small class="text-white-50 fs-9" id="jobAppCameraModalSubtitle">ถ่ายรูปภาพสำหรับใบสมัครงานโดยตรง</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="window.closeJobAppLiveCamera()"></button>
+        </div>
+        <div class="modal-body text-center p-3 p-md-4 bg-black">
+          <div class="position-relative d-inline-block w-100" style="max-width: 620px;">
+            <video id="jobAppCameraVideo" autoplay playsinline class="w-100 rounded-3 shadow" style="max-height: 420px; object-fit: cover; background: #111;"></video>
+            <canvas id="jobAppCameraCanvas" class="d-none"></canvas>
+            <img id="jobAppCameraPreview" class="img-fluid rounded-3 shadow d-none" style="max-height: 420px; object-fit: contain;" alt="รูปถ่ายจากกล้อง">
+            <div id="jobAppCameraError" class="alert alert-danger d-none mt-3 text-start mb-0">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>ไม่สามารถเข้าถึงกล้องได้:</strong> กรุณาอนุญาตสิทธิ์กล้องในเบราว์เซอร์ หรือกดปิดหน้าต่างนี้แล้วใช้ปุ่ม <b>"📸 ถ่ายด้วยกล้องมือถือ"</b> เพื่อเปิดกล้องถ่ายภาพได้ทันทีโดยไม่ต้องขออนุญาต
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light p-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-3 fs-8 fw-semibold" onclick="window.switchJobAppCamera()">
+            <i class="bi bi-arrow-repeat me-1"></i> สลับกล้องหน้า/หลัง
+          </button>
+          <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-secondary rounded-pill px-3 fs-8" data-bs-dismiss="modal" onclick="window.closeJobAppLiveCamera()">
+              ยกเลิก
+            </button>
+            <button type="button" id="btnJobAppSnapPhoto" class="btn btn-warning rounded-pill px-4 fw-bold fs-8 shadow-sm" onclick="window.takeJobAppCameraPhoto()">
+              <i class="bi bi-camera-fill me-1"></i> ถ่ายภาพ
+            </button>
+            <button type="button" id="btnJobAppRetakePhoto" class="btn btn-outline-warning rounded-pill px-3 fw-bold fs-8 d-none" onclick="window.retakeJobAppCameraPhoto()">
+              <i class="bi bi-arrow-counterclockwise me-1"></i> ถ่ายใหม่
+            </button>
+            <button type="button" id="btnJobAppUsePhoto" class="btn btn-success rounded-pill px-4 fw-bold fs-8 shadow-sm d-none" onclick="window.useJobAppCameraPhoto()">
+              <i class="bi bi-check2-circle me-1"></i> ใช้รูปนี้
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

@@ -14,6 +14,7 @@ export default defineConfig(() => ({
         org_chart: path.resolve(__dirname, 'org_chart.html'),
         job_application: path.resolve(__dirname, 'job_application.html'),
         payroll: path.resolve(__dirname, 'payroll.html'),
+        procurement: path.resolve(__dirname, 'procurement.html'),
       },
     },
   },
