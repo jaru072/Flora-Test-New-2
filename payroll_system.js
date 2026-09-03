@@ -82,11 +82,12 @@
       }
 
       if (!cfg || !cfg.projectId) {
+        const dynamicDbId = window.firebaseConfig?.firestoreDatabaseId || window.floraFirebaseConfig?.firestoreDatabaseId || "";
         cfg = {
           apiKey: "AIzaSyCVFTo7glMah6eeubjCLQa6HtIrnwpmrc4",
           authDomain: "flora-gaden.firebaseapp.com",
           projectId: "flora-gaden",
-          firestoreDatabaseId: "ai-studio-remixfloratestne-7fc63c6e-7cdb-49cc-b006-9bd6ab3a7926",
+          firestoreDatabaseId: dynamicDbId || "ai-studio-remixfloratestne-7fc63c6e-7cdb-49cc-b006-9bd6ab3a7926",
           storageBucket: "flora-gaden.firebasestorage.app",
           messagingSenderId: "633519077693",
           appId: "1:633519077693:web:6267796ae34a8286ff6d54"

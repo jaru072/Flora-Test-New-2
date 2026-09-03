@@ -17908,7 +17908,8 @@
         if (showFeedback) {
           if (totalDocsCopied > 0) {
             const summaryTxt = Object.entries(detailedCounts).map(([k, v]) => `• ${k}: ${v} รายการ`).join('\n');
-            alert(`🎉 ซิงค์และคัดลอกข้อมูลเรียบร้อยแล้ว!\n\nจำนวนข้อมูลที่นำเข้าทั้งหมด: ${totalDocsCopied} รายการ\n\n${summaryTxt}\n\nข้อมูลทั้งหมดถูกจัดเก็บลงสู่ฐานข้อมูล (ai-studio-remixfloratestne-7fc63c6e-7cdb-49cc-b006-9bd6ab3a7926) เรียบร้อยครับ`);
+            const targetDbDisplay = firebaseConfig?.firestoreDatabaseId || "(default)";
+            alert(`🎉 ซิงค์และคัดลอกข้อมูลเรียบร้อยแล้ว!\n\nจำนวนข้อมูลที่นำเข้าทั้งหมด: ${totalDocsCopied} รายการ\n\n${summaryTxt}\n\nข้อมูลทั้งหมดถูกจัดเก็บลงสู่ฐานข้อมูล (${targetDbDisplay}) เรียบร้อยครับ`);
             showToast(`🎉 ซิงค์ข้อมูลสำเร็จแล้ว ${totalDocsCopied} รายการ`);
           } else {
             let diagnosticMsg = `ℹ️ ระบบได้ทำการตรวจค้นฐานข้อมูลแล้ว ไม่พบข้อมูล (0 รายการ)`;

@@ -1,21 +1,26 @@
 📋 สรุปสิ่งที่เก็บไว้ในโปรเจกต์หลัก(Flora Garden V.2) เก็บไว้หมด  
-แต่ต้องลบโค้ดของ Flora Garden Test ที่จะ copy มาแทนที่ 4 ไฟล์ข่างล่างนี้
+แต่ต้องลบโค้ดของ Flora Garden Test ที่จะ copy มาแทนที่ 6 ไฟล์ข้างล่างนี้
 
-✅ firebase-applet-config.json
+✅ firebase-applet-config.json (ศูนย์กลางหลัก กำหนด firestoreDatabaseId ของโปรเจกต์นี้)
 ✅ script.js
 ✅ org_chart.html
 ✅ index.html
+✅ payroll_system.js
+✅ job_application.js
 
-รบกวนช่วยตรวจสอบและตั้งค่าตามนี้: (ตรวจสอบแล้วไม่ต้องเก็บ 4 ไฟล์ข้างบนก็ได้)
-1. ตรวจสอบไฟล์ firebase-applet-config.json,script.js,org_chart.html,index.html ให้เชื่อมต่อกับ Database ID ของโปรเจกต์นี้ คือ:
+รบกวนช่วยตรวจสอบและตั้งค่าตามนี้: (ข้อ 1. ไม่จำเป็นต้องทำแล้ว เพราะใช้จาก firebase-applet-config.json )
+1. ตรวจสอบไฟล์ firebase-applet-config.json (และ script.js, org_chart.html, payroll_system.js, job_application.js) ให้เชื่อมต่อกับ Database ID ของโปรเจกต์นี้ คือ:
    👉 ai-studio-floragardenv2-c509b5a5-f4a3-4546-bbae-c5f21564ba7d
 
-2. ปรับปุ่ม "ดึงข้อมูล" ในหน้าสำรองข้อมูล ให้ดึงต้นทางมาจาก Test คือ Database ID:
-   👉 ai-studio-floragardentest-b067b23c-205a-446d-8774-e8804286e5e1
+2. ปรับปุ่ม "ดึงข้อมูล" ในหน้าสำรองข้อมูล ให้ดึงต้นทางมาจาก Database ID:
+   👉 ai-studio-remixfloratestne-7fc63c6e-7cdb-49cc-b006-9bd6ab3a7926
 
 3. ทำการ compile_applet ให้เรียบร้อย
 
----- สำหรับโปรเจ็กต์ที่ Add Bucket ใหม่ ----
+*** หมายเหตุ Flora Garden V.2 กับ Flora Test New 2 ใช้ฐานข้อมูล Firebase Firestore ต่างกัน
+    แต่ทั้งคู่ ใช้ Bucket เดิม: flora-gaden.firebasestorage.app ร่วมกัน
+
+---- สำหรับโปรเจ็กต์ที่ Add Bucket ใหม่ หรือ ไม่ใช่ Bucket เดิมต้นฉบับ----
 
 4. รบกวนช่วยอัปเดตการตั้งค่า Firebase Storage Bucket ของโปรเจกต์นี้ และช่วย คัดลอกรูปภาพเดิมทั้งหมดมาไว้ใน Bucket ใหม่ ดังนี้ครับ:
   การตั้งค่า Storage Bucket ใหม่:

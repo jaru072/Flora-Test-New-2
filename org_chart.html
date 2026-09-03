@@ -2734,7 +2734,7 @@
     // Initialize Firebase
     async function initFirebase() {
       try {
-        const fallbackDatabaseId = "ai-studio-remixfloratestne-7fc63c6e-7cdb-49cc-b006-9bd6ab3a7926";
+        const fallbackDatabaseId = window.firebaseConfig?.firestoreDatabaseId || window.floraFirebaseConfig?.firestoreDatabaseId || "ai-studio-remixfloratestne-7fc63c6e-7cdb-49cc-b006-9bd6ab3a7926";
         let config = null;
         try {
           const resp = await fetch('firebase-applet-config.json');

@@ -915,7 +915,17 @@
 
   async function connectFirestoreSync() {
     try {
-      const cfg = window.firebaseConfig || window.floraFirebaseConfig;
+      let cfg = window.firebaseConfig || window.floraFirebaseConfig;
+      if (!cfg || !cfg.projectId) {
+        try {
+          const res = await fetch("firebase-applet-config.json");
+          if (res.ok) {
+            cfg = await res.json();
+            window.firebaseConfig = cfg;
+            window.floraFirebaseConfig = cfg;
+          }
+        } catch (e) {}
+      }
       if (!cfg) return;
 
       const { initializeApp, getApps, getApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
