@@ -74,6 +74,39 @@
     }
   }
 
+  // Procurement Permission Guard (Admin & Authorized Procurement Officers)
+  function canManageProcurement() {
+    if (window.currentUserCanManageProcurement === true) return true;
+    if (window.auth?.currentUser?.email === 'jaru072@gmail.com') return true;
+    const role = window.currentUserRole || window.currentUserProfile?.role;
+    if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'MANAGER') return true;
+    if (window.currentUserProfile?.accessProcurement === true) return true;
+    return false;
+  }
+
+  function updateAuthPermissions(canManage) {
+    const btnGR = $('btnOpenNewGR');
+    if (btnGR) {
+      if (canManage) {
+        btnGR.classList.remove('d-none');
+      } else {
+        btnGR.classList.add('d-none');
+      }
+    }
+    const btnVendor = $('btnOpenNewVendor');
+    if (btnVendor) {
+      if (canManage) {
+        btnVendor.classList.remove('d-none');
+      } else {
+        btnVendor.classList.add('d-none');
+      }
+    }
+    renderPRTable();
+    renderPOTable();
+    renderGRTable();
+    renderVendors();
+  }
+
   // Error logging with Firestore format
   function logFirestoreError(err, op, path) {
     const info = {
@@ -322,21 +355,39 @@
 
       // Action Button
       let actionBtn = '';
+      const hasMgmtAccess = canManageProcurement();
+
       if (item.status === 'pending' || item.status === 'draft') {
-        actionBtn = `
-          <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-1 fw-semibold me-1" onclick="window.procurementModule.approvePR('${item.id}')" title="อนุมัติใบขอซื้อ">
-            <i class="bi bi-check-lg me-1"></i>อนุมัติ
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" onclick="window.procurementModule.rejectPR('${item.id}')" title="ส่งกลับแก้ไข/ไม่อนุมัติ">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        `;
+        if (hasMgmtAccess) {
+          actionBtn = `
+            <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-1 fw-semibold me-1" onclick="window.procurementModule.approvePR('${item.id}')" title="อนุมัติใบขอซื้อ">
+              <i class="bi bi-check-lg me-1"></i>อนุมัติ
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" onclick="window.procurementModule.rejectPR('${item.id}')" title="ส่งกลับแก้ไข/ไม่อนุมัติ">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          `;
+        } else {
+          actionBtn = `
+            <span class="badge bg-light text-muted border py-1.5 px-2.5 rounded-pill">
+              <i class="bi bi-clock-history me-1 text-warning"></i>รอการอนุมัติ
+            </span>
+          `;
+        }
       } else if (item.status === 'approved') {
-        actionBtn = `
-          <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 fw-bold" onclick="window.procurementModule.openCreatePOFromPR('${item.id}')">
-            <i class="bi bi-receipt me-1"></i>ออก PO
-          </button>
-        `;
+        if (hasMgmtAccess) {
+          actionBtn = `
+            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 fw-bold" onclick="window.procurementModule.openCreatePOFromPR('${item.id}')">
+              <i class="bi bi-receipt me-1"></i>ออก PO
+            </button>
+          `;
+        } else {
+          actionBtn = `
+            <span class="badge bg-light text-primary border py-1.5 px-2.5 rounded-pill">
+              <i class="bi bi-receipt me-1"></i>รอออก PO
+            </span>
+          `;
+        }
       } else if (item.status === 'po_created') {
         actionBtn = `
           <span class="badge bg-light text-muted border py-1.5 px-2">สร้าง PO เสร็จสิ้น</span>
@@ -498,7 +549,12 @@
       return;
     }
 
+    const hasMgmtAccess = canManageProcurement();
     tbody.innerHTML = list.map(v => {
+      const actionContent = hasMgmtAccess
+        ? `<button type="button" class="btn btn-sm btn-outline-danger p-1 rounded-circle" onclick="window.procurementModule.deleteVendor('${v.id}')" title="ลบคู่ค้า"><i class="bi bi-trash"></i></button>`
+        : `<span class="badge bg-light text-muted border px-2 py-1"><i class="bi bi-shield-check text-success me-1"></i>คู่ค้าที่รับรอง</span>`;
+
       return `
         <tr>
           <td class="fw-bold text-dark font-monospace">${esc(v.code || '-')}</td>
@@ -509,9 +565,7 @@
           <td class="font-monospace">${esc(v.taxId || '-')}</td>
           <td class="text-center"><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">รับรองแล้ว</span></td>
           <td class="text-end">
-            <button type="button" class="btn btn-sm btn-outline-danger p-1 rounded-circle" onclick="window.procurementModule.deleteVendor('${v.id}')" title="ลบคู่ค้า">
-              <i class="bi bi-trash"></i>
-            </button>
+            ${actionContent}
           </td>
         </tr>
       `;
@@ -592,6 +646,10 @@
   }
 
   function openNewGoodsReceiptModal() {
+    if (!canManageProcurement()) {
+      showToast('ขออภัย คุณไม่มีสิทธิ์บันทึกการตรวจรับพัสดุเข้าคลัง (เฉพาะฝ่ายคลังและจัดซื้อ)');
+      return;
+    }
     const modalEl = $('newGRModal');
     if (modalEl) {
       const modal = new bootstrap.Modal(modalEl);
@@ -600,6 +658,10 @@
   }
 
   function openNewVendorModal() {
+    if (!canManageProcurement()) {
+      showToast('ขออภัย คุณไม่มีสิทธิ์จัดการข้อมูลคู่ค้า');
+      return;
+    }
     const modalEl = $('newVendorModal');
     if (modalEl) {
       const modal = new bootstrap.Modal(modalEl);
@@ -672,6 +734,10 @@
 
   // Approve PR
   async function approvePR(prId) {
+    if (!canManageProcurement()) {
+      showToast('ขออภัย คุณไม่มีสิทธิ์อนุมัติใบขอซื้อ (เฉพาะผู้มีอำนาจและฝ่ายจัดซื้อ)');
+      return;
+    }
     if (!confirm('ยืนยันการอนุมัติใบขอซื้อนี้เพื่อส่งต่อให้ฝ่ายจัดซื้อออกใบสั่งซื้อ?')) return;
     const now = new Date();
     try {
@@ -693,6 +759,10 @@
 
   // Reject PR
   async function rejectPR(prId) {
+    if (!canManageProcurement()) {
+      showToast('ขออภัย คุณไม่มีสิทธิ์ส่งกลับแก้ไขหรือไม่อนุมัติใบขอซื้อ');
+      return;
+    }
     const reason = prompt('ระบุเหตุผลในการไม่อนุมัติหรือส่งกลับแก้ไข:');
     if (reason === null) return;
     const now = new Date();
@@ -713,6 +783,10 @@
 
   // Open Create PO From Approved PR
   function openCreatePOFromPR(prId) {
+    if (!canManageProcurement()) {
+      showToast('ขออภัย คุณไม่มีสิทธิ์สร้างใบสั่งซื้อ (เฉพาะฝ่ายจัดซื้อและผู้ดูแลระบบ)');
+      return;
+    }
     const pr = state.requisitions.find(r => r.id === prId);
     if (!pr) return;
     state.selectedPR = pr;
@@ -764,6 +838,10 @@
   // Save New PO
   async function saveNewPO(e) {
     e.preventDefault();
+    if (!canManageProcurement()) {
+      showToast('ขออภัย คุณไม่มีสิทธิ์ออกใบสั่งซื้อ (เฉพาะฝ่ายจัดซื้อและผู้ดูแลระบบ)');
+      return;
+    }
     if (!state.selectedPR) return;
 
     const vendorId = $('poVendorSelect').value;
@@ -964,6 +1042,10 @@
   // Save Goods Receipt (GR)
   async function saveGoodsReceipt(e) {
     e.preventDefault();
+    if (!canManageProcurement()) {
+      showToast('ขออภัย คุณไม่มีสิทธิ์บันทึกการตรวจรับพัสดุเข้าคลัง');
+      return;
+    }
     if (!state.selectedPO) {
       alert('กรุณาเลือกใบสั่งซื้อ');
       return;
@@ -1039,6 +1121,10 @@
   // Save New Vendor
   async function saveNewVendor(e) {
     e.preventDefault();
+    if (!canManageProcurement()) {
+      showToast('ขออภัย คุณไม่มีสิทธิ์บันทึกข้อมูลคู่ค้า');
+      return;
+    }
     const name = $('vendorName').value.trim();
     const category = $('vendorCategory').value.trim();
     const phone = $('vendorPhone').value.trim();
@@ -1077,6 +1163,10 @@
   }
 
   async function deleteVendor(vendorId) {
+    if (!canManageProcurement()) {
+      showToast('ขออภัย คุณไม่มีสิทธิ์ลบคู่ค้า');
+      return;
+    }
     if (!confirm('ต้องการลบคู่ค้านี้ออกจากระบบหรือไม่?')) return;
     try {
       await window.floraFirebaseBridge.deleteDoc(
@@ -1113,6 +1203,8 @@
   // Export module API to global
   window.procurementModule = {
     init,
+    updateAuthPermissions,
+    canManageProcurement,
     openNewRequisitionModal,
     openNewGoodsReceiptModal,
     openNewVendorModal,

@@ -1875,14 +1875,15 @@
                       <tr>
                         <th>ผู้ใช้งาน</th>
                         <th>อีเมล</th>
-                        <th class="text-center" style="width: 130px;">Online</th>
-                        <th class="text-center" style="width: 170px;">บทบาทสิทธิ์</th>
-                        <th class="text-center" style="width: 190px;">สิทธิ์เข้าใช้งานระบบ</th>
-                        <th class="text-end pe-3" style="width: 100px;">บันทึก</th>
+                        <th class="text-center" style="width: 100px;">Online</th>
+                        <th class="text-center" style="width: 160px;">บทบาทสิทธิ์</th>
+                        <th class="text-center" style="width: 250px;">สิทธิ์เข้าใช้งานระบบ</th>
+                        <th class="text-center" style="width: 230px;">ผูกรหัสบุคลากร</th>
+                        <th class="text-end pe-3" style="width: 90px;">บันทึก</th>
                       </tr>
                     </thead>
                     <tbody id="usersTableBody">
-                      <tr><td colspan="6" class="text-center py-3 text-muted">กำลังโหลดข้อมูลผู้ใช้จาก Firestore...</td></tr>
+                      <tr><td colspan="7" class="text-center py-3 text-muted">กำลังโหลดข้อมูลผู้ใช้จาก Firestore...</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -4677,6 +4678,32 @@
                 </div>
               </div>
             </div>
+
+            <!-- Card 7: Purge Entire Database (Safe Storage - No Image Deletion) -->
+            <div class="col-12 mt-2">
+              <div class="card border-2 border-danger shadow-sm rounded-4 p-3.5 bg-white">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="bg-danger text-white rounded-circle p-3 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 50px; height: 50px;">
+                      <i class="bi bi-trash3-fill fs-4"></i>
+                    </div>
+                    <div>
+                      <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <h6 class="fw-bold text-danger mb-0 fs-6">ลบฐานข้อมูลทั้งหมด (พัสดุ-อุปกรณ์ และ บุคลากร)</h6>
+                        <span class="badge bg-success text-white rounded-pill px-2.5 py-0.5 fs-9 fw-bold">
+                          <i class="bi bi-shield-check me-1"></i>รูปภาพใน Storage ปลอดภัย 100%
+                        </span>
+                      </div>
+                      <p class="text-muted fs-8 mb-0 mt-0.5">ล้างข้อมูลเอกสารทั้งหมดในระบบและ Firestore ทั้งพัสดุ-อุปกรณ์, รายชื่อบุคลากร, แผนก, ตำแหน่ง, ประวัติการเบิก-ยืม-คืน และบันทึกเวลา โดย<strong>เก็บรักษาไฟล์รูปภาพทั้งหมดใน Firebase Storage ไว้อย่างปลอดภัย</strong></p>
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-outline-danger border-2 rounded-pill px-4 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm text-nowrap align-self-start align-self-md-center" onclick="purgeEntireDatabaseAndStorage()" id="btnOpenPurgeDatabaseModal">
+                    <i class="bi bi-trash3-fill fs-6"></i>
+                    <span>ลบฐานข้อมูลทั้งหมด</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Restore Inspection & Execution Card (shown when restore file selected) -->
@@ -4715,7 +4742,11 @@
           </div>
 
         </div>
-        <div class="modal-footer bg-light border-0 pt-0 pb-3 pe-4">
+        <div class="modal-footer bg-light border-0 pt-0 pb-3 px-4 d-flex align-items-center justify-content-between">
+          <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3.5 py-1.5 fw-bold d-flex align-items-center gap-1.5 shadow-2xs" onclick="purgeEntireDatabaseAndStorage()" title="ลบฐานข้อมูลพัสดุและบุคลากรทั้งหมด (รูปภาพใน Storage ปลอดภัย 100%)">
+            <i class="bi bi-trash3-fill text-danger"></i>
+            <span>ลบฐานข้อมูลทั้งหมด</span>
+          </button>
           <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">ปิดหน้าต่าง</button>
         </div>
       </div>

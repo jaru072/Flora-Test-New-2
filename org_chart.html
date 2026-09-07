@@ -2498,14 +2498,15 @@
                       <tr>
                         <th>ผู้ใช้งาน</th>
                         <th>อีเมล</th>
-                        <th class="text-center" style="width: 130px;">Online</th>
-                        <th class="text-center" style="width: 170px;">บทบาทสิทธิ์</th>
-                        <th class="text-center" style="width: 190px;">สิทธิ์เข้าใช้งานระบบ</th>
-                        <th class="text-end pe-3" style="width: 100px;">บันทึก</th>
+                        <th class="text-center" style="width: 100px;">Online</th>
+                        <th class="text-center" style="width: 160px;">บทบาทสิทธิ์</th>
+                        <th class="text-center" style="width: 250px;">สิทธิ์เข้าใช้งานระบบ</th>
+                        <th class="text-center" style="width: 230px;">ผูกรหัสบุคลากร</th>
+                        <th class="text-end pe-3" style="width: 90px;">บันทึก</th>
                       </tr>
                     </thead>
                     <tbody id="usersTableBody">
-                      <tr><td colspan="6" class="text-center py-3 text-muted">กำลังโหลดข้อมูลผู้ใช้จาก Firestore...</td></tr>
+                      <tr><td colspan="7" class="text-center py-3 text-muted">กำลังโหลดข้อมูลผู้ใช้จาก Firestore...</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -3140,9 +3141,11 @@
           }
 
           if (filteredList.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-search me-1 text-warning"></i> ไม่พบรายชื่อผู้ใช้งานที่ค้นหา</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-search me-1 text-warning"></i> ไม่พบรายชื่อผู้ใช้งานที่ค้นหา</td></tr>`;
             return;
           }
+
+          const empList = Array.isArray(window.employees) ? window.employees : [];
 
           tbody.innerHTML = filteredList.map(u => {
             const uRole = u.role || 'WORKER';
@@ -3155,9 +3158,26 @@
 
             const safeName = u.displayName || 'ผู้ใช้';
             const safeEmail = u.email || '-';
-            const isSuperAdmin = u.email === 'jaru072@gmail.com' || uRole === 'ADMIN';
-            const hasPersonnel = isSuperAdmin ? true : (u.accessPersonnel !== false);
-            const hasInventory = isSuperAdmin ? true : (u.accessInventory !== false);
+            const hasPersonnel = (u.accessPersonnel !== undefined) ? Boolean(u.accessPersonnel) : (uRole === 'ADMIN' || uRole === 'MANAGER' || uRole === 'STAFF');
+            const hasInventory = (u.accessInventory !== undefined) ? Boolean(u.accessInventory) : true;
+            const hasPayroll = Boolean(u.accessPayroll);
+            const hasProcurement = Boolean(u.accessProcurement);
+
+            // Match linked employee
+            const currentLinkedEmpId = u.linkedEmployeeId || '';
+            const matchedEmpByEmail = !currentLinkedEmpId && u.email ? empList.find(e => e.email && String(e.email).trim().toLowerCase() === String(u.email).trim().toLowerCase()) : null;
+            const targetEmpId = currentLinkedEmpId || (matchedEmpByEmail ? (matchedEmpByEmail.id || matchedEmpByEmail.code) : '');
+
+            const empOptions = [
+              `<option value="">-- ยังไม่ผูกบุคลากร --</option>`,
+              ...empList.map(emp => {
+                const empIdVal = emp.id || emp.code;
+                const isSelected = (empIdVal === targetEmpId || emp.code === targetEmpId) ? 'selected' : '';
+                const empCodeStr = emp.code ? `[${emp.code}] ` : '';
+                const empDeptStr = emp.department ? ` (${emp.department})` : '';
+                return `<option value="${empIdVal}" ${isSelected}>${empCodeStr}${emp.name || 'ไม่มีชื่อ'}${empDeptStr}</option>`;
+              })
+            ].join('');
 
             return `
               <tr>
@@ -3170,10 +3190,13 @@
                     </div>
                   </div>
                 </td>
-                <td class="text-muted fs-8">${safeEmail}</td>
+                <td class="text-muted fs-8">
+                  ${safeEmail}
+                  ${matchedEmpByEmail && !currentLinkedEmpId ? `<span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 d-block mt-1 fs-9">แนะนำผูกตามอีเมล</span>` : ''}
+                </td>
                 <td class="text-center">${onlineBadge}</td>
                 <td class="text-center">
-                  <select id="userRoleSelect_${u.id}" class="form-select form-select-sm fw-semibold" ${u.email === 'jaru072@gmail.com' ? 'disabled' : ''}>
+                  <select id="userRoleSelect_${u.id}" class="form-select form-select-sm fw-semibold" onchange="window.onUserRoleSelectChanged('${u.id}')">
                     <option value="ADMIN" ${uRole === 'ADMIN' ? 'selected' : ''}>🔴 ผู้ดูแลระบบ (ADMIN)</option>
                     <option value="MANAGER" ${uRole === 'MANAGER' ? 'selected' : ''}>🔵 ผู้จัดการ/บริหาร (MANAGER)</option>
                     <option value="STAFF" ${uRole === 'STAFF' ? 'selected' : ''}>🟣 เจ้าหน้าที่ (STAFF)</option>
@@ -3183,17 +3206,30 @@
                 <td class="text-center">
                   <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
                     <div class="form-check form-switch m-0" title="สิทธิ์เข้าระบบงานบุคคล (HR)">
-                      <input class="form-check-input" type="checkbox" id="userAccPersonnel_${u.id}" ${hasPersonnel ? 'checked' : ''} ${isSuperAdmin ? 'disabled' : ''}>
+                      <input class="form-check-input" type="checkbox" id="userAccPersonnel_${u.id}" ${hasPersonnel ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
                       <label class="form-check-label fs-8 fw-semibold text-primary" for="userAccPersonnel_${u.id}">👥 บุคคล</label>
                     </div>
-                    <div class="form-check form-switch m-0" title="สิทธิ์เข้าระบบพัสดุและอุปกรณ์ (Stock & Equipment)">
-                      <input class="form-check-input" type="checkbox" id="userAccInventory_${u.id}" ${hasInventory ? 'checked' : ''} ${isSuperAdmin ? 'disabled' : ''}>
+                    <div class="form-check form-switch m-0" title="สิทธิ์เข้าระบบพัสดุและอุปกรณ์">
+                      <input class="form-check-input" type="checkbox" id="userAccInventory_${u.id}" ${hasInventory ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
                       <label class="form-check-label fs-8 fw-semibold text-success" for="userAccInventory_${u.id}">📦 พัสดุฯ</label>
+                    </div>
+                    <div class="form-check form-switch m-0" title="สิทธิ์เข้าระบบเงินเดือน (เฉพาะการเงิน/ผู้ดูแลระบบ)">
+                      <input class="form-check-input" type="checkbox" id="userAccPayroll_${u.id}" ${hasPayroll ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
+                      <label class="form-check-label fs-8 fw-semibold text-warning" for="userAccPayroll_${u.id}">💰 เงินเดือน</label>
+                    </div>
+                    <div class="form-check form-switch m-0" title="สิทธิ์การจัดการจัดซื้อ (อนุมัติ/ออก PO/ตรวจรับ)">
+                      <input class="form-check-input" type="checkbox" id="userAccProcurement_${u.id}" ${hasProcurement ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
+                      <label class="form-check-label fs-8 fw-semibold text-teal" style="color: #0f766e;" for="userAccProcurement_${u.id}">🛒 จัดซื้อฯ</label>
                     </div>
                   </div>
                 </td>
+                <td class="text-center">
+                  <select id="userLinkedEmp_${u.id}" class="form-select form-select-sm fs-8 border-secondary border-opacity-50" onchange="window.updateFirestoreUserRole('${u.id}')">
+                    ${empOptions}
+                  </select>
+                </td>
                 <td class="text-end pe-3">
-                  <button class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold" onclick="updateFirestoreUserRole('${u.id}')">
+                  <button class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold" onclick="window.updateFirestoreUserRole('${u.id}')">
                     <i class="bi bi-check-lg me-1"></i> บันทึก
                   </button>
                 </td>
@@ -3202,12 +3238,46 @@
           }).join('');
         };
 
+        // Role Select Change Handler
+        window.onUserRoleSelectChanged = function(userId) {
+          const selectElem = document.getElementById(`userRoleSelect_${userId}`);
+          const chkPersonnel = document.getElementById(`userAccPersonnel_${userId}`);
+          const chkInventory = document.getElementById(`userAccInventory_${userId}`);
+          const chkPayroll = document.getElementById(`userAccPayroll_${userId}`);
+          const chkProcurement = document.getElementById(`userAccProcurement_${userId}`);
+          if (!selectElem) return;
+
+          const role = selectElem.value;
+          if (role === 'ADMIN') {
+            if (chkPersonnel) chkPersonnel.checked = true;
+            if (chkInventory) chkInventory.checked = true;
+            if (chkPayroll) chkPayroll.checked = true;
+            if (chkProcurement) chkProcurement.checked = true;
+          } else if (role === 'MANAGER') {
+            if (chkPersonnel) chkPersonnel.checked = true;
+            if (chkInventory) chkInventory.checked = true;
+            if (chkPayroll) chkPayroll.checked = true;
+            if (chkProcurement) chkProcurement.checked = true;
+          } else if (role === 'STAFF') {
+            if (chkPersonnel) chkPersonnel.checked = false;
+            if (chkInventory) chkInventory.checked = true;
+            if (chkPayroll) chkPayroll.checked = false;
+            if (chkProcurement) chkProcurement.checked = false;
+          } else if (role === 'WORKER') {
+            if (chkPersonnel) chkPersonnel.checked = false;
+            if (chkInventory) chkInventory.checked = true;
+            if (chkPayroll) chkPayroll.checked = false;
+            if (chkProcurement) chkProcurement.checked = false;
+          }
+          window.updateFirestoreUserRole(userId);
+        };
+
         // Load Users Table from Firestore
         window.loadUsersTableFromFirestore = async function() {
           const tbody = document.getElementById('usersTableBody');
           if (!tbody || !window.db) return;
           try {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm text-success me-2"></div> กำลังโหลดรายชื่อผู้ใช้งาน...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm text-success me-2"></div> กำลังโหลดรายชื่อผู้ใช้งาน...</td></tr>`;
             await window.ensureAdminUserInUsersCollection();
 
             onSnapshot(collection(window.db, "users"), (snapshot) => {
@@ -3218,23 +3288,34 @@
               window.renderUsersTable();
             }, (err) => {
               console.warn("Users snapshot notice:", err);
-              if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-3">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
+              if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-3">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
             });
           } catch (err) {
-            if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-3">ไม่สามารถอ่านข้อมูลผู้ใช้: ${err.message}</td></tr>`;
+            if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-3">ไม่สามารถอ่านข้อมูลผู้ใช้: ${err.message}</td></tr>`;
           }
         };
 
-        // Update Firestore User Role
+        // Update Firestore User Role & Linked Employee
         window.updateFirestoreUserRole = async function(userId) {
           const selectElem = document.getElementById(`userRoleSelect_${userId}`);
           const chkPersonnel = document.getElementById(`userAccPersonnel_${userId}`);
           const chkInventory = document.getElementById(`userAccInventory_${userId}`);
+          const chkPayroll = document.getElementById(`userAccPayroll_${userId}`);
+          const chkProcurement = document.getElementById(`userAccProcurement_${userId}`);
+          const selEmp = document.getElementById(`userLinkedEmp_${userId}`);
           if (!selectElem || !window.db) return;
+
           const newRole = selectElem.value;
-          const isSuperAdmin = newRole === 'ADMIN';
-          const accessPersonnel = isSuperAdmin ? true : (chkPersonnel ? chkPersonnel.checked : true);
-          const accessInventory = isSuperAdmin ? true : (chkInventory ? chkInventory.checked : true);
+          const accessPersonnel = chkPersonnel ? chkPersonnel.checked : (newRole === 'ADMIN' || newRole === 'MANAGER' || newRole === 'STAFF');
+          const accessInventory = chkInventory ? chkInventory.checked : true;
+          const accessPayroll = chkPayroll ? chkPayroll.checked : (newRole === 'ADMIN');
+          const accessProcurement = chkProcurement ? chkProcurement.checked : (newRole === 'ADMIN' || newRole === 'MANAGER');
+
+          const linkedEmpId = selEmp ? selEmp.value : '';
+          const empList = Array.isArray(window.employees) ? window.employees : [];
+          const matchedEmp = empList.find(e => (e.id === linkedEmpId || e.code === linkedEmpId));
+          const linkedEmpName = matchedEmp ? (matchedEmp.name || '') : '';
+          const linkedEmpCode = matchedEmp ? (matchedEmp.code || '') : '';
 
           try {
             const userRef = doc(window.db, "users", userId);
@@ -3242,13 +3323,37 @@
               role: newRole,
               accessPersonnel: accessPersonnel,
               accessInventory: accessInventory,
+              accessPayroll: accessPayroll,
+              accessProcurement: accessProcurement,
+              linkedEmployeeId: linkedEmpId,
+              linkedEmployeeName: linkedEmpName,
+              linkedEmployeeCode: linkedEmpCode,
               modules: [
                 ...(accessPersonnel ? ['personnel'] : []),
-                ...(accessInventory ? ['inventory'] : [])
+                ...(accessInventory ? ['inventory'] : []),
+                ...(accessPayroll ? ['payroll'] : []),
+                ...(accessProcurement ? ['procurement'] : [])
               ],
               updatedAt: new Date().toISOString()
             });
-            if (typeof showToast === 'function') showToast(`อัปเดตสิทธิ์บทบาทและสิทธิ์เข้าถึงระบบเรียบร้อยแล้ว`);
+
+            // Bi-directional link to employee document if selected
+            if (linkedEmpId) {
+              const uObj = allUsersList.find(u => u.id === userId);
+              const userEmailStr = uObj?.email || '';
+              try {
+                const empRef = doc(window.db, "employees", linkedEmpId);
+                await updateDoc(empRef, {
+                  linkedUserId: userId,
+                  linkedUserEmail: userEmailStr,
+                  updatedAt: new Date().toISOString()
+                });
+              } catch (empErr) {
+                console.warn("Could not update linked employee document:", empErr);
+              }
+            }
+
+            if (typeof showToast === 'function') showToast(`บันทึกสิทธิ์และผูกบัญชีบุคลากรเรียบร้อยแล้ว`);
           } catch (err) {
             if (typeof showToast === 'function') showToast(`บันทึกไม่สำเร็จ: ${err.message}`);
           }
@@ -3281,26 +3386,7 @@
               list.push({ id: docSnap.id, ...data });
             });
           } else {
-            let seedList = [];
-            try {
-              const saved = getScopedLocalStorageItem('flora_employees');
-              if (saved) {
-                const parsed = JSON.parse(saved);
-                if (Array.isArray(parsed) && parsed.length > 0) seedList = parsed;
-              }
-            } catch(e){}
-            if (seedList.length === 0 && typeof generateSeedEmployees === 'function') {
-              seedList = generateSeedEmployees();
-            }
-            if (seedList.length > 0) {
-              list = seedList;
-              for (const emp of seedList) {
-                const empId = emp.id || emp.code;
-                if (empId) {
-                  setDoc(doc(window.db, "employees", empId), emp, { merge: true }).catch(err => console.warn("Seed emp error:", err));
-                }
-              }
-            }
+            list = [];
           }
 
           // Firestore is authoritative whenever the listener succeeds. Never

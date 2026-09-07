@@ -250,9 +250,9 @@
     ];
 
     const defaultInitialEquipmentList = [
-      { id: "FG-001", code: "FG-001", name: "น้ำมันเบนซิน 95", category: "น้ำมัน", location: "โรงน้ำมัน", quantity: 50, minQuantity: 10, borrowedCount: 0, unit: "ลิตร", imageUrl: "https://images.unsplash.com/photo-1545454675-3531b543be5d?w=300&auto=format&fit=crop&q=80", description: "น้ำมันเบนซินสำหรับเครื่องตัดหญ้าและเครื่องพ่นยา", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "FG-001", code: "FG-001", name: "น้ำมันเบนซิน 95", category: "น้ำมัน", location: "โรงน้ำมัน", quantity: 50, minQuantity: 10, borrowedCount: 0, unit: "ลิตร", imageUrl: "", description: "น้ำมันเบนซินสำหรับเครื่องตัดหญ้าและเครื่องพ่นยา", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
       { id: "FG-002", code: "FG-002", name: "น้ำมันเครื่อง 2T", category: "น้ำมัน", location: "โรงน้ำมัน", quantity: 24, minQuantity: 5, borrowedCount: 0, unit: "ขวด", imageUrl: "", description: "น้ำมัน 2 จังหวะสำหรับเครื่องตัดหญ้า", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "AX-001", code: "AX-001", name: "กรรไกรตัดแต่งกิ่งด้ามยาว", category: "เครื่องมือช่าง", location: "โรงเก็บเครื่องมือ A", quantity: 15, minQuantity: 3, borrowedCount: 0, unit: "อัน", imageUrl: "https://images.unsplash.com/photo-1589051039495-eb77712c88f2?w=300&auto=format&fit=crop&q=80", description: "ใบมีดคมพิเศษสำหรับแต่งทรงพุ่ม", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "AX-001", code: "AX-001", name: "กรรไกรตัดแต่งกิ่งด้ามยาว", category: "เครื่องมือช่าง", location: "โรงเก็บเครื่องมือ A", quantity: 15, minQuantity: 3, borrowedCount: 0, unit: "อัน", imageUrl: "", description: "ใบมีดคมพิเศษสำหรับแต่งทรงพุ่ม", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
       { id: "AX-002", code: "AX-002", name: "เครื่องตัดหญ้าสะพายบ่า", category: "เครื่องมือช่าง", location: "โรงเก็บเครื่องมือ A", quantity: 8, minQuantity: 2, borrowedCount: 0, unit: "เครื่อง", imageUrl: "", description: "เครื่องตัดหญ้า 2 จังหวะ พร้อมใบมีด", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
       { id: "SL-001", code: "SL-001", name: "รถเข็นปูน 2 ล้อ", category: "อุปกรณ์เกษตร ประเภทยืมใช้(รถเข็น พั้ว จอบ จก ฯลฯ)", location: "สโตว์กรงเหล็ก", quantity: 10, minQuantity: 2, borrowedCount: 0, unit: "คัน", imageUrl: "", description: "สำหรับขนดินและปุ๋ย", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
       { id: "SL-002", code: "SL-002", name: "จอบขุดดินด้ามไม้", category: "อุปกรณ์เกษตร ประเภทยืมใช้(รถเข็น พั้ว จอบ จก ฯลฯ)", location: "สโตว์กรงเหล็ก", quantity: 20, minQuantity: 5, borrowedCount: 0, unit: "เล่ม", imageUrl: "", description: "หน้าจอบกว้างสำหรับขุดแปลง", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
@@ -261,7 +261,7 @@
     ];
 
     const defaultEmployeesSeedList = [
-      { id: "EXEC-01", code: "EXEC-01", name: "ประธานโครงการ", role: "ADMIN", position: "ประธานโครงการ", department: "ฝ่ายบริหารและอำนวยการ", phone: "081-000-0001", status: "ปฏิบัติงาน", photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80", accessPersonnel: true, accessInventory: true },
+      { id: "EXEC-01", code: "EXEC-01", name: "ประธานโครงการ", role: "ADMIN", position: "ประธานโครงการ", department: "ฝ่ายบริหารและอำนวยการ", phone: "081-000-0001", status: "ปฏิบัติงาน", photoUrl: "", accessPersonnel: true, accessInventory: true },
       { id: "EXEC-02", code: "EXEC-02", name: "ที่ปรึกษาโครงการ 1", role: "ADMIN", position: "ที่ปรึกษาโครงการ", department: "ฝ่ายบริหารและอำนวยการ", phone: "081-000-0002", status: "ปฏิบัติงาน", accessPersonnel: true, accessInventory: true },
       { id: "EXEC-03", code: "EXEC-03", name: "ที่ปรึกษาโครงการ 2", role: "ADMIN", position: "ที่ปรึกษาโครงการ", department: "ฝ่ายบริหารและอำนวยการ", phone: "081-000-0003", status: "ปฏิบัติงาน", accessPersonnel: true, accessInventory: true },
       { id: "EXEC-04", code: "EXEC-04", name: "ผู้ประสานงานโครงการ", role: "ADMIN", position: "ผู้ประสานงานโครงการ", department: "ฝ่ายบริหารและอำนวยการ", phone: "081-000-0004", status: "ปฏิบัติงาน", accessPersonnel: true, accessInventory: true }
@@ -410,28 +410,43 @@
         
         if (userSnap.exists()) {
           const data = userSnap.data();
+          const isOwner = user.email === 'jaru072@gmail.com';
           currentUserProfile = { 
             id: user.uid, 
             ...data, 
-            accessPersonnel: data.accessPersonnel !== undefined ? data.accessPersonnel : true,
+            accessPersonnel: isOwner ? true : (data.accessPersonnel !== undefined ? data.accessPersonnel : false),
             accessInventory: data.accessInventory !== undefined ? data.accessInventory : true,
+            accessPayroll: isOwner ? true : Boolean(data.accessPayroll),
+            accessProcurement: isOwner ? true : Boolean(data.accessProcurement),
+            linkedEmployeeId: data.linkedEmployeeId || '',
+            linkedEmployeeName: data.linkedEmployeeName || '',
+            linkedEmployeeCode: data.linkedEmployeeCode || '',
             isOnline: true, 
             status: 'Online', 
             lastActiveAt: nowIso, 
             lastLoginAt: nowIso 
           };
-          if (user.email === 'jaru072@gmail.com') {
+          if (isOwner) {
             currentUserProfile.role = 'ADMIN';
             currentUserProfile.accessPersonnel = true;
             currentUserProfile.accessInventory = true;
+            currentUserProfile.accessPayroll = true;
+            currentUserProfile.accessProcurement = true;
           }
           await setDoc(userRef, {
             role: currentUserProfile.role || 'WORKER',
-            accessPersonnel: currentUserProfile.accessPersonnel !== false,
+            accessPersonnel: currentUserProfile.accessPersonnel === true,
             accessInventory: currentUserProfile.accessInventory !== false,
+            accessPayroll: currentUserProfile.accessPayroll === true,
+            accessProcurement: currentUserProfile.accessProcurement === true,
+            linkedEmployeeId: currentUserProfile.linkedEmployeeId || '',
+            linkedEmployeeName: currentUserProfile.linkedEmployeeName || '',
+            linkedEmployeeCode: currentUserProfile.linkedEmployeeCode || '',
             modules: [
-              ...(currentUserProfile.accessPersonnel !== false ? ['personnel'] : []),
-              ...(currentUserProfile.accessInventory !== false ? ['inventory'] : [])
+              ...(currentUserProfile.accessPersonnel === true ? ['personnel'] : []),
+              ...(currentUserProfile.accessInventory !== false ? ['inventory'] : []),
+              ...(currentUserProfile.accessPayroll === true ? ['payroll'] : []),
+              ...(currentUserProfile.accessProcurement === true ? ['procurement'] : [])
             ],
             isOnline: true,
             status: 'Online',
@@ -439,16 +454,49 @@
             lastLoginAt: nowIso
           }, { merge: true });
         } else {
-          const defaultRole = initialRoleChoice || (user.email === 'jaru072@gmail.com' ? 'ADMIN' : 'WORKER');
+          const isOwner = user.email === 'jaru072@gmail.com';
+          const defaultRole = isOwner ? 'ADMIN' : (initialRoleChoice || 'WORKER');
+
+          // Auto-link to employee if email matches
+          let matchedEmpId = '';
+          let matchedEmpName = '';
+          let matchedEmpCode = '';
+          try {
+            if (window.db) {
+              const empSnap = await getDocs(collection(window.db, 'employees'));
+              if (!empSnap.empty) {
+                empSnap.forEach(d => {
+                  const ed = d.data();
+                  if (ed.email && String(ed.email).trim().toLowerCase() === String(user.email).trim().toLowerCase()) {
+                    matchedEmpId = d.id;
+                    matchedEmpName = ed.name || '';
+                    matchedEmpCode = ed.code || '';
+                  }
+                });
+              }
+            }
+          } catch(e) {
+            console.warn("Auto-link check notice:", e);
+          }
+
           currentUserProfile = {
             uid: user.uid,
             email: user.email || '',
             displayName: user.displayName || user.email?.split('@')[0] || 'ผู้ใช้งาน',
             photoURL: user.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-            role: user.email === 'jaru072@gmail.com' ? 'ADMIN' : defaultRole,
-            accessPersonnel: true,
+            role: isOwner ? 'ADMIN' : defaultRole,
+            accessPersonnel: isOwner,
             accessInventory: true,
-            modules: ['personnel', 'inventory'],
+            accessPayroll: isOwner, // Closed by default for new users!
+            accessProcurement: isOwner, // Blocked management by default for new users!
+            linkedEmployeeId: matchedEmpId,
+            linkedEmployeeName: matchedEmpName,
+            linkedEmployeeCode: matchedEmpCode,
+            modules: [
+              ...(isOwner ? ['personnel'] : []),
+              'inventory',
+              ...(isOwner ? ['payroll', 'procurement'] : [])
+            ],
             isOnline: true,
             status: 'Online',
             lastActiveAt: nowIso,
@@ -456,12 +504,24 @@
             updatedAt: nowIso
           };
           await setDoc(userRef, currentUserProfile);
+
+          if (matchedEmpId && window.db) {
+            try {
+              await updateDoc(doc(window.db, 'employees', matchedEmpId), {
+                linkedUserId: user.uid,
+                linkedUserEmail: user.email,
+                updatedAt: nowIso
+              });
+            } catch(e){}
+          }
         }
 
         if (user.email === 'jaru072@gmail.com') {
           currentUserProfile.role = 'ADMIN';
           currentUserProfile.accessPersonnel = true;
           currentUserProfile.accessInventory = true;
+          currentUserProfile.accessPayroll = true;
+          currentUserProfile.accessProcurement = true;
         }
         
         sessionStorage.setItem('flora_personnel_access', JSON.stringify({
@@ -470,8 +530,13 @@
           displayName: currentUserProfile?.displayName || user.displayName || 'ผู้ใช้งาน',
           photoURL: currentUserProfile?.photoURL || user.photoURL || '',
           role: currentUserProfile?.role || 'WORKER',
-          accessPersonnel: currentUserProfile?.accessPersonnel !== false,
+          accessPersonnel: currentUserProfile?.accessPersonnel === true,
           accessInventory: currentUserProfile?.accessInventory !== false,
+          accessPayroll: currentUserProfile?.accessPayroll === true,
+          accessProcurement: currentUserProfile?.accessProcurement === true,
+          linkedEmployeeId: currentUserProfile?.linkedEmployeeId || '',
+          linkedEmployeeName: currentUserProfile?.linkedEmployeeName || '',
+          linkedEmployeeCode: currentUserProfile?.linkedEmployeeCode || '',
           isAdmin: currentUserProfile?.role === 'ADMIN'
         }));
 
@@ -1223,8 +1288,10 @@
         countBadge.textContent = `แสดง ${filteredList.length} / ${allUsersList.length} รายการ`;
       }
 
+      const empList = Array.isArray(window.employeeList) ? window.employeeList : (typeof employeeList !== 'undefined' && Array.isArray(employeeList) ? employeeList : []);
+
       if (filteredList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4"><i class="bi bi-search me-1 text-warning"></i> ไม่พบรายชื่อผู้ใช้งานที่ตรงตามเงื่อนไขการค้นหา/กรอง</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-search me-1 text-warning"></i> ไม่พบรายชื่อผู้ใช้งานที่ตรงตามเงื่อนไขการค้นหา/กรอง</td></tr>`;
         return;
       }
 
@@ -1247,9 +1314,26 @@
 
         const safeName = typeof escapeHtml === 'function' ? escapeHtml(u.displayName || 'ผู้ใช้') : (u.displayName || 'ผู้ใช้');
         const safeEmail = typeof escapeHtml === 'function' ? escapeHtml(u.email || '-') : (u.email || '-');
-        const isSuperAdmin = u.email === 'jaru072@gmail.com' || uRole === 'ADMIN';
-        const hasPersonnel = isSuperAdmin ? true : (u.accessPersonnel !== false);
-        const hasInventory = isSuperAdmin ? true : (u.accessInventory !== false);
+        const hasPersonnel = (u.accessPersonnel !== undefined) ? Boolean(u.accessPersonnel) : (uRole === 'ADMIN' || uRole === 'MANAGER' || uRole === 'STAFF');
+        const hasInventory = (u.accessInventory !== undefined) ? Boolean(u.accessInventory) : true;
+        const hasPayroll = Boolean(u.accessPayroll);
+        const hasProcurement = Boolean(u.accessProcurement);
+
+        // Match linked employee
+        const currentLinkedEmpId = u.linkedEmployeeId || '';
+        const matchedEmpByEmail = !currentLinkedEmpId && u.email ? empList.find(e => e.email && String(e.email).trim().toLowerCase() === String(u.email).trim().toLowerCase()) : null;
+        const targetEmpId = currentLinkedEmpId || (matchedEmpByEmail ? (matchedEmpByEmail.id || matchedEmpByEmail.code) : '');
+
+        const empOptions = [
+          `<option value="">-- ยังไม่ผูกบุคลากร --</option>`,
+          ...empList.map(emp => {
+            const empIdVal = emp.id || emp.code;
+            const isSelected = (empIdVal === targetEmpId || emp.code === targetEmpId) ? 'selected' : '';
+            const empCodeStr = emp.code ? `[${emp.code}] ` : '';
+            const empDeptStr = emp.department ? ` (${emp.department})` : '';
+            return `<option value="${empIdVal}" ${isSelected}>${empCodeStr}${emp.name || 'ไม่มีชื่อ'}${empDeptStr}</option>`;
+          })
+        ].join('');
 
         return `
           <tr>
@@ -1262,13 +1346,16 @@
                 </div>
               </div>
             </td>
-            <td class="text-muted fs-8">${safeEmail}</td>
+            <td class="text-muted fs-8">
+              ${safeEmail}
+              ${matchedEmpByEmail && !currentLinkedEmpId ? `<span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 d-block mt-1 fs-9">แนะนำผูกตามอีเมล</span>` : ''}
+            </td>
             <td class="text-center">
               ${onlineBadge}
               ${timeSubtitle}
             </td>
             <td class="text-center">
-              <select id="userRoleSelect_${u.id}" class="form-select form-select-sm fw-semibold" ${u.email === 'jaru072@gmail.com' ? 'disabled' : ''}>
+              <select id="userRoleSelect_${u.id}" class="form-select form-select-sm fw-semibold" onchange="window.onUserRoleSelectChanged('${u.id}')">
                 <option value="ADMIN" ${uRole === 'ADMIN' ? 'selected' : ''}>🔴 ผู้ดูแลระบบ (ADMIN)</option>
                 <option value="MANAGER" ${uRole === 'MANAGER' ? 'selected' : ''}>🔵 ผู้จัดการ/บริหาร (MANAGER)</option>
                 <option value="STAFF" ${uRole === 'STAFF' ? 'selected' : ''}>🟣 เจ้าหน้าที่ (STAFF)</option>
@@ -1278,35 +1365,92 @@
             <td class="text-center">
               <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
                 <div class="form-check form-switch m-0" title="สิทธิ์เข้าระบบงานบุคคล (HR)">
-                  <input class="form-check-input" type="checkbox" id="userAccPersonnel_${u.id}" ${hasPersonnel ? 'checked' : ''} ${isSuperAdmin ? 'disabled' : ''}>
+                  <input class="form-check-input" type="checkbox" id="userAccPersonnel_${u.id}" ${hasPersonnel ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
                   <label class="form-check-label fs-8 fw-semibold text-primary" for="userAccPersonnel_${u.id}">👥 บุคคล</label>
                 </div>
-                <div class="form-check form-switch m-0" title="สิทธิ์เข้าระบบพัสดุและอุปกรณ์ (Stock & Equipment)">
-                  <input class="form-check-input" type="checkbox" id="userAccInventory_${u.id}" ${hasInventory ? 'checked' : ''} ${isSuperAdmin ? 'disabled' : ''}>
+                <div class="form-check form-switch m-0" title="สิทธิ์เข้าระบบพัสดุและอุปกรณ์">
+                  <input class="form-check-input" type="checkbox" id="userAccInventory_${u.id}" ${hasInventory ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
                   <label class="form-check-label fs-8 fw-semibold text-success" for="userAccInventory_${u.id}">📦 พัสดุฯ</label>
+                </div>
+                <div class="form-check form-switch m-0" title="สิทธิ์เข้าระบบเงินเดือน (เฉพาะการเงิน/ผู้ดูแลระบบ)">
+                  <input class="form-check-input" type="checkbox" id="userAccPayroll_${u.id}" ${hasPayroll ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
+                  <label class="form-check-label fs-8 fw-semibold text-warning" for="userAccPayroll_${u.id}">💰 เงินเดือน</label>
+                </div>
+                <div class="form-check form-switch m-0" title="สิทธิ์การจัดการจัดซื้อ (อนุมัติ/ออก PO/ตรวจรับ)">
+                  <input class="form-check-input" type="checkbox" id="userAccProcurement_${u.id}" ${hasProcurement ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
+                  <label class="form-check-label fs-8 fw-semibold text-teal" style="color: #0f766e;" for="userAccProcurement_${u.id}">🛒 จัดซื้อฯ</label>
                 </div>
               </div>
             </td>
+            <td class="text-center">
+              <select id="userLinkedEmp_${u.id}" class="form-select form-select-sm fs-8 border-secondary border-opacity-50" onchange="window.updateFirestoreUserRole('${u.id}')">
+                ${empOptions}
+              </select>
+            </td>
             <td class="text-end pe-3">
-              <button class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold" onclick="updateFirestoreUserRole('${u.id}')">
+              <button class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold" onclick="window.updateFirestoreUserRole('${u.id}')">
                 <i class="bi bi-check-lg me-1"></i> บันทึก
               </button>
             </td>
           </tr>
         `;
       }).join('');
-    }
+    };
+
+    // Role Select Change Handler in Main Script
+    window.onUserRoleSelectChanged = function(userId) {
+      const selectElem = document.getElementById(`userRoleSelect_${userId}`);
+      const chkPersonnel = document.getElementById(`userAccPersonnel_${userId}`);
+      const chkInventory = document.getElementById(`userAccInventory_${userId}`);
+      const chkPayroll = document.getElementById(`userAccPayroll_${userId}`);
+      const chkProcurement = document.getElementById(`userAccProcurement_${userId}`);
+      if (!selectElem) return;
+
+      const role = selectElem.value;
+      if (role === 'ADMIN') {
+        if (chkPersonnel) chkPersonnel.checked = true;
+        if (chkInventory) chkInventory.checked = true;
+        if (chkPayroll) chkPayroll.checked = true;
+        if (chkProcurement) chkProcurement.checked = true;
+      } else if (role === 'MANAGER') {
+        if (chkPersonnel) chkPersonnel.checked = true;
+        if (chkInventory) chkInventory.checked = true;
+        if (chkPayroll) chkPayroll.checked = true;
+        if (chkProcurement) chkProcurement.checked = true;
+      } else if (role === 'STAFF') {
+        if (chkPersonnel) chkPersonnel.checked = false;
+        if (chkInventory) chkInventory.checked = true;
+        if (chkPayroll) chkPayroll.checked = false;
+        if (chkProcurement) chkProcurement.checked = false;
+      } else if (role === 'WORKER') {
+        if (chkPersonnel) chkPersonnel.checked = false;
+        if (chkInventory) chkInventory.checked = true;
+        if (chkPayroll) chkPayroll.checked = false;
+        if (chkProcurement) chkProcurement.checked = false;
+      }
+      window.updateFirestoreUserRole(userId);
+    };
 
     // Update User Role & Module Permissions in Firestore
     window.updateFirestoreUserRole = async function(userId) {
       const selectElem = document.getElementById(`userRoleSelect_${userId}`);
       const chkPersonnel = document.getElementById(`userAccPersonnel_${userId}`);
       const chkInventory = document.getElementById(`userAccInventory_${userId}`);
+      const chkPayroll = document.getElementById(`userAccPayroll_${userId}`);
+      const chkProcurement = document.getElementById(`userAccProcurement_${userId}`);
+      const selEmp = document.getElementById(`userLinkedEmp_${userId}`);
       if (!selectElem || !db) return;
       const newRole = selectElem.value;
-      const isSuperAdmin = newRole === 'ADMIN';
-      const accessPersonnel = isSuperAdmin ? true : (chkPersonnel ? chkPersonnel.checked : true);
-      const accessInventory = isSuperAdmin ? true : (chkInventory ? chkInventory.checked : true);
+      const accessPersonnel = chkPersonnel ? chkPersonnel.checked : (newRole === 'ADMIN' || newRole === 'MANAGER' || newRole === 'STAFF');
+      const accessInventory = chkInventory ? chkInventory.checked : true;
+      const accessPayroll = chkPayroll ? chkPayroll.checked : (newRole === 'ADMIN');
+      const accessProcurement = chkProcurement ? chkProcurement.checked : (newRole === 'ADMIN' || newRole === 'MANAGER');
+
+      const linkedEmpId = selEmp ? selEmp.value : '';
+      const empList = Array.isArray(window.employeeList) ? window.employeeList : (typeof employeeList !== 'undefined' && Array.isArray(employeeList) ? employeeList : []);
+      const matchedEmp = empList.find(e => (e.id === linkedEmpId || e.code === linkedEmpId));
+      const linkedEmpName = matchedEmp ? (matchedEmp.name || '') : '';
+      const linkedEmpCode = matchedEmp ? (matchedEmp.code || '') : '';
 
       try {
         const userRef = doc(db, "users", userId);
@@ -1314,18 +1458,59 @@
           role: newRole,
           accessPersonnel: accessPersonnel,
           accessInventory: accessInventory,
+          accessPayroll: accessPayroll,
+          accessProcurement: accessProcurement,
+          linkedEmployeeId: linkedEmpId,
+          linkedEmployeeName: linkedEmpName,
+          linkedEmployeeCode: linkedEmpCode,
           modules: [
             ...(accessPersonnel ? ['personnel'] : []),
-            ...(accessInventory ? ['inventory'] : [])
+            ...(accessInventory ? ['inventory'] : []),
+            ...(accessPayroll ? ['payroll'] : []),
+            ...(accessProcurement ? ['procurement'] : [])
           ],
           updatedAt: new Date().toISOString()
         });
-        showToast(`อัปเดตสิทธิ์บทบาทและสิทธิ์เข้าถึงระบบเรียบร้อยแล้ว`);
+
+        // Update in-memory user list object
+        if (Array.isArray(allUsersList)) {
+          const targetUser = allUsersList.find(u => u.id === userId);
+          if (targetUser) {
+            targetUser.role = newRole;
+            targetUser.accessPersonnel = accessPersonnel;
+            targetUser.accessInventory = accessInventory;
+            targetUser.accessPayroll = accessPayroll;
+            targetUser.accessProcurement = accessProcurement;
+            targetUser.linkedEmployeeId = linkedEmpId;
+            targetUser.linkedEmployeeName = linkedEmpName;
+            targetUser.linkedEmployeeCode = linkedEmpCode;
+          }
+        }
+
+        // Bi-directional link to employee document if selected
+        if (linkedEmpId) {
+          const uObj = Array.isArray(allUsersList) ? allUsersList.find(u => u.id === userId) : null;
+          const userEmailStr = uObj?.email || '';
+          try {
+            const empRef = doc(db, "employees", linkedEmpId);
+            await updateDoc(empRef, {
+              linkedUserId: userId,
+              linkedUserEmail: userEmailStr,
+              updatedAt: new Date().toISOString()
+            });
+          } catch (empErr) {
+            console.warn("Could not update linked employee document:", empErr);
+          }
+        }
+
+        showToast(`บันทึกสิทธิ์และผูกบัญชีบุคลากรเรียบร้อยแล้ว`);
         if (currentAuthUser && currentAuthUser.uid === userId) {
           if (currentUserProfile) {
             currentUserProfile.role = newRole;
             currentUserProfile.accessPersonnel = accessPersonnel;
             currentUserProfile.accessInventory = accessInventory;
+            currentUserProfile.accessPayroll = accessPayroll;
+            currentUserProfile.accessProcurement = accessProcurement;
           }
           setRole(newRole);
           if (typeof window.checkModuleAccess === 'function') {
@@ -15363,10 +15548,6 @@
 
     // Function to show the custom confirmation modal for database purge (PRESERVING Firebase Storage images)
     window.purgeEntireDatabaseAndStorage = function() {
-      if (MAIN_PERSONNEL_READ_ONLY) {
-        if (typeof showToast === 'function') showToast('⛔ ปิดการลบฐานข้อมูลทั้งหมดจากหน้าหลัก เพื่อป้องกันข้อมูลบุคลากรและโครงสร้าง');
-        return;
-      }
       const modalEl = document.getElementById('confirmPurgeDbModal');
       const chk = document.getElementById('chkConfirmPurgeDb');
       const btn = document.getElementById('btnConfirmPurgeDbAction');
@@ -15378,7 +15559,10 @@
       }
 
       // Populate dynamic Database ID and Project Name in the confirmation modal
-      const info = window.getFriendlyProjectAndDbInfo();
+      const info = (typeof window.getFriendlyProjectAndDbInfo === 'function')
+        ? window.getFriendlyProjectAndDbInfo()
+        : { projectName: 'Flora Garden New', projectId: 'flora-gaden', databaseId: 'ai-studio-remixfloratestne-7fc63c6e-7cdb-49cc-b006-9bd6ab3a7926' };
+
       const projNameEl = document.getElementById('purgeTargetProjectName');
       const dbIdEl = document.getElementById('purgeTargetDbId');
       const projBadgeEl = document.getElementById('purgeTargetProjectIdBadge');
@@ -15393,24 +15577,47 @@
         projBadgeEl.textContent = `Project: ${info.projectId}`;
       }
 
+      // Track if called from backupRestoreModal
+      const backupModalEl = document.getElementById('backupRestoreModal');
+      if (backupModalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        if (backupModalEl.classList.contains('show')) {
+          window._purgeOpenedFromBackupModal = true;
+          const brInst = bootstrap.Modal.getInstance(backupModalEl);
+          if (brInst) brInst.hide();
+        } else {
+          window._purgeOpenedFromBackupModal = false;
+        }
+      }
+
       if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         modal.show();
       } else {
         // Fallback confirmation with project and database ID details
-        const c1 = confirm(`⚠️ คำเตือน: คุณแน่ใจหรือไม่ว่าต้องการ 'ลบฐานข้อมูลทั้งหมด' ?\n\n📌 โปรเจ็กต์: ${info.projectName}\n📌 Database ID: ${info.databaseId}\n📌 Firebase Project: ${info.projectId}\n\n*หมายเหตุ: จะไม่ลบไฟล์รูปภาพใน Firebase Storage (รูปภาพจะยังคงอยู่ใน Storage ปลอดภัย)*`);
+        const c1 = confirm(`⚠️ คำเตือน: คุณแน่ใจหรือไม่ว่าต้องการ 'ลบฐานข้อมูลทั้งหมด' ?\n\n📌 โปรเจ็กต์: ${info.projectName}\n📌 Database ID: ${info.databaseId}\n📌 Firebase Project: ${info.projectId}\n\n*หมายเหตุ: จะไม่ลบไฟล์รูปภาพใน Firebase Storage (รูปภาพจะยังคงอยู่ใน Storage ปลอดภัย 100%)*`);
         if (c1) {
           window.executeConfirmedPurgeDatabase();
         }
       }
     };
 
-    // Execute the confirmed database purge
+    // Ensure cancel on confirmPurgeDbModal returns to backupRestoreModal if opened from there
+    const purgeDbModalElement = document.getElementById('confirmPurgeDbModal');
+    if (purgeDbModalElement) {
+      purgeDbModalElement.addEventListener('hidden.bs.modal', () => {
+        if (window._purgeOpenedFromBackupModal) {
+          const brModalEl = document.getElementById('backupRestoreModal');
+          if (brModalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            const brInst = bootstrap.Modal.getOrCreateInstance(brModalEl);
+            brInst.show();
+          }
+          window._purgeOpenedFromBackupModal = false;
+        }
+      });
+    }
+
+    // Execute the confirmed database purge (deletes all Firestore docs for equipment and personnel, leaves Firebase Storage 100% untouched)
     window.executeConfirmedPurgeDatabase = async function() {
-      if (MAIN_PERSONNEL_READ_ONLY) {
-        if (typeof showToast === 'function') showToast('⛔ ยกเลิกการลบฐานข้อมูลทั้งหมดจากหน้าหลัก');
-        return;
-      }
       const modalEl = document.getElementById('confirmPurgeDbModal');
       const btn = document.getElementById('btnConfirmPurgeDbAction');
       if (btn) {
@@ -15419,25 +15626,47 @@
       }
 
       if (typeof showToast === 'function') {
-        showToast("⏳ กำลังเริ่มประมวลผลลบเอกสารฐานข้อมูลใน Firestore (คงรูปภาพใน Storage)...");
+        showToast("⏳ กำลังเริ่มประมวลผลลบเอกสารฐานข้อมูลทั้งหมดใน Firestore (คงรูปภาพใน Storage ปลอดภัย 100%)...");
       }
 
       let deletedDocsCount = 0;
 
       try {
-        // NOTE: We DO NOT delete images from Firebase Storage here as requested.
-        // Storage images remain intact and preserved in Firebase Storage.
+        // NOTE: Firebase Storage images are explicitly PRESERVED and NOT deleted!
+        // Storage images remain intact and 100% safe.
 
-        // 1. Delete all documents in Firestore collections if Firestore ready
+        // 1. Delete all documents in Firestore collections for both equipment and personnel
         if (isFirebaseReady && db) {
-          const collectionsToPurge = ["equipment", "employees", "transactions", "attendance", "categories", "departments", "locations", "system_metadata", "audit_logs"];
+          const collectionsToPurge = [
+            "equipment",
+            "employees",
+            "deleted_employees",
+            "transactions",
+            "attendance",
+            "categories",
+            "departments",
+            "locations",
+            "positions",
+            "system_metadata",
+            "audit_logs",
+            "user_login_logs",
+            "payroll_periods",
+            "payroll_records",
+            "job_applications"
+          ];
           for (const colName of collectionsToPurge) {
             try {
               const colRef = collection(db, colName);
               const qSnap = await getDocs(colRef);
-              for (const dSnap of qSnap.docs) {
-                await deleteDoc(dSnap.ref);
-                deletedDocsCount++;
+              if (!qSnap.empty) {
+                const batchSize = 400;
+                for (let i = 0; i < qSnap.docs.length; i += batchSize) {
+                  const chunk = qSnap.docs.slice(i, i + batchSize);
+                  const batch = writeBatch(db);
+                  chunk.forEach(docSnap => batch.delete(docSnap.ref));
+                  await batch.commit();
+                  deletedDocsCount += chunk.length;
+                }
               }
             } catch (fErr) {
               console.warn(`Firestore collection purge notice (${colName}):`, fErr.message);
@@ -15447,52 +15676,76 @@
 
         // 2. Clear local memory arrays
         equipmentList = [];
+        window.equipmentList = [];
         employeeList = [];
+        window.employeeList = [];
+        window.employees = [];
         transactionHistory = [];
+        window.transactionHistory = [];
         attendanceLogs = [];
+        window.attendanceLogs = [];
         auditLogs = [];
+        window.auditLogs = [];
         categoriesList = [];
+        window.categoriesList = [];
         departmentsList = [];
-        locationsList = [];
         window.departmentsList = [];
+        locationsList = [];
         window.locationsList = [];
+        positionsList = [];
+        window.positionsList = [];
 
-        // 3. Clear LocalStorage keys
-        localStorage.removeItem('flora_employees');
-        localStorage.removeItem('flora_equipment');
-        localStorage.removeItem('flora_transactions');
-        localStorage.removeItem('flora_attendance');
-        localStorage.removeItem('flora_audit_logs');
-        localStorage.removeItem('flora_categories');
-        localStorage.removeItem('flora_departments');
-        localStorage.removeItem('flora_locations');
-        localStorage.removeItem('flora_db_initialized');
-        localStorage.removeItem('flora_fs_seeded_employees');
-        localStorage.removeItem('flora_fs_seeded_attendance');
-        localStorage.removeItem('flora_fs_seeded_categories');
-        localStorage.removeItem('flora_fs_seeded_equipment');
-        localStorage.removeItem('flora_fs_seeded_locations');
+        // 3. Clear LocalStorage keys (both base and scoped)
+        const baseKeysToRemove = [
+          'flora_employees',
+          'flora_equipment',
+          'flora_transactions',
+          'flora_attendance',
+          'flora_audit_logs',
+          'flora_user_login_logs',
+          'flora_categories',
+          'flora_departments',
+          'flora_locations',
+          'flora_positions',
+          'flora_deleted_employees',
+          'flora_db_initialized',
+          'flora_fs_seeded_employees',
+          'flora_fs_seeded_attendance',
+          'flora_fs_seeded_categories',
+          'flora_fs_seeded_equipment',
+          'flora_fs_seeded_locations'
+        ];
+        baseKeysToRemove.forEach(k => {
+          localStorage.removeItem(k);
+          if (typeof getScopedStorageKey === 'function') {
+            localStorage.removeItem(getScopedStorageKey(k));
+          }
+        });
 
-        saveToLocalStorage();
+        if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
 
         // 4. Refresh UI components
-        renderCatalogGrid();
-        renderStaffTable();
-        renderHistoryTable();
-        renderEmployeeDirectory();
-        renderAttendanceTable();
-        populateEmployeeDropdowns();
-        populateEquipmentDropdown();
-        populateQuickScanDropdown();
-        populateLocationDropdowns();
-        populateDepartmentDropdowns();
+        if (typeof renderCatalogGrid === 'function') renderCatalogGrid();
+        if (typeof renderStaffTable === 'function') renderStaffTable();
+        if (typeof renderHistoryTable === 'function') renderHistoryTable();
+        if (typeof renderEmployeeDirectory === 'function') renderEmployeeDirectory();
+        if (typeof renderAttendanceTable === 'function') renderAttendanceTable();
+        if (typeof populateEmployeeDropdowns === 'function') populateEmployeeDropdowns();
+        if (typeof populateEquipmentDropdown === 'function') populateEquipmentDropdown();
+        if (typeof populateQuickScanDropdown === 'function') populateQuickScanDropdown();
+        if (typeof populateLocationDropdowns === 'function') populateLocationDropdowns();
+        if (typeof populateDepartmentDropdowns === 'function') populateDepartmentDropdowns();
         if (typeof renderLocationsListModal === 'function') renderLocationsListModal();
         if (typeof renderDepartmentsListModal === 'function') renderDepartmentsListModal();
         if (typeof renderCategoryManagementList === 'function') renderCategoryManagementList();
         if (typeof renderAuditLogsTable === 'function') renderAuditLogsTable();
-        updateStats();
-
+        if (typeof updateStats === 'function') updateStats();
         if (typeof renderDbEditorTable === 'function') renderDbEditorTable();
+        if (typeof window.refreshBackupModalLiveStats === 'function') window.refreshBackupModalLiveStats();
+        if (typeof refreshEquipmentBackupModalStats === 'function') refreshEquipmentBackupModalStats();
+
+        // Prevent reopening backup modal automatically on execute
+        window._purgeOpenedFromBackupModal = false;
 
         // Hide confirmation modal
         if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
@@ -15500,7 +15753,11 @@
           if (modalInstance) modalInstance.hide();
         }
 
-        showToast(`🗑️ ลบฐานข้อมูลสำเร็จแล้ว (${deletedDocsCount} รายการ) รวมถึง locations ใน Firestore เรียบร้อยแล้ว`);
+        if (typeof showToast === 'function') {
+          showToast(`🗑️ ลบฐานข้อมูลทั้งหมดสำเร็จแล้ว (${deletedDocsCount} รายการ) ทั้งพัสดุและบุคลากร (รูปภาพใน Storage ปลอดภัย 100%)`);
+        } else {
+          alert(`ลบฐานข้อมูลทั้งหมดสำเร็จแล้ว (${deletedDocsCount} รายการ) รูปภาพใน Storage ปลอดภัย 100%`);
+        }
       } catch (err) {
         console.error("Purge error:", err);
         if (typeof showToast === 'function') {
@@ -16555,16 +16812,8 @@
     };
 
     async function seedCollectionIfEmpty(collName, list) {
-      if (!isFirebaseReady || !db || !Array.isArray(list) || list.length === 0) return;
-      try {
-        for (const item of list) {
-          if (item && item.id) {
-            await setDoc(doc(db, collName, item.id), item, { merge: true });
-          }
-        }
-      } catch (e) {
-        console.warn(`Seeding ${collName} notice:`, e);
-      }
+      // Safe no-op: Automatic background database seeding is disabled to prevent overwriting cloud records.
+      return;
     }
 
     let isInitialFetchCompleted = false;
@@ -16628,21 +16877,7 @@
           renderStaffTable();
           hasData = true;
         } else if (empSnap.status === 'fulfilled' && empSnap.value.empty) {
-          let seedEmps = (employeeList && employeeList.length > 0) ? employeeList : defaultEmployeesSeedList;
-          try {
-            const saved = localStorage.getItem('flora_employees');
-            if (saved) {
-              const parsed = JSON.parse(saved);
-              if (Array.isArray(parsed) && parsed.length > 0) seedEmps = parsed;
-            }
-          } catch(e){}
-          employeeList = seedEmps;
-          for (const emp of seedEmps) {
-            const empId = emp.id || emp.code;
-            if (empId) {
-              setDoc(doc(db, "employees", empId), emp, { merge: true }).catch(() => {});
-            }
-          }
+          employeeList = [];
           renderEmployeeDirectory();
           populateEmployeeDropdowns();
           renderStaffTable();
@@ -16673,10 +16908,7 @@
           renderCategoryManagementList();
           hasData = true;
         } else if (catSnap.status === 'fulfilled' && catSnap.value.empty) {
-          categoriesList = [...defaultCategoriesList];
-          for (const c of defaultCategoriesList) {
-            setDoc(doc(db, "categories", c.id), c, { merge: true }).catch(() => {});
-          }
+          categoriesList = [];
           renderCategoryDropdowns();
           renderCategoryManagementList();
           hasData = true;
@@ -16709,21 +16941,7 @@
           populateQuickScanDropdown();
           hasData = true;
         } else if (eqSnap.status === 'fulfilled' && eqSnap.value.empty) {
-          let seedEquip = (equipmentList && equipmentList.length > 0) ? equipmentList : defaultInitialEquipmentList;
-          try {
-            const saved = localStorage.getItem('flora_equipment');
-            if (saved) {
-              const parsed = JSON.parse(saved);
-              if (Array.isArray(parsed) && parsed.length > 0) seedEquip = parsed;
-            }
-          } catch(e){}
-          equipmentList = seedEquip;
-          for (const item of seedEquip) {
-            const eqId = item.id || item.code;
-            if (eqId) {
-              setDoc(doc(db, "equipment", eqId), item, { merge: true }).catch(() => {});
-            }
-          }
+          equipmentList = [];
           renderCatalogGrid();
           renderStaffTable();
           populateEquipmentDropdown();
@@ -16767,12 +16985,7 @@
           populateDepartmentDropdowns();
           hasData = true;
         } else if (deptSnap.status === 'fulfilled' && deptSnap.value.empty) {
-          departmentsList = [...defaultDepartmentsList];
-          defaultDepartmentsList.forEach((dName, idx) => {
-            const numStr = String(idx + 1).padStart(3, '0');
-            const code = `DEP-${numStr}`;
-            setDoc(doc(db, "departments", code), { id: code, code: code, name: dName }, { merge: true }).catch(() => {});
-          });
+          departmentsList = [];
           populateDepartmentDropdowns();
           hasData = true;
         }
@@ -16801,12 +17014,7 @@
           populateLocationDropdowns();
           hasData = true;
         } else if (locSnap.status === 'fulfilled' && locSnap.value.empty) {
-          locationsList = [...defaultLocationsList];
-          defaultLocationsList.forEach((lName, idx) => {
-            const numStr = String(idx + 1).padStart(3, '0');
-            const code = `LOC-${numStr}`;
-            setDoc(doc(db, "locations", code), { id: code, code: code, name: lName }, { merge: true }).catch(() => {});
-          });
+          locationsList = [];
           populateLocationDropdowns();
           hasData = true;
         }
@@ -16837,10 +17045,7 @@
             populatePositionDropdowns();
             hasData = true;
           } else {
-            positionsList = [...defaultPositionsList];
-            for (const pos of defaultPositionsList) {
-              setDoc(doc(db, "positions", pos.id), pos, { merge: true }).catch(() => {});
-            }
+            positionsList = [];
             populatePositionDropdowns();
             hasData = true;
           }

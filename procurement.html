@@ -390,7 +390,7 @@
                 <i class="bi bi-shield-lock-fill text-success fs-5"></i>
                 <span class="fs-8 fw-bold text-dark">ระบบตรวจสอบ 3 ด้าน (3-Way Matching: PO - ใบส่งของ - ของที่ได้รับจริง)</span>
               </div>
-              <button type="button" class="btn btn-sm btn-success rounded-pill px-3" onclick="window.procurementModule.openNewGoodsReceiptModal()">
+              <button type="button" id="btnOpenNewGR" class="btn btn-sm btn-success rounded-pill px-3" onclick="window.procurementModule.openNewGoodsReceiptModal()">
                 <i class="bi bi-plus-circle me-1"></i>บันทึกการตรวจรับพัสดุ
               </button>
             </div>
@@ -421,7 +421,7 @@
           <div class="tab-pane fade" id="tab-vendor" role="tabpanel">
             <div class="p-3 bg-light border-bottom d-flex align-items-center justify-content-between">
               <span class="fs-8 fw-semibold text-muted">รายชื่อผู้ขายและคู่ค้าที่ผ่านการรับรอง</span>
-              <button type="button" class="btn btn-sm btn-outline-teal rounded-pill px-3 btn-proc-primary" onclick="window.procurementModule.openNewVendorModal()">
+              <button type="button" id="btnOpenNewVendor" class="btn btn-sm btn-outline-teal rounded-pill px-3 btn-proc-primary" onclick="window.procurementModule.openNewVendorModal()">
                 <i class="bi bi-plus-circle me-1"></i>เพิ่มคู่ค้าใหม่
               </button>
             </div>
@@ -814,7 +814,7 @@
   <!-- Firebase Initializer -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, initializeFirestore, collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, initializeFirestore, collection, getDocs, getDoc, doc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     fetch('/firebase-applet-config.json')
@@ -863,12 +863,46 @@
           window.updateAllFloraTitles();
         }
 
-        onAuthStateChanged(window.auth, (user) => {
+        onAuthStateChanged(window.auth, async (user) => {
+          let canManage = false;
           if (user) {
+            let userProfile = null;
+            const isSuperOwner = (user.email === 'jaru072@gmail.com');
+            try {
+              if (window.db) {
+                const uSnap = await getDoc(doc(window.db, 'users', user.uid));
+                if (uSnap.exists()) {
+                  userProfile = uSnap.data();
+                }
+              }
+            } catch (e) {
+              console.warn('Procurement user profile fetch notice:', e);
+            }
+            if (isSuperOwner || userProfile?.role === 'ADMIN' || userProfile?.role === 'MANAGER' || userProfile?.accessProcurement === true) {
+              canManage = true;
+            }
+
+            window.currentUserProfile = userProfile;
+            window.currentUserRole = isSuperOwner ? 'ADMIN' : (userProfile?.role || 'WORKER');
+            window.currentUserCanManageProcurement = canManage;
+
             const roleEl = document.getElementById('currentRoleText');
-            if (roleEl) roleEl.textContent = user.displayName || user.email?.split('@')[0] || 'Admin';
+            if (roleEl) {
+              const roleTitle = canManage ? (isSuperOwner || userProfile?.role === 'ADMIN' ? 'ผู้ดูแลระบบ' : 'ฝ่ายจัดซื้อ/บริหาร') : 'ผู้ใช้งาน (ดูรายการ)';
+              roleEl.textContent = `${user.displayName || user.email?.split('@')[0] || 'ผู้ใช้งาน'} (${roleTitle})`;
+            }
             const avatarEl = document.getElementById('navUserAvatar');
-            if (avatarEl && user.photoURL) avatarEl.src = user.photoURL;
+            if (avatarEl && (user.photoURL || userProfile?.photoURL)) {
+              avatarEl.src = user.photoURL || userProfile?.photoURL;
+            }
+          } else {
+            window.currentUserProfile = null;
+            window.currentUserRole = 'WORKER';
+            window.currentUserCanManageProcurement = false;
+          }
+
+          if (window.procurementModule?.updateAuthPermissions) {
+            window.procurementModule.updateAuthPermissions(canManage);
           }
           if (window.procurementModule?.init) {
             window.procurementModule.init();
