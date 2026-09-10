@@ -2202,7 +2202,7 @@
                 </button>
               </div>
               <div class="input-group">
-                <select id="empDeptSelect" class="form-select rounded-start-3" required>
+                <select id="empDeptSelect" class="form-select rounded-start-3" required onchange="if(typeof populatePositionDropdowns==='function') populatePositionDropdowns(null, this.value)">
                   <option value="">-- กรุณาเลือกแผนก --</option>
                 </select>
                 <button type="button" class="btn btn-outline-success fw-semibold px-3" onclick="openManageDepartmentsModal()" title="จัดการรายชื่อแผนก (เพิ่ม/แก้ไข/ลบ)">

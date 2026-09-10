@@ -1,4 +1,4 @@
-    import { initializeApp, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
       initializeFirestore,
       getFirestore, 
@@ -188,44 +188,60 @@
     ];
 
     const defaultDepartmentsList = [
-      "แผนกงานธุรการ",
-      "แผนกงานทดลอง",
-      "แผนกทีมกุหลาบ",
-      "แผนกทีมเจดีย์/แปลง G",
-      "แผนกทีมแปลง A-B",
-      "แผนกทีมแปลง E/P11",
-      "แผนกทีมถนนธรรมชัย/เฟื้องฟ้า/ผสมดิน",
-      "แผนกทีมไม้ดอกหลังวิหารคดคอร์ 13-20(ปอ)",
-      "ทั่วไป",
-      "ทีมตัดหญ้า",
-      "ทีมวิหารหลวงปู่"
+      { id: "dept-1-1", code: "1.1", name: "1.1 งานธุรการ / งานบุคคล", cleanName: "งานธุรการ / งานบุคคล", group: "งานส่วนกลาง" },
+      { id: "dept-1-2", code: "1.2", name: "1.2 งานสวัสดิการ", cleanName: "งานสวัสดิการ", group: "งานส่วนกลาง" },
+      { id: "dept-1-3-water", code: "1.3", name: "1.3 งานระบบน้ำ", cleanName: "งานระบบน้ำ", group: "งานส่วนกลาง" },
+      { id: "dept-1-3-grass", code: "1.4", name: "1.4 งานตัดหญ้า", cleanName: "งานตัดหญ้า", group: "งานส่วนกลาง" },
+      { id: "dept-2-1", code: "2.1", name: "2.1 งานทดลอง", cleanName: "งานทดลอง", group: "งานกุหลาบ / งานทดลอง" },
+      { id: "dept-2-2", code: "2.2", name: "2.2 งานกุหลาบ", cleanName: "งานกุหลาบ", group: "งานกุหลาบ / งานทดลอง" },
+      { id: "dept-3-1", code: "3.1", name: "3.1 งานเจดีย์", cleanName: "งานเจดีย์", group: "งานรัตนบุปผา" },
+      { id: "dept-3-2", code: "3.2", name: "3.2 งานวิหารหลวงปู่", cleanName: "งานวิหารหลวงปู่", group: "งานรัตนบุปผา" },
+      { id: "dept-3-3", code: "3.3", name: "3.3 งานถนนธรรมชัย / เฟื่องฟ้า", cleanName: "งานถนนธรรมชัย / เฟื่องฟ้า", group: "งานรัตนบุปผา" },
+      { id: "dept-3-4", code: "3.4", name: "3.4 งานผสมแกลบ / งานโต๊ะกลาง", cleanName: "งานผสมแกลบ / งานโต๊ะกลาง", group: "งานรัตนบุปผา" },
+      { id: "dept-4-1", code: "4.1", name: "4.1 แปลง A / B", cleanName: "แปลง A / B", group: "งานธรรมยาตรา" },
+      { id: "dept-4-2", code: "4.2", name: "4.2 แปลง E / P11", cleanName: "แปลง E / P11", group: "งานธรรมยาตรา" },
+      { id: "dept-4-3", code: "4.3", name: "4.3 งานไม้กระถางหลังวิหารคด 13–20", cleanName: "งานไม้กระถางหลังวิหารคด 13–20", group: "งานธรรมยาตรา" },
+      { id: "academic", code: "4.5", name: "สายวิชาการและเทคนิคการผลิต", cleanName: "สายวิชาการและเทคนิคการผลิต", group: "สายวิชาการและเทคนิคการผลิต" },
+      { id: "executive-admin", code: "", name: "ฝ่ายบริหารและอำนวยการ", cleanName: "ฝ่ายบริหารและอำนวยการ", group: "ฝ่ายบริหารและอำนวยการ" }
     ];
 
     const defaultPositionsList = [
-      { id: "POS-001", code: "POS-001", name: "ประธานโครงการ", group: "ระดับบริหารและประสานงาน", order: 1 },
-      { id: "POS-002", code: "POS-002", name: "ที่ปรึกษาโครงการ", group: "ระดับบริหารและประสานงาน", order: 2 },
-      { id: "POS-003", code: "POS-003", name: "ผู้ประสานงานโครงการ", group: "ระดับบริหารและประสานงาน", order: 3 },
-      { id: "POS-004", code: "POS-004", name: "หัวหน้างานส่วนกลาง (4.1)", group: "ระดับหัวหน้างานฝ่ายหลัก", order: 4 },
-      { id: "POS-005", code: "POS-005", name: "หัวหน้างานกุหลาบ/งานทดลอง (4.2)", group: "ระดับหัวหน้างานฝ่ายหลัก", order: 5 },
-      { id: "POS-006", code: "POS-006", name: "หัวหน้างานรัตนบุปผา (4.3)", group: "ระดับหัวหน้างานฝ่ายหลัก", order: 6 },
-      { id: "POS-007", code: "POS-007", name: "หัวหน้างานธรรมยาตรา (4.4)", group: "ระดับหัวหน้างานฝ่ายหลัก", order: 7 },
-      { id: "POS-008", code: "POS-008", name: "นักวิชาการ", group: "สายวิชาการและกำกับมาตรฐาน", order: 8 },
-      { id: "POS-009", code: "POS-009", name: "หัวหน้างานธุรการ / บุคคล (5.1)", group: "ระดับหัวหน้าแผนก", order: 9 },
-      { id: "POS-010", code: "POS-010", name: "หัวหน้างานสวัสดิการ (5.2)", group: "ระดับหัวหน้าแผนก", order: 10 },
-      { id: "POS-011", code: "POS-011", name: "หัวหน้างานสนับสนุน (ระบบน้ำ/ตัดหญ้า) (5.3)", group: "ระดับหัวหน้าแผนก", order: 11 },
-      { id: "POS-012", code: "POS-012", name: "หัวหน้างานทดลอง (5.4)", group: "ระดับหัวหน้าแผนก", order: 12 },
-      { id: "POS-013", code: "POS-013", name: "หัวหน้างานกุหลาบ (5.5)", group: "ระดับหัวหน้าแผนก", order: 13 },
-      { id: "POS-014", code: "POS-014", name: "หัวหน้างานเจดีย์ (5.6)", group: "ระดับหัวหน้าแผนก", order: 14 },
-      { id: "POS-015", code: "POS-015", name: "หัวหน้างานวิหารหลวงปู่ (5.7)", group: "ระดับหัวหน้าแผนก", order: 15 },
-      { id: "POS-016", code: "POS-016", name: "หัวหน้างานถนนธรรมชัย / เฟื่องฟ้า (5.8)", group: "ระดับหัวหน้าแผนก", order: 16 },
-      { id: "POS-017", code: "POS-017", name: "หัวหน้างานผสมแกลบ / โต๊ะกลาง (5.9)", group: "ระดับหัวหน้าแผนก", order: 17 },
-      { id: "POS-018", code: "POS-018", name: "หัวหน้างานแปลง A / B (5.10)", group: "ระดับหัวหน้าแผนก", order: 18 },
-      { id: "POS-019", code: "POS-019", name: "หัวหน้างานแปลง E / P11 (5.11)", group: "ระดับหัวหน้าแผนก", order: 19 },
-      { id: "POS-020", code: "POS-020", name: "หัวหน้างานไม้กระถางหลังวิหารคด (5.12)", group: "ระดับหัวหน้าแผนก", order: 20 },
-      { id: "POS-021", code: "POS-021", name: "หัวหน้าแผนก / หัวหน้าแปลง (Team Leader)", group: "ระดับหัวหน้าแผนก", order: 21 },
-      { id: "POS-022", code: "POS-022", name: "เจ้าหน้าที่ธุรการ", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", order: 22 },
-      { id: "POS-023", code: "POS-023", name: "พระภิกษุ", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", order: 23 },
-      { id: "POS-024", code: "POS-024", name: "พนักงานปฏิบัติการ", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", order: 24 }
+      { id: "pos-1", code: "1", name: "ประธานโครงการ", group: "ระดับบริหารและประสานงาน", category: "executive", order: 1 },
+      { id: "pos-2", code: "2", name: "ที่ปรึกษาโครงการ", group: "ระดับบริหารและประสานงาน", category: "executive", order: 2 },
+      { id: "pos-3", code: "3", name: "ผู้ประสานงานโครงการ", group: "ระดับบริหารและประสานงาน", category: "executive", order: 3 },
+      { id: "pos-4-1", code: "4.1", name: "หัวหน้างานส่วนกลาง", group: "ระดับหัวหน้างานฝ่ายหลัก", category: "section_head", order: 4 },
+      { id: "pos-4-2", code: "4.2", name: "หัวหน้างานกุหลาบ/งานทดลอง", group: "ระดับหัวหน้างานฝ่ายหลัก", category: "section_head", order: 5 },
+      { id: "pos-4-3", code: "4.3", name: "หัวหน้างานรัตนบุปผา", group: "ระดับหัวหน้างานฝ่ายหลัก", category: "section_head", order: 6 },
+      { id: "pos-4-4", code: "4.4", name: "หัวหน้างานธรรมยาตรา", group: "ระดับหัวหน้างานฝ่ายหลัก", category: "section_head", order: 7 },
+      { id: "pos-academic", code: "4.5.1", name: "นักวิชาการ", group: "สายวิชาการและกำกับมาตรฐาน", category: "academic", order: 8 },
+      { id: "pos-5-1", code: "5.1", name: "หัวหน้างานธุรการ / บุคคล", group: "ระดับหัวหน้าแผนก", category: "team_leader", order: 9 },
+      { id: "pos-5-2", code: "5.2", name: "หัวหน้างานสวัสดิการ", group: "ระดับหัวหน้าแผนก", category: "team_leader", order: 10 },
+      { id: "pos-5-3", code: "5.3", name: "หัวหน้างานระบบน้ำ", group: "ระดับหัวหน้าแผนก", category: "team_leader", order: 11 },
+      { id: "pos-5-4", code: "5.4", name: "หัวหน้างานตัดหญ้า", group: "ระดับหัวหน้าแผนก", category: "team_leader", order: 12 },
+      { id: "pos-5-5", code: "5.5", name: "หัวหน้างานทดลอง", group: "ระดับหัวหน้าแผนก", category: "team_leader", order: 13 },
+      { id: "pos-5-6", code: "5.6", name: "หัวหน้างานกุหลาบ", group: "ระดับหัวหน้าแผนก", category: "team_leader", order: 14 },
+      { id: "pos-5-7", code: "5.7", name: "หัวหน้างานเจดีย์", group: "ระดับหัวหน้าแผนก", category: "team_leader", order: 15 },
+      { id: "pos-5-8", code: "5.8", name: "หัวหน้างานวิหารหลวงปู่", group: "ระดับหัวหน้าแผนก", category: "team_leader", order: 16 },
+      { id: "pos-5-9", code: "5.9", name: "หัวหน้างานถนนธรรมชัย / เฟื่องฟ้า", group: "ระดับหัวหน้าแผนก", category: "team_leader", order: 17 },
+      { id: "pos-5-10", code: "5.10", name: "หัวหน้างานผสมแกลบ / โต๊ะกลาง", group: "ระดับหัวหน้าแผนก", category: "team_leader", order: 18 },
+      { id: "pos-5-11", code: "5.11", name: "หัวหน้างานแปลง A / B", group: "ระดับหัวหน้าแผนก", category: "team_leader", order: 19 },
+      { id: "pos-5-12", code: "5.12", name: "หัวหน้างานแปลง E / P11", group: "ระดับหัวหน้าแผนก", category: "team_leader", order: 20 },
+      { id: "pos-5-13", code: "5.13", name: "หัวหน้างานไม้กระถางหลังวิหารคด 13–20", group: "ระดับหัวหน้าแผนก", category: "team_leader", order: 21 },
+      { id: "pos-6-1", code: "6.1", name: "เจ้าหน้าที่ธุรการ", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", category: "staff", order: 22 },
+      { id: "pos-6-2", code: "6.2", name: "พนักงานสวัสดิการ", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", category: "worker", order: 23 },
+      { id: "pos-6-3", code: "6.3", name: "พนักงานดูแลระบบน้ำ", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", category: "worker", order: 24 },
+      { id: "pos-6-4", code: "6.4", name: "พนักงานตัดหญ้า", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", category: "worker", order: 25 },
+      { id: "pos-6-5", code: "6.5", name: "พนักงานงานทดลอง", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", category: "worker", order: 26 },
+      { id: "pos-6-6", code: "6.6", name: "พนักงานดูแลกุหลาบ", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", category: "worker", order: 27 },
+      { id: "pos-6-7", code: "6.7", name: "พนักงานงานเจดีย์", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", category: "worker", order: 28 },
+      { id: "pos-6-8", code: "6.8", name: "พนักงานงานวิหารหลวงปู่", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", category: "worker", order: 29 },
+      { id: "pos-6-9", code: "6.9", name: "พนักงานดูแลถนนธรรมชัย", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", category: "worker", order: 30 },
+      { id: "pos-6-10", code: "6.10", name: "พนักงานผสมแกลบ", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", category: "worker", order: 31 },
+      { id: "pos-6-11", code: "6.11", name: "พนักงานดูแลแปลง A/B", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", category: "worker", order: 32 },
+      { id: "pos-6-12", code: "6.12", name: "พนักงานดูแลแปลง E/P11", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", category: "worker", order: 33 },
+      { id: "pos-6-13", code: "6.13", name: "พนักงานดูแลไม้กระถาง", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", category: "worker", order: 34 },
+      { id: "pos-6-monk", code: "6.14", name: "พระภิกษุ", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", category: "staff", order: 35 },
+      { id: "pos-worker", code: "6.15", name: "พนักงานปฏิบัติการ", group: "เจ้าหน้าที่และพนักงานปฏิบัติการ", category: "worker", order: 36 }
     ];
 
     const defaultLocationsList = [
@@ -267,13 +283,14 @@
       { id: "EXEC-04", code: "EXEC-04", name: "ผู้ประสานงานโครงการ", role: "ADMIN", position: "ผู้ประสานงานโครงการ", department: "ฝ่ายบริหารและอำนวยการ", phone: "081-000-0004", status: "ปฏิบัติงาน", accessPersonnel: true, accessInventory: true }
     ];
 
-    // Initialize Firebase & Auth gracefully with long polling for iframe sandbox resilience
+    // Initialize Firebase & Auth gracefully with forced long polling for iframe sandbox resilience
     try {
-      const app = initializeApp(firebaseConfig);
+      const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
       
       try {
         const fsSettings = {
-          experimentalAutoDetectLongPolling: true
+          experimentalForceLongPolling: true,
+          useFetchStreams: false
         };
         const customDbId = (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== "(default)")
           ? firebaseConfig.firestoreDatabaseId
@@ -320,6 +337,8 @@
 
       isFirebaseReady = true;
       console.log("Firebase & Auth initialized successfully with project flora-gaden.");
+      window.db = db;
+      window.floraDb = db;
       window.floraFirebaseBridge = { 
         db, doc, setDoc, onSnapshot, getDoc, getDocs, collection, deleteDoc,
         storage, ref, uploadBytes, getDownloadURL, deleteObject, auth 
@@ -1959,46 +1978,47 @@
           categoriesList = [...defaultCategoriesList];
         }
 
-        const savedDepts = getScopedLocalStorageItem('flora_departments');
-        if (savedDepts) {
-          try {
-            departmentsList = JSON.parse(savedDepts);
-          } catch(e) {
+        if (typeof window.getFloraOrgDepartments === 'function') {
+          departmentsList = window.getFloraOrgDepartments();
+        } else {
+          const savedDepts = getScopedLocalStorageItem('flora_departments');
+          if (savedDepts) {
+            try {
+              departmentsList = JSON.parse(savedDepts);
+            } catch(e) {
+              departmentsList = [...defaultDepartmentsList];
+            }
+          } else {
             departmentsList = [...defaultDepartmentsList];
           }
-        } else {
-          departmentsList = [...defaultDepartmentsList];
         }
 
-        const savedPositions = getScopedLocalStorageItem('flora_positions');
-        if (savedPositions) {
-          try {
-            const parsed = JSON.parse(savedPositions);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              const posMap = new Map();
-              defaultPositionsList.forEach(p => posMap.set(p.name.toLowerCase(), p));
-              parsed.forEach(p => {
-                const name = typeof p === 'object' ? (p.name || p.id || '') : String(p);
-                if (name && name.trim()) {
-                  posMap.set(name.trim().toLowerCase(), typeof p === 'object' ? p : { id: `POS-${String(posMap.size+1).padStart(3, '0')}`, code: `POS-${String(posMap.size+1).padStart(3, '0')}`, name: name.trim(), group: 'ตำแหน่งทั่วไป' });
-                }
-              });
-              const merged = Array.from(posMap.values());
-              merged.sort((a, b) => {
-                const numA = parseInt(((a.code || a.id || '').match(/^POS-(\d+)$/i) || [0, 999999])[1], 10);
-                const numB = parseInt(((b.code || b.id || '').match(/^POS-(\d+)$/i) || [0, 999999])[1], 10);
-                if (numA !== numB) return numA - numB;
-                return (a.order || 0) - (b.order || 0);
-              });
-              positionsList = merged;
-            } else {
+        if (window.positionsList && Array.isArray(window.positionsList) && window.positionsList.length > 0) {
+          positionsList = [...window.positionsList];
+        } else {
+          const savedPositions = getScopedLocalStorageItem('flora_positions');
+          if (savedPositions) {
+            try {
+              const parsed = JSON.parse(savedPositions);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                const posMap = new Map();
+                defaultPositionsList.forEach(p => posMap.set(p.name.toLowerCase(), p));
+                parsed.forEach(p => {
+                  const name = typeof p === 'object' ? (p.name || p.id || '') : String(p);
+                  if (name && name.trim()) {
+                    posMap.set(name.trim().toLowerCase(), typeof p === 'object' ? p : { id: `POS-${String(posMap.size+1).padStart(3, '0')}`, code: `POS-${String(posMap.size+1).padStart(3, '0')}`, name: name.trim(), group: 'ตำแหน่งทั่วไป' });
+                  }
+                });
+                positionsList = Array.from(posMap.values());
+              } else {
+                positionsList = [...defaultPositionsList];
+              }
+            } catch(e) {
               positionsList = [...defaultPositionsList];
             }
-          } catch(e) {
+          } else {
             positionsList = [...defaultPositionsList];
           }
-        } else {
-          positionsList = [...defaultPositionsList];
         }
 
         const savedLocs = getScopedLocalStorageItem('flora_locations');
@@ -2012,27 +2032,48 @@
           locationsList = [...defaultLocationsList];
         }
 
-        const deptMap = {
-          "เจ้าหน้าที่สำนักงาน (Staff)": "แผนกงานธุรการ",
-          "แผนกเรือนกระจกและเพาะชำ": "แผนกงานทดลอง",
-          "แผนกตกแต่งและตัดแต่งกิ่ง": "แผนกทีมเจดีย์/แปลง G",
-          "แผนกระบบน้ำและบำรุงดิน": "แผนกทีมถนนธรรมชัย/เฟื้องฟ้า/ผสมดิน",
-          "สวนกุหลาบและไม้ดอก": "แผนกทีมกุหลาบ",
-          "สวนไม้ผลและไม้ยืนต้น": "แผนกทีมไม้ดอกหลังวิหารคดคอร์ 13-20(ปอ)",
-          "แผนกดูแลไม้ดอก (Rose & Tulip)": "แผนกทีมกุหลาบ",
-          "แผนกไม้ประดับใบ (Indoor Flora)": "แผนกงานทดลอง"
+        const legacyDeptMap = {
+          "แผนกงานธุรการ": "1.1 งานธุรการ / งานบุคคล",
+          "งานธุรการ": "1.1 งานธุรการ / งานบุคคล",
+          "แผนกงานบุคคล": "1.1 งานธุรการ / งานบุคคล",
+          "เจ้าหน้าที่สำนักงาน (Staff)": "1.1 งานธุรการ / งานบุคคล",
+          "แผนกเรือนกระจกและเพาะชำ": "2.1 งานทดลอง",
+          "แผนกงานทดลอง": "2.1 งานทดลอง",
+          "งานทดลอง": "2.1 งานทดลอง",
+          "แผนกทีมกุหลาบ": "2.2 งานกุหลาบ",
+          "ทีมกุหลาบ": "2.2 งานกุหลาบ",
+          "สวนกุหลาบและไม้ดอก": "2.2 งานกุหลาบ",
+          "แผนกดูแลไม้ดอก (Rose & Tulip)": "2.2 งานกุหลาบ",
+          "แผนกไม้ประดับใบ (Indoor Flora)": "2.1 งานทดลอง",
+          "แผนกทีมเจดีย์/แปลง G": "3.1 งานเจดีย์",
+          "แผนกตกแต่งและตัดแต่งกิ่ง": "3.1 งานเจดีย์",
+          "แผนกทีมเจดีย์": "3.1 งานเจดีย์",
+          "งานเจดีย์": "3.1 งานเจดีย์",
+          "ทีมวิหารหลวงปู่": "3.2 งานวิหารหลวงปู่",
+          "งานวิหารหลวงปู่": "3.2 งานวิหารหลวงปู่",
+          "แผนกทีมถนนธรรมชัย/เฟื้องฟ้า/ผสมดิน": "3.3 งานถนนธรรมชัย / เฟื่องฟ้า",
+          "แผนกระบบน้ำและบำรุงดิน": "1.3 งานระบบน้ำ",
+          "แผนกทีมถนนธรรมชัย": "3.3 งานถนนธรรมชัย / เฟื่องฟ้า",
+          "งานถนนธรรมชัย": "3.3 งานถนนธรรมชัย / เฟื่องฟ้า",
+          "ผสมดิน": "3.4 งานผสมแกลบ / งานโต๊ะกลาง",
+          "แผนกทีมแปลง A-B": "4.1 แปลง A / B",
+          "แปลง A-B": "4.1 แปลง A / B",
+          "แผนกทีมแปลง E/P11": "4.2 แปลง E / P11",
+          "แปลง E/P11": "4.2 แปลง E / P11",
+          "สวนไม้ผลและไม้ยืนต้น": "4.3 งานไม้กระถางหลังวิหารคด 13–20",
+          "แผนกทีมไม้ดอกหลังวิหารคดคอร์ 13-20(ปอ)": "4.3 งานไม้กระถางหลังวิหารคด 13–20",
+          "ทีมตัดหญ้า": "1.4 งานตัดหญ้า",
+          "ระบบน้ำ": "1.3 งานระบบน้ำ",
+          "ทั่วไป": "ฝ่ายบริหารและอำนวยการ",
+          "วิชาการ": "สายวิชาการและเทคนิคการผลิต"
         };
 
-        const oldDepts = Object.keys(deptMap);
-        departmentsList = (departmentsList || []).map(d => deptMap[d] || d);
-        departmentsList = Array.from(new Set(departmentsList));
-        if (departmentsList.length === 0 || departmentsList.some(d => oldDepts.includes(d))) {
-          departmentsList = [...defaultDepartmentsList];
-        }
-
         (employeeList || []).forEach(emp => {
-          if (deptMap[emp.department]) {
-            emp.department = deptMap[emp.department];
+          if (emp.department && legacyDeptMap[emp.department]) {
+            emp.department = legacyDeptMap[emp.department];
+          }
+          if (emp.position && typeof emp.position === 'string') {
+            emp.position = emp.position.replace(/\s*\(\d+(?:\.\d+)*\)\s*$/, '').trim();
           }
         });
       } catch (e) {
@@ -5572,13 +5613,19 @@
       const deptSelect = document.getElementById('bulkEmpDeptSelect');
       if (deptSelect) {
         deptSelect.innerHTML = '<option value="">-- เลือกแผนกที่ต้องการเปลี่ยน --</option>';
-        if (typeof departmentsList !== 'undefined' && Array.isArray(departmentsList)) {
-          departmentsList.forEach(dept => {
-            const opt = document.createElement('option');
-            opt.value = dept;
-            opt.textContent = dept;
-            deptSelect.appendChild(opt);
-          });
+        const groups = getDepartmentDropdownGroups(departmentsList);
+        for (const [key, grp] of Object.entries(groups)) {
+          if (grp.items.length > 0) {
+            const optGroup = document.createElement('optgroup');
+            optGroup.label = grp.label;
+            grp.items.forEach(dept => {
+              const opt = document.createElement('option');
+              opt.value = dept.name;
+              opt.textContent = dept.displayName;
+              optGroup.appendChild(opt);
+            });
+            deptSelect.appendChild(optGroup);
+          }
         }
         const customOpt = document.createElement('option');
         customOpt.value = 'CUSTOM';
@@ -14227,7 +14274,7 @@
       document.getElementById('empCodeInput').value = emp.code || emp.id;
       if (document.getElementById('empRoleSelect')) document.getElementById('empRoleSelect').value = emp.role;
       populateDepartmentDropdowns(emp.department);
-      populatePositionDropdowns(emp.position);
+      populatePositionDropdowns(emp.position, emp.department);
       if (document.getElementById('empDetailsInput')) document.getElementById('empDetailsInput').value = emp.details || '';
       document.getElementById('empPhoneInput').value = emp.phone;
       document.getElementById('empPhotoUrlInput').value = emp.photoUrl || '';
@@ -14464,33 +14511,102 @@
       }
     };
 
+    function getDepartmentDropdownGroups(deptList = departmentsList) {
+      const groups = {
+        central: { label: '🏢 สายงานส่วนกลาง (1)', items: [] },
+        rose: { label: '🌹 สายงานกุหลาบและงานทดลอง (2)', items: [] },
+        ratana: { label: '🪷 สายงานรัตนบุปผา (3)', items: [] },
+        dhamma: { label: '🌾 สายงานธรรมยาตรา (4)', items: [] },
+        admin: { label: '👑 ฝ่ายบริหารและอำนวยการ', items: [] },
+        academic: { label: '🔬 สายวิชาการและเทคนิคการผลิต', items: [] },
+        other: { label: '📁 แผนกทั่วไป / อื่นๆ', items: [] }
+      };
+
+      const sourceList = (deptList && deptList.length)
+        ? deptList
+        : (typeof window.getFloraOrgDepartments === 'function' ? window.getFloraOrgDepartments() : defaultDepartmentsList);
+
+      sourceList.forEach((d, idx) => {
+        const id = typeof d === 'object' ? (d.id || d.nodeId || `dept-${idx}`) : `dept-${idx}`;
+        const code = typeof d === 'object' ? (d.code || '') : '';
+        const rawName = typeof d === 'object' ? (d.display || d.label || d.name || '') : String(d);
+        const cleanName = typeof d === 'object' ? (d.cleanName || d.name || rawName) : rawName;
+        const grp = typeof d === 'object' ? (d.group || '') : '';
+
+        const item = {
+          id,
+          code,
+          name: rawName,
+          displayName: rawName,
+          cleanName: cleanName.replace(/^\s*\d+(?:\.\d+)*\s*/, '').trim(),
+          nodeId: id,
+          group: grp
+        };
+
+        if (grp.includes('ส่วนกลาง') || code.startsWith('1.') || id.includes('dept-1') || id === 'division-1') {
+          groups.central.items.push(item);
+        } else if (grp.includes('กุหลาบ') || grp.includes('ทดลอง') || code.startsWith('2.') || id.includes('dept-2') || id === 'division-2') {
+          groups.rose.items.push(item);
+        } else if (grp.includes('รัตนบุปผา') || code.startsWith('3.') || id.includes('dept-3') || id === 'division-3') {
+          groups.ratana.items.push(item);
+        } else if (grp.includes('ธรรมยาตรา') || (code.startsWith('4.') && !code.startsWith('4.5')) || id.includes('dept-4') || id === 'division-4') {
+          groups.dhamma.items.push(item);
+        } else if (id === 'academic' || id === 'pos-academic' || grp.includes('วิชาการ') || code.startsWith('4.5') || rawName.includes('วิชาการ')) {
+          groups.academic.items.push(item);
+        } else if (id === 'executive-admin' || grp.includes('บริหาร') || rawName.includes('บริหาร') || rawName.includes('ประธาน')) {
+          groups.admin.items.push(item);
+        } else {
+          groups.other.items.push(item);
+        }
+      });
+
+      return groups;
+    }
+    window.getDepartmentDropdownGroups = getDepartmentDropdownGroups;
+
     function populateDepartmentDropdowns(selectedValue = null) {
       const select = document.getElementById('empDeptSelect');
       if (!select) return;
 
-      const currentVal = selectedValue || select.value;
+      const currentVal = selectedValue !== null && selectedValue !== undefined ? selectedValue : select.value;
 
-      select.innerHTML = '<option value="">-- กรุณาเลือกแผนก --</option>';
+      select.innerHTML = '<option value="">-- กรุณาเลือกแผนก / สายงาน --</option>';
 
       let hasSelected = false;
+      const groups = getDepartmentDropdownGroups(departmentsList);
 
-      departmentsList.forEach(deptName => {
-        const opt = document.createElement('option');
-        opt.value = deptName;
-        opt.textContent = deptName;
-        if (deptName === currentVal) {
-          opt.selected = true;
-          hasSelected = true;
+      for (const [key, grp] of Object.entries(groups)) {
+        if (grp.items.length > 0) {
+          const optGroup = document.createElement('optgroup');
+          optGroup.label = grp.label;
+
+          grp.items.forEach(dept => {
+            const opt = document.createElement('option');
+            opt.value = dept.name;
+            opt.textContent = dept.displayName;
+            if (dept.code) opt.dataset.code = dept.code;
+            if (dept.nodeId) opt.dataset.nodeId = dept.nodeId;
+
+            if (dept.name === currentVal || dept.displayName === currentVal || dept.cleanName === currentVal) {
+              opt.selected = true;
+              hasSelected = true;
+            }
+            optGroup.appendChild(opt);
+          });
+
+          select.appendChild(optGroup);
         }
-        select.appendChild(opt);
-      });
+      }
 
       if (currentVal && !hasSelected) {
+        const legacyGroup = document.createElement('optgroup');
+        legacyGroup.label = 'แผนกเดิม / นอกโครงสร้าง';
         const opt = document.createElement('option');
         opt.value = currentVal;
         opt.textContent = `${currentVal} (แผนกเดิม)`;
         opt.selected = true;
-        select.appendChild(opt);
+        legacyGroup.appendChild(opt);
+        select.appendChild(legacyGroup);
       }
     }
     window.populateDepartmentDropdowns = populateDepartmentDropdowns;
@@ -14718,71 +14834,123 @@
     };
 
     // ==================== POSITIONS LIST MANAGEMENT ====================
-    function populatePositionDropdowns(selectedValue = null) {
+    function populatePositionDropdowns(selectedValue = null, selectedDept = null) {
       const select = document.getElementById('empPositionSelect');
       if (!select) return;
 
+      const deptSelect = document.getElementById('empDeptSelect');
+      const currentDept = selectedDept !== null && selectedDept !== undefined ? selectedDept : (deptSelect?.value || '');
       const currentVal = selectedValue !== null && selectedValue !== undefined ? selectedValue : select.value;
+
+      if (!currentDept) {
+        select.innerHTML = '<option value="">-- กรุณาเลือกแผนกก่อน --</option>';
+        return;
+      }
+
       select.innerHTML = '<option value="">-- กรุณาเลือกตำแหน่ง --</option>';
 
       let hasSelected = false;
-      const normalizedPositions = (positionsList || []).map(p => {
-        if (typeof p === 'string') {
-          return { id: p, code: p, name: p, group: 'ตำแหน่งทั่วไป' };
-        }
-        return p;
-      });
+      const cleanDept = (typeof stripStructureCode === 'function' ? stripStructureCode(currentDept) : currentDept).toLowerCase();
+      const codeMatch = currentDept.match(/^(\d+\.\d+|\d+)/);
+      const deptCode = codeMatch ? codeMatch[1] : '';
 
-      // Group positions by group
-      const groups = {};
-      normalizedPositions.forEach(p => {
-        const grp = p.group || 'ตำแหน่งทั่วไป';
-        if (!groups[grp]) groups[grp] = [];
-        groups[grp].push(p);
-      });
+      const groups = {
+        leader: { label: '👑 ระดับหัวหน้า', items: [] },
+        worker: { label: '👷 ระดับพนักงาน / ปฏิบัติการ', items: [] }
+      };
 
-      const groupOrder = [
-        'ระดับบริหารและประสานงาน',
-        'ระดับหัวหน้างานฝ่ายหลัก',
-        'สายวิชาการและกำกับมาตรฐาน',
-        'ระดับหัวหน้าแผนก',
-        'เจ้าหน้าที่และพนักงานปฏิบัติการ',
-        'ตำแหน่งทั่วไป'
-      ];
-
-      const sortedGroupKeys = Object.keys(groups).sort((a, b) => {
-        const idxA = groupOrder.indexOf(a);
-        const idxB = groupOrder.indexOf(b);
-        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        if (idxA !== -1) return -1;
-        if (idxB !== -1) return 1;
-        return a.localeCompare(b, 'th');
-      });
-
-      sortedGroupKeys.forEach(grpName => {
-        const optGroup = document.createElement('optgroup');
-        optGroup.label = grpName;
-
-        groups[grpName].forEach(pos => {
-          const opt = document.createElement('option');
-          opt.value = pos.name;
-          opt.textContent = pos.name;
-          if (pos.name === currentVal) {
-            opt.selected = true;
-            hasSelected = true;
+      if (currentDept.includes('บริหาร') || currentDept.includes('อำนวยการ')) {
+        groups.leader.label = '👑 ระดับบริหารและประสานงาน';
+        (positionsList || []).forEach(p => {
+          const pName = typeof p === 'string' ? p : p.name;
+          if (pName.includes('ประธาน') || pName.includes('ที่ปรึกษา') || pName.includes('ผู้ประสานงาน')) {
+            groups.leader.items.push(pName);
           }
-          optGroup.appendChild(opt);
+        });
+        groups.worker.items.push('พนักงานปฏิบัติการ');
+      } else if (currentDept.includes('วิชาการ')) {
+        groups.leader.label = '🔬 สายวิชาการ';
+        (positionsList || []).forEach(p => {
+          const pName = typeof p === 'string' ? p : p.name;
+          if (pName.includes('วิชาการ')) {
+            groups.leader.items.push(pName);
+          }
+        });
+        groups.worker.items.push('พนักงานปฏิบัติการ');
+      } else {
+        const departmentKeywordsMap = [
+          { code: '1.1', kw: ['ธุรการ', 'บุคคล'], leaderKw: ['ธุรการ', 'บุคคล'], workerKw: ['ธุรการ'] },
+          { code: '1.2', kw: ['สวัสดิการ'], leaderKw: ['สวัสดิการ'], workerKw: ['สวัสดิการ'] },
+          { code: '1.3', kw: ['ระบบน้ำ'], leaderKw: ['ระบบน้ำ'], workerKw: ['ระบบน้ำ'] },
+          { code: '1.4', kw: ['ตัดหญ้า'], leaderKw: ['ตัดหญ้า'], workerKw: ['ตัดหญ้า'] },
+          { code: '2.1', kw: ['ทดลอง'], leaderKw: ['ทดลอง'], workerKw: ['ทดลอง'] },
+          { code: '2.2', kw: ['กุหลาบ'], leaderKw: ['กุหลาบ'], workerKw: ['กุหลาบ'] },
+          { code: '3.1', kw: ['เจดีย์'], leaderKw: ['เจดีย์'], workerKw: ['เจดีย์'] },
+          { code: '3.2', kw: ['วิหารหลวงปู่'], leaderKw: ['วิหารหลวงปู่'], workerKw: ['วิหารหลวงปู่'] },
+          { code: '3.3', kw: ['ถนนธรรมชัย', 'เฟื่องฟ้า'], leaderKw: ['ถนนธรรมชัย', 'เฟื่องฟ้า'], workerKw: ['ถนนธรรมชัย', 'เฟื่องฟ้า'] },
+          { code: '3.4', kw: ['ผสมแกลบ', 'โต๊ะกลาง'], leaderKw: ['ผสมแกลบ', 'โต๊ะกลาง'], workerKw: ['ผสมแกลบ', 'โต๊ะกลาง'] },
+          { code: '4.1', kw: ['แปลง a', 'แปลง b', 'a / b', 'a/b'], leaderKw: ['แปลง a / b', 'แปลง a/b', 'แปลง a'], workerKw: ['แปลง a/b', 'แปลง a'] },
+          { code: '4.2', kw: ['แปลง e', 'p11', 'e / p11', 'e/p11'], leaderKw: ['แปลง e / p11', 'แปลง e/p11', 'แปลง e'], workerKw: ['แปลง e/p11', 'แปลง e'] },
+          { code: '4.3', kw: ['ไม้กระถาง', 'วิหารคด'], leaderKw: ['ไม้กระถาง', 'วิหารคด'], workerKw: ['ไม้กระถาง'] },
+          { code: '1', kw: ['ส่วนกลาง'], leaderKw: ['ส่วนกลาง'], workerKw: ['ธุรการ'] },
+          { code: '2', kw: ['กุหลาบและงานทดลอง', 'กุหลาบ/งานทดลอง'], leaderKw: ['กุหลาบ/งานทดลอง', 'กุหลาบและงานทดลอง'], workerKw: ['ทดลอง'] },
+          { code: '3', kw: ['รัตนบุปผา'], leaderKw: ['รัตนบุปผา'], workerKw: [] },
+          { code: '4', kw: ['ธรรมยาตรา'], leaderKw: ['ธรรมยาตรา'], workerKw: [] }
+        ];
+
+        const matchedConfig = departmentKeywordsMap.find(cfg => 
+          (deptCode && cfg.code === deptCode) ||
+          cfg.kw.some(k => cleanDept.includes(k) || currentDept.toLowerCase().includes(k))
+        );
+
+        (positionsList || []).forEach(p => {
+          const pName = typeof p === 'string' ? p : p.name;
+          const isLeader = pName.includes('หัวหน้า') || (typeof p === 'object' && (p.category === 'team_leader' || p.category === 'section_head'));
+          if (matchedConfig) {
+            if (isLeader && matchedConfig.leaderKw.some(k => pName.toLowerCase().includes(k.toLowerCase()))) {
+              if (!groups.leader.items.includes(pName)) groups.leader.items.push(pName);
+            } else if (!isLeader && matchedConfig.workerKw.some(k => pName.toLowerCase().includes(k.toLowerCase()))) {
+              if (!groups.worker.items.includes(pName)) groups.worker.items.push(pName);
+            }
+          }
         });
 
-        select.appendChild(optGroup);
-      });
+        if (groups.leader.items.length === 0) {
+          const cleanName = typeof stripStructureCode === 'function' ? stripStructureCode(currentDept) : currentDept;
+          groups.leader.items.push(`หัวหน้า${cleanName}`);
+        }
+        if (!groups.worker.items.includes('พนักงานปฏิบัติการ')) {
+          groups.worker.items.push('พนักงานปฏิบัติการ');
+        }
+      }
+
+      for (const [key, grp] of Object.entries(groups)) {
+        if (grp.items.length > 0) {
+          const optGroup = document.createElement('optgroup');
+          optGroup.label = grp.label;
+          grp.items.forEach(posName => {
+            const opt = document.createElement('option');
+            opt.value = posName;
+            opt.textContent = typeof stripStructureCode === 'function' ? stripStructureCode(posName) : posName;
+            if (posName === currentVal || (typeof stripStructureCode === 'function' && stripStructureCode(posName) === stripStructureCode(currentVal))) {
+              opt.selected = true;
+              hasSelected = true;
+            }
+            optGroup.appendChild(opt);
+          });
+          select.appendChild(optGroup);
+        }
+      }
 
       if (currentVal && !hasSelected) {
+        const legacyGroup = document.createElement('optgroup');
+        legacyGroup.label = '📌 ตำแหน่งเดิมที่ระบุไว้';
         const opt = document.createElement('option');
         opt.value = currentVal;
-        opt.textContent = `${currentVal} (ตำแหน่งเดิม)`;
+        opt.textContent = typeof stripStructureCode === 'function' ? stripStructureCode(currentVal) : currentVal;
         opt.selected = true;
-        select.appendChild(opt);
+        legacyGroup.appendChild(opt);
+        select.appendChild(legacyGroup);
       }
     }
     window.populatePositionDropdowns = populatePositionDropdowns;
@@ -16877,7 +17045,15 @@
           renderStaffTable();
           hasData = true;
         } else if (empSnap.status === 'fulfilled' && empSnap.value.empty) {
-          employeeList = [];
+          if (!employeeList || employeeList.length === 0) {
+            const savedEmps = getScopedLocalStorageItem('flora_employees') || localStorage.getItem('flora_employees');
+            if (savedEmps) {
+              try {
+                const parsed = JSON.parse(savedEmps);
+                if (Array.isArray(parsed) && parsed.length > 0) employeeList = parsed;
+              } catch(e){}
+            }
+          }
           renderEmployeeDirectory();
           populateEmployeeDropdowns();
           renderStaffTable();
@@ -17083,11 +17259,19 @@
       try {
         onSnapshot(collection(db, "employees"), (snapshot) => {
           if (snapshot.empty) {
-            employeeList = [];
+            if (!employeeList || employeeList.length === 0) {
+              const savedEmps = getScopedLocalStorageItem('flora_employees') || localStorage.getItem('flora_employees');
+              if (savedEmps) {
+                try {
+                  const parsed = JSON.parse(savedEmps);
+                  if (Array.isArray(parsed) && parsed.length > 0) employeeList = parsed;
+                } catch(e){}
+              }
+            }
           } else {
             employeeList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            saveToLocalStorage();
           }
-          saveToLocalStorage();
           renderEmployeeDirectory();
           populateEmployeeDropdowns();
           renderStaffTable();
@@ -17954,7 +18138,8 @@
         const getDbInstance = (dbId) => {
           try {
             const fsSettings = {
-              experimentalAutoDetectLongPolling: true
+              experimentalForceLongPolling: true,
+              useFetchStreams: false
             };
             if (!dbId || dbId === "(default)") {
               try {
@@ -18726,6 +18911,29 @@
         const observer = new MutationObserver(updateScrollButtonsVisibility);
         observer.observe(document.body, { childList: true, subtree: true });
       } catch(e) {}
+
+      function syncFromOrgTreeEvents() {
+        if (typeof window.getFloraOrgDepartments === 'function') {
+          departmentsList = window.getFloraOrgDepartments();
+        }
+        if (window.positionsList && Array.isArray(window.positionsList) && window.positionsList.length > 0) {
+          positionsList = [...window.positionsList];
+        }
+        if (typeof populateDepartmentDropdowns === 'function') {
+          populateDepartmentDropdowns();
+        }
+        if (typeof populatePositionDropdowns === 'function') {
+          populatePositionDropdowns();
+        }
+      }
+      window.addEventListener('flora-departments-changed', syncFromOrgTreeEvents);
+      window.addEventListener('flora-positions-changed', syncFromOrgTreeEvents);
+      window.addEventListener('flora-org-tree-changed', syncFromOrgTreeEvents);
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'flora_departments' || e.key === 'flora_positions' || e.key === 'flora_org_tree_v1') {
+          syncFromOrgTreeEvents();
+        }
+      });
 
       updateScrollButtonsVisibility();
     }

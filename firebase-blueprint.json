@@ -334,6 +334,9 @@
         "text": { "type": "string" },
         "tag": { "type": "string" },
         "channel": { "type": "string" },
+        "recipientId": { "type": "string" },
+        "recipientName": { "type": "string" },
+        "isDirect": { "type": "boolean" },
         "timestamp": { "type": "string" },
         "createdAt": { "type": "string" }
       },

@@ -685,11 +685,12 @@
         window.firebaseConfig = config;
         window.floraFirebaseConfig = config;
         const app = initializeApp(config);
-        const dbId = config.firestoreDatabaseId;
-        if (dbId && dbId !== "(default)") {
-          window.db = initializeFirestore(app, {}, dbId);
-        } else {
-          window.db = getFirestore(app);
+        const dbId = (config.firestoreDatabaseId && config.firestoreDatabaseId !== "(default)") ? config.firestoreDatabaseId : undefined;
+        const fsSettings = { experimentalForceLongPolling: true, useFetchStreams: false };
+        try {
+          window.db = dbId ? initializeFirestore(app, fsSettings, dbId) : initializeFirestore(app, fsSettings);
+        } catch (eFs) {
+          window.db = dbId ? getFirestore(app, dbId) : getFirestore(app);
         }
         window.auth = getAuth(app);
         

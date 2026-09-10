@@ -105,11 +105,12 @@
         app = initializeApp(cfg);
       }
 
-      const dbId = cfg.firestoreDatabaseId;
-      if (dbId && dbId !== "(default)") {
-        window.db = initializeFirestore(app, {}, dbId);
-      } else {
-        window.db = getFirestore(app);
+      const dbId = (cfg.firestoreDatabaseId && cfg.firestoreDatabaseId !== "(default)") ? cfg.firestoreDatabaseId : undefined;
+      const fsSettings = { experimentalForceLongPolling: true, useFetchStreams: false };
+      try {
+        window.db = dbId ? initializeFirestore(app, fsSettings, dbId) : initializeFirestore(app, fsSettings);
+      } catch (eFs) {
+        window.db = dbId ? getFirestore(app, dbId) : getFirestore(app);
       }
 
       window.floraFirebaseBridge = {

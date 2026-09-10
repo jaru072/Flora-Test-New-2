@@ -89,7 +89,19 @@
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
   function esc(value) { return String(value ?? "").replace(/[&<>'"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" }[c])); }
   function normalize(value) { return String(value || "").replace(/^\s*\d+(?:\.\d+)*\s*/, "").replace(/[–-]/g, "-").replace(/\s+/g, " ").trim().toLocaleLowerCase("th"); }
-  function display(node) { return node.code === "ORG-ROOT" ? node.name : `${node.code} ${node.name}`.trim(); }
+  function isAutoCode(code) {
+    if (!code || code === "ORG-ROOT") return true;
+    const s = String(code).trim();
+    return /^AUTO[-_]/i.test(s) || /^POS-\d+/i.test(s);
+  }
+  function cleanNodeName(name) {
+    return String(name || "").replace(/^AUTO-[A-Z0-9_-]+\s*/i, "").trim();
+  }
+  function display(node) {
+    if (!node) return "";
+    const name = cleanNodeName(node.name);
+    return isAutoCode(node.code) ? name : `${node.code} ${name}`.trim();
+  }
   function flatten(node = tree, parent = null, depth = 0, ancestors = []) {
     const row = { node, parent, depth, ancestors };
     return [row, ...(node.children || []).flatMap(child => flatten(child, node, depth + 1, [...ancestors, node]))];
@@ -124,9 +136,19 @@
       if (note !== undefined && typeof note !== "string") throw new Error(`หมายเหตุของโหนด ${id} ไม่ถูกต้อง`);
       if (children !== undefined && !Array.isArray(children)) throw new Error(`โหนดย่อยของ ${id} ไม่ถูกต้อง`);
       if (++count > 5000) throw new Error("มีโหนดเกิน 5,000 รายการ");
-      return { id, code: code.trim(), name: name.trim(), kind, ...(note ? { note } : {}), children: (children || []).map(child => visit(child, depth + 1)) };
+      const cleanName = cleanNodeName(name.trim()) || name.trim();
+      return { id, code: code.trim(), name: cleanName, kind, ...(note ? { note } : {}), children: (children || []).map(child => visit(child, depth + 1)) };
     };
     return visit(value, 0);
+  }
+
+  function sanitizeTreeNames(root) {
+    if (!root) return root;
+    root.name = cleanNodeName(root.name) || root.name;
+    if (root.children && Array.isArray(root.children)) {
+      root.children.forEach(sanitizeTreeNames);
+    }
+    return root;
   }
 
   function syncMasterTitleToStorageAndDom(title, note) {
@@ -176,6 +198,7 @@
       if (!saved) saved = localStorage.getItem(BASE_STORAGE_KEY);
       if (saved) tree = validateTree(JSON.parse(saved));
     } catch (error) { console.warn("Tree local data reset:", error); tree = clone(seedTree); }
+    sanitizeTreeNames(tree);
     selectedId = tree.id;
     syncMasterTitleToStorageAndDom(tree.name, tree.note);
   }
@@ -185,20 +208,76 @@
   }
   function syncDerivedLists() {
     const rows = flatten();
-    window.positionsList = rows.filter(({node}) => ["position","role","supervision"].includes(node.kind)).map(({node}, index) => {
+    window.positionsList = rows.filter(({node}) => ["position","role","supervision"].includes(node.kind)).map(({node, ancestors}, index) => {
       let category = "worker";
-      if (["pos-1","pos-2","pos-3"].includes(node.id)) category = "executive";
-      else if (node.kind === "supervision" || node.id === "pos-academic") category = "academic";
-      else if (node.kind === "position") category = "section_head";
-      else if (String(node.code).startsWith("5") || node.name.includes("หัวหน้า")) category = "team_leader";
-      else if (node.name.includes("เจ้าหน้าที่")) category = "staff";
-      return { id: node.id, name: node.name, category, order: index + 1, nodeId: node.id };
+      let groupName = "เจ้าหน้าที่และพนักงานปฏิบัติการ";
+      if (["pos-1","pos-2","pos-3"].includes(node.id)) {
+        category = "executive";
+        groupName = "ระดับบริหารและประสานงาน";
+      } else if (node.kind === "supervision" || node.id === "pos-academic") {
+        category = "academic";
+        groupName = "สายวิชาการและกำกับมาตรฐาน";
+      } else if (node.kind === "position") {
+        category = "section_head";
+        groupName = "ระดับหัวหน้างานฝ่ายหลัก";
+      } else if (String(node.code).startsWith("5") || node.name.includes("หัวหน้า")) {
+        category = "team_leader";
+        groupName = "ระดับหัวหน้าแผนก";
+      } else if (node.name.includes("เจ้าหน้าที่") || node.name.includes("พระภิกษุ")) {
+        category = "staff";
+        groupName = "เจ้าหน้าที่และพนักงานปฏิบัติการ";
+      }
+
+      const chain = [...ancestors, node];
+      const deptNode = [...chain].reverse().find(item => item.kind === "department");
+      const divNode = [...chain].reverse().find(item => item.kind === "division");
+      const inAcademic = chain.some(item => item.id === "academic");
+      const isAcademicOnly = (node.id === "academic" || node.id === "pos-academic" || (!deptNode && !divNode && inAcademic));
+      const deptName = deptNode ? display(deptNode) : divNode ? display(divNode) : isAcademicOnly ? "สายวิชาการและเทคนิคการผลิต" : "ฝ่ายบริหารและอำนวยการ";
+      const deptNodeId = deptNode?.id || divNode?.id || (isAcademicOnly ? "academic" : "executive-admin");
+
+      return {
+        id: node.id,
+        code: node.code || `POS-${String(index + 1).padStart(3, '0')}`,
+        name: node.name,
+        displayName: node.name,
+        category,
+        group: groupName,
+        order: index + 1,
+        nodeId: node.id,
+        departmentName: deptName,
+        departmentNodeId: deptNodeId
+      };
     });
-    window.departmentsList = getDepartments().map(item => ({ id: item.id, name: item.label, nodeId: item.id }));
+
+    const depts = getDepartments();
+    window.departmentsList = depts.map(item => ({
+      id: item.id,
+      code: item.code,
+      name: item.display || item.name,
+      cleanName: item.cleanName || item.name,
+      label: item.display || item.name,
+      display: item.display || item.name,
+      group: item.group || "ทั่วไป",
+      nodeId: item.id,
+      kind: item.kind
+    }));
+
+    try {
+      localStorage.setItem('flora_positions', JSON.stringify(window.positionsList));
+      localStorage.setItem('org_chart_positions', JSON.stringify(window.positionsList));
+      localStorage.setItem('flora_departments', JSON.stringify(window.departmentsList.map(d => d.name)));
+      localStorage.setItem('org_chart_departments', JSON.stringify(window.departmentsList));
+    } catch(e) {}
   }
   function reconcileEmployeesFromTree(persist = true) {
     let changedCount = 0;
-    for (const emp of (window.employees || [])) {
+    const targetEmployees = (window.employees && window.employees.length) ? window.employees : (window.employeeList || []);
+    for (const emp of targetEmployees) {
+      if (!emp) continue;
+      const deptStr = (emp.department || '').trim();
+      if (!deptStr || deptStr === 'ยังไม่ระบุ' || deptStr === 'ยังไม่ระบุแผนก' || deptStr === 'ทั่วไป' || deptStr === 'Unassigned' || deptStr === '-') continue;
+
       const resolvedNodeId = resolveEmployeeNode(emp);
       const assignment = resolvedNodeId ? assignmentFor(resolvedNodeId) : null;
       if (!assignment) continue;
@@ -225,15 +304,69 @@
   function dispatchChange(origin = "local") {
     persistLocal(); syncDerivedLists(); reconcileEmployeesFromTree(true); renderManager();
     syncMasterTitleToStorageAndDom(tree.name, tree.note);
-    window.dispatchEvent(new CustomEvent("flora-org-tree-changed", { detail: { origin, tree: clone(tree) } }));
+    window.orgChartDirty = true;
+    window.orgTreeVersion = (window.orgTreeVersion || 0) + 1;
+    window.dispatchEvent(new CustomEvent("flora-org-tree-changed", { detail: { origin, tree: clone(tree), departments: clone(window.departmentsList), positions: clone(window.positionsList) } }));
+    window.dispatchEvent(new CustomEvent("flora-departments-changed", { detail: { origin, departments: clone(window.departmentsList) } }));
+    window.dispatchEvent(new CustomEvent("flora-positions-changed", { detail: { origin, positions: clone(window.positionsList) } }));
+    if (typeof window.markOrgChartDirty === "function") window.markOrgChartDirty();
     if (origin !== "remote" && firestoreBridge) firestoreBridge.write(tree);
     if (origin !== "remote") window.logPersonnelAudit?.("แก้ไขโครงสร้าง Tree", { rootId: tree.id, rootName: tree.name });
   }
 
   function getDepartments() {
-    const result = flatten().filter(({node}) => ["division","department"].includes(node.kind)).map(({node}) => ({ id: node.id, code: node.code, name: node.name, label: node.name, kind:node.kind }));
-    result.push({ id:"academic", code:"4.5", name:"งานวิชาการ", label:"งานวิชาการ", kind:"special" });
-    result.push({ id:"executive-admin", code:"", name:"ฝ่ายบริหารและอำนวยการ", label:"ฝ่ายบริหารและอำนวยการ", kind:"special" });
+    const result = [];
+    const rows = flatten();
+
+    rows.filter(({node}) => ["division","department"].includes(node.kind)).forEach(({node, ancestors}) => {
+      let groupName = "ทั่วไป";
+      if (node.kind === "division") {
+        groupName = node.name;
+      } else {
+        const divAncestor = [...ancestors].reverse().find(a => a.kind === "division");
+        if (divAncestor) {
+          groupName = divAncestor.name;
+        } else if (ancestors.some(a => a.id === "academic")) {
+          groupName = "สายวิชาการและเทคนิคการผลิต";
+        }
+      }
+
+      result.push({
+        id: node.id,
+        code: node.code || "",
+        name: node.name,
+        cleanName: node.name,
+        label: display(node),
+        display: display(node),
+        kind: node.kind,
+        group: groupName,
+        nodeId: node.id
+      });
+    });
+
+    result.push({
+      id: "academic",
+      code: "4.5",
+      name: "สายวิชาการและเทคนิคการผลิต",
+      cleanName: "สายวิชาการและเทคนิคการผลิต",
+      label: "สายวิชาการและเทคนิคการผลิต",
+      display: "สายวิชาการและเทคนิคการผลิต",
+      kind: "special",
+      group: "สายวิชาการและเทคนิคการผลิต",
+      nodeId: "academic"
+    });
+    result.push({
+      id: "executive-admin",
+      code: "",
+      name: "ฝ่ายบริหารและอำนวยการ",
+      cleanName: "ฝ่ายบริหารและอำนวยการ",
+      label: "ฝ่ายบริหารและอำนวยการ",
+      display: "ฝ่ายบริหารและอำนวยการ",
+      kind: "special",
+      group: "ฝ่ายบริหารและอำนวยการ",
+      nodeId: "executive-admin"
+    });
+
     return result;
   }
   function assignmentFor(nodeId) {
@@ -242,12 +375,12 @@
     const chain = [...ancestors, node];
     const deptNode = [...chain].reverse().find(item => item.kind === "department");
     const divisionNode = [...chain].reverse().find(item => item.kind === "division");
-    const inAcademic = chain.some(item => item.id === "academic");
-    let department = deptNode ? display(deptNode) : divisionNode ? display(divisionNode) : inAcademic ? "งานวิชาการ" : "ฝ่ายบริหารและอำนวยการ";
+    const isAcademicOnly = (node.id === "academic" || node.id === "pos-academic" || (!deptNode && !divisionNode && chain.some(item => item.id === "academic")));
+    let department = deptNode ? display(deptNode) : divisionNode ? display(divisionNode) : isAcademicOnly ? "งานวิชาการ" : "ฝ่ายบริหารและอำนวยการ";
     if (node.id === "academic" || node.id === "pos-academic") department = "งานวิชาการ";
     return {
       department,
-      departmentNodeId: deptNode?.id || (inAcademic ? "academic" : divisionNode?.id || "executive-admin"),
+      departmentNodeId: deptNode?.id || divisionNode?.id || (isAcademicOnly ? "academic" : "executive-admin"),
       position: ["position","role","supervision"].includes(node.kind) ? node.name : "พนักงาน",
       positionNodeId: ["position","role","supervision"].includes(node.kind) ? node.id : ""
     };
@@ -286,13 +419,49 @@
   }
   function resolveEmployeeNode(emp) {
     if (!emp) return null;
+    const deptStr = (emp.department || '').trim();
+    if (!deptStr || deptStr === 'ยังไม่ระบุ' || deptStr === 'ยังไม่ระบุแผนก' || deptStr === 'ทั่วไป' || deptStr === 'Unassigned' || deptStr === '-') return null;
+
     if (emp.positionNodeId && findNode(emp.positionNodeId)) return emp.positionNodeId;
-    const positionMatch = flatten().find(({node}) => ["position","role","supervision"].includes(node.kind) && (normalize(emp.position) === normalize(node.name) || normalize(emp.position) === normalize(display(node))));
-    if (positionMatch) return positionMatch.node.id;
-    if (emp.departmentNodeId && findNode(emp.departmentNodeId)) return emp.departmentNodeId;
-    const deptMatch = flatten().find(({node}) => ["department","division"].includes(node.kind) && (normalize(emp.department) === normalize(node.name) || normalize(emp.department) === normalize(display(node))));
-    if (deptMatch) return deptMatch.node.id;
-    if (normalize(emp.department).includes("วิชาการ")) return "academic";
+
+    const normPos = normalize(emp.position);
+    const normDept = normalize(emp.department);
+
+    if (emp.departmentNodeId && findNode(emp.departmentNodeId)) {
+      const deptNode = findNode(emp.departmentNodeId);
+      if (deptNode && deptNode.children && normPos) {
+        const localPos = deptNode.children.find(c => ["position","role","supervision"].includes(c.kind) && (normPos === normalize(c.name) || normPos === normalize(display(c))));
+        if (localPos) return localPos.id;
+      }
+      if (emp.departmentNodeId === 'academic' && normPos && (normPos.includes('หัวหน้า') || normPos.startsWith('4.') || normPos.includes('ส่วนกลาง') || normPos.includes('กุหลาบ') || normPos.includes('รัตนบุปผา') || normPos.includes('ธรรมยาตรา'))) {
+        // Stale academic departmentNodeId: fall through to position/division matching
+      } else {
+        return emp.departmentNodeId;
+      }
+    }
+
+    if (normDept) {
+      const deptMatch = flatten().find(({node}) => ["department","division"].includes(node.kind) && (normDept === normalize(node.name) || normDept === normalize(display(node))));
+      if (deptMatch) {
+        if (deptMatch.node.children && normPos) {
+          const localPos = deptMatch.node.children.find(c => ["position","role","supervision"].includes(c.kind) && (normPos === normalize(c.name) || normPos === normalize(display(c))));
+          if (localPos) return localPos.id;
+        }
+        return deptMatch.node.id;
+      }
+    }
+
+    if (normPos) {
+      const positionMatch = flatten().find(({node}) => ["position","role","supervision"].includes(node.kind) && (normPos === normalize(node.name) || normPos === normalize(display(node))));
+      if (positionMatch) {
+        const posAssignment = assignmentFor(positionMatch.node.id);
+        if (!normDept || (posAssignment && normalize(posAssignment.department) === normDept)) {
+          return positionMatch.node.id;
+        }
+      }
+    }
+
+    if (normDept && normDept.includes("วิชาการ")) return "academic";
     // An executive department alone does not identify a specific executive
     // position. Never fall back to the president node without an exact
     // position label or a valid positionNodeId.
@@ -334,7 +503,7 @@
             <div class="tree-scroll-area"><ul class="flora-tree-list">${renderManagerNode(tree)}</ul></div>
           </section>
           <aside class="tree-details">
-            <span class="tree-detail-code">${esc(selected.node.code)}</span><p class="mt-2 mb-0 fw-bold text-success">${esc(KIND_LABELS[selected.node.kind])}</p><h5>${esc(selected.node.name)}</h5><p>${esc(selected.node.note || "ไม่มีหมายเหตุ")}</p>
+            <span class="tree-detail-code">${isAutoCode(selected.node.code) ? (showAdminCodes ? esc(selected.node.code) : 'รหัสภายในอัตโนมัติ') : esc(selected.node.code)}</span><p class="mt-2 mb-0 fw-bold text-success">${esc(KIND_LABELS[selected.node.kind])}</p><h5>${esc(cleanNodeName(selected.node.name))}</h5><p>${esc(selected.node.note || "ไม่มีหมายเหตุ")}</p>
             <dl class="tree-detail-list"><div class="tree-admin-code-field"><dt>รหัสถาวร</dt><dd>${esc(selected.node.id)}</dd></div><div><dt>ระดับ</dt><dd>${selected.depth}</dd></div><div><dt>โหนดแม่</dt><dd>${esc(selected.parent?.name || "ไม่มี — จุดเริ่มต้น")}</dd></div><div><dt>โหนดย่อย</dt><dd>${selected.node.children?.length || 0} รายการ</dd></div></dl>
             <div class="tree-detail-actions"><button class="primary" onclick="floraTreeOpenAdd('${selected.node.id}')"><i class="bi bi-plus-lg me-1"></i>เพิ่มโหนดย่อย</button><button onclick="floraTreeOpenEdit('${selected.node.id}')"><i class="bi bi-pencil me-1"></i>แก้ไขข้อมูล</button>${selected.node.id !== tree.id ? `<button class="danger" onclick="floraTreeDelete('${selected.node.id}')"><i class="bi bi-trash me-1"></i>ลบโหนดนี้</button>` : ""}</div>
           </aside>
@@ -349,9 +518,9 @@
     return `<li class="flora-tree-item ${isRoot ? "flora-tree-root-item" : ""}"><div class="flora-tree-row ${isRoot ? "flora-tree-root-row" : ""}">
       <button class="flora-tree-toggle ${children.length ? "" : "leaf"}" onclick="floraTreeToggle('${node.id}')" aria-label="${children.length ? "เปิดปิดกิ่ง" : "ปลายกิ่ง"}">${children.length ? (open ? "−" : "+") : "•"}</button>
       <button class="flora-tree-card ${selected ? "selected" : ""} ${matched ? "matched" : ""} ${isRoot ? "root-node-card border-warning border-2" : ""}" onclick="floraTreeSelect('${node.id}')">
-        <span class="flora-tree-code ${isRoot ? "bg-warning text-dark fw-bold" : ""}">${isRoot ? "👑 โหนด 1" : esc(node.code)}</span>
+        <span class="flora-tree-code ${isRoot ? "bg-warning text-dark fw-bold" : ""}">${isRoot ? "👑 โหนด 1" : (isAutoCode(node.code) ? (showAdminCodes ? esc(node.code) : '<span class="opacity-50">—</span>') : esc(node.code))}</span>
         <span class="flora-tree-copy">
-          <b class="${isRoot ? "text-dark" : ""}">${esc(node.name)}</b>
+          <b class="${isRoot ? "text-dark" : ""}">${esc(cleanNodeName(node.name))}</b>
           <small class="${isRoot ? "text-success fw-bold" : ""}">${isRoot ? "👑 ชื่อหลักของระบบทั้งหมด (Master Name)" : esc(KIND_LABELS[node.kind])}${children.length ? ` · ${children.length} โหนดย่อย` : ""}</small>
         </span>
       </button>
@@ -388,11 +557,11 @@
         </div>
       ` : ''}
 
-      ${showAdminCodes ? `<label>เลข/รหัสโครงสร้าง<input id="treeFormCode" value="${esc(node?.code || "")}" placeholder="เช่น 1.5" required></label>` : `<input id="treeFormCode" type="hidden" value="${esc(node?.code || `AUTO-${Date.now().toString(36).toUpperCase()}`)}">${isRoot ? '' : '<div class="tree-code-note"><i class="bi bi-shield-check me-1"></i>ระบบจัดเก็บรหัสภายในให้อัตโนมัติ</div>'}`}
+      ${showAdminCodes ? `<label>เลข/รหัสโครงสร้าง<input id="treeFormCode" value="${esc(isAutoCode(node?.code) ? "" : (node?.code || ""))}" placeholder="เช่น 1.5 (เว้นว่างเพื่อใช้รหัสอัตโนมัติ)"></label>` : `<input id="treeFormCode" type="hidden" value="${esc(node?.code || `AUTO-${Date.now().toString(36).toUpperCase()}`)}">${isRoot ? '' : '<div class="tree-code-note"><i class="bi bi-shield-check me-1"></i>ระบบจัดเก็บรหัสภายในให้อัตโนมัติ</div>'}`}
       
       <label>
         ${isRoot ? "ชื่อหลักของระบบ / โครงการ (Master Name)" : "ชื่อหน่วยงานหรือตำแหน่ง"}
-        <input id="treeFormName" value="${esc(node?.name || "")}" placeholder="${isRoot ? 'ระบุชื่อหลักของระบบ/องค์กร' : 'ระบุชื่อหน่วยงานหรือตำแหน่ง'}" required>
+        <input id="treeFormName" value="${esc(cleanNodeName(node?.name || ""))}" placeholder="${isRoot ? 'ระบุชื่อหลักของระบบ/องค์กร' : 'ระบุชื่อหน่วยงานหรือตำแหน่ง'}" required>
       </label>
 
       <label>ประเภทโหนด
@@ -425,30 +594,77 @@
   window.floraTreeExpandAll = () => { expanded = new Set(flatten().filter(r=>r.node.children?.length).map(r=>r.node.id)); renderManager(); };
   window.floraTreeCollapseAll = () => { expanded = new Set([tree.id]); renderManager(); };
   window.floraTreeToggleCodes = () => { showAdminCodes = !showAdminCodes; renderManager(); };
-  window.floraTreeOpenAdd = id => { if(window.requirePersonnelAdmin&&!window.requirePersonnelAdmin("เพิ่มโหนด Tree"))return; modalState={mode:"add",targetId:id}; selectedId=id; renderManager(); };
-  window.floraTreeOpenEdit = id => { if(window.requirePersonnelAdmin&&!window.requirePersonnelAdmin("แก้ไขโหนด Tree"))return; modalState={mode:"edit",targetId:id}; selectedId=id; renderManager(); };
+  window.floraTreeOpenAdd = id => { if(window.requirePersonnelAdmin&&!window.requirePersonnelAdmin("เพิ่มโหนด Tree"))return; modalState={mode:"add",targetId:id}; selectedId=id; renderManager(); renderModalHost(); };
+  window.floraTreeOpenEdit = id => { if(window.requirePersonnelAdmin&&!window.requirePersonnelAdmin("แก้ไขโหนด Tree"))return; modalState={mode:"edit",targetId:id}; selectedId=id; renderManager(); renderModalHost(); };
   window.floraTreeCloseModal = () => { modalState=null; renderModalHost(); };
   window.floraTreeSaveNode = async event => {
     event.preventDefault(); if (!modalState) return;
     if(window.requirePersonnelAdmin&&!window.requirePersonnelAdmin("บันทึกโครงสร้าง Tree"))return;
-    const code=document.getElementById("treeFormCode").value.trim(), name=document.getElementById("treeFormName").value.trim(), kind=document.getElementById("treeFormKind").value, note=document.getElementById("treeFormNote").value.trim();
-    if (!code || !name || !VALID_KINDS.has(kind)) return;
+    let code=document.getElementById("treeFormCode").value.trim();
+    let name=document.getElementById("treeFormName").value.trim();
+    const kind=document.getElementById("treeFormKind").value, note=document.getElementById("treeFormNote").value.trim();
+    name = cleanNodeName(name);
+    if (!code) code = `AUTO-${Date.now().toString(36).toUpperCase()}`;
+    if (!name || !VALID_KINDS.has(kind)) return;
     if (modalState.mode === "add") {
-      const newNode={id:`node-${Date.now()}`,code,name,kind,note,children:[]};
+      let defaultChildren = [];
+      const timestamp = Date.now();
+      if (kind === "department") {
+        const cleanDeptName = name.replace(/^(งาน|แผนก)/, '').trim() || name;
+        defaultChildren = [
+          { id: `node-${timestamp}-lead`, code: isAutoCode(code) ? `AUTO-${timestamp}-1` : `${code}.1`, name: `หัวหน้างาน${cleanDeptName}`, kind: 'role', children: [] },
+          { id: `node-${timestamp}-staff`, code: isAutoCode(code) ? `AUTO-${timestamp}-2` : `${code}.2`, name: `พนักงาน${cleanDeptName}`, kind: 'role', children: [] }
+        ];
+      } else if (kind === "division") {
+        const cleanDivName = name.replace(/^(งาน|ฝ่าย)/, '').trim() || name;
+        defaultChildren = [
+          { id: `node-${timestamp}-head`, code: isAutoCode(code) ? `AUTO-${timestamp}-head` : `4.${code}`, name: `หัวหน้างาน${cleanDivName}`, kind: 'position', children: [] }
+        ];
+      }
+      const newNode={id:`node-${timestamp}`,code,name,kind,note,children:defaultChildren};
       tree=replaceNode(tree,modalState.targetId,node=>({...node,children:[...(node.children||[]),newNode]})); expanded.add(modalState.targetId); selectedId=newNode.id;
     } else {
       const old=findNode(modalState.targetId); if (!old) return;
+      const oldName = old.name;
+      const oldDisplay = display(old);
       tree=replaceNode(tree,old.id,node=>({...node,code,name,kind,note}));
+
+      const targetEmployees = (window.employees && window.employees.length) ? window.employees : (window.employeeList || []);
+      targetEmployees.forEach(emp => {
+        if (["department", "division"].includes(old.kind)) {
+          if (emp.departmentNodeId === old.id || emp.department === oldName || emp.department === oldDisplay) {
+            emp.departmentNodeId = old.id;
+          }
+        }
+        if (["position", "role", "supervision"].includes(old.kind)) {
+          if (emp.positionNodeId === old.id || emp.position === oldName || emp.position === oldDisplay) {
+            emp.positionNodeId = old.id;
+          }
+        }
+      });
     }
-    modalState=null; dispatchChange();
+    modalState=null; renderModalHost(); dispatchChange();
   };
   window.floraTreeDelete = id => {
     if(window.requirePersonnelAdmin&&!window.requirePersonnelAdmin("ลบโหนด Tree"))return;
     const node=findNode(id); if (!node || id===tree.id) return;
-    if (node.children?.length) { alert(`ยังลบ “${node.name}” ไม่ได้ เพราะมีโหนดย่อย ${node.children.length} รายการ\nกรุณาย้ายหรือลบโหนดย่อยก่อน`); return; }
-    const assigned=(window.employees||[]).filter(emp=>resolveEmployeeNode(emp)===id);
-    if (assigned.length) { alert(`ยังลบ “${node.name}” ไม่ได้ เพราะมีบุคลากร ${assigned.length} คนอยู่ในโหนดนี้\nกรุณาไปแท็บผังบุคลากรและย้ายบุคลากรก่อน`); return; }
-    if (!confirm(`ลบ “${node.name}” ออกจากโครงสร้างหรือไม่?`)) return;
+    const allDescendantIds = new Set();
+    function gatherIds(n) {
+      allDescendantIds.add(n.id);
+      (n.children || []).forEach(gatherIds);
+    }
+    gatherIds(node);
+    const assigned=(window.employees||[]).filter(emp=>{
+      const nid = resolveEmployeeNode(emp);
+      return allDescendantIds.has(nid) || allDescendantIds.has(emp.departmentNodeId) || allDescendantIds.has(emp.positionNodeId);
+    });
+    const cName = cleanNodeName(node.name);
+    if (assigned.length) { alert(`ยังลบ “${cName}” ไม่ได้ เนื่องจากมีบุคลากร ${assigned.length} คนอยู่ในโหนดนี้หรือโหนดย่อย\nกรุณาย้ายบุคลากรไปยังหน่วยงานอื่นก่อนลบ`); return; }
+    const hasChildren = (node.children && node.children.length > 0);
+    const msg = hasChildren 
+      ? `ยืนยันการลบ “${cName}” พร้อมโหนดย่อยทั้งหมด (${node.children.length} รายการ) ออกจากผังโครงสร้างหรือไม่?`
+      : `ยืนยันการลบ “${cName}” ออกจากโครงสร้างหรือไม่?`;
+    if (!confirm(msg)) return;
     tree=removeNode(tree,id); selectedId=tree.id; dispatchChange();
   };
   window.floraTreeReset = () => {
@@ -560,12 +776,85 @@
   window.syncFloraEmployeesToTree = (persist = true) => reconcileEmployeesFromTree(Boolean(persist));
   window.isEmployeeAssignedToFloraTree = emp => Boolean(resolveEmployeeNode(emp));
   window.resolveFloraAssignmentByLabels = (department, position) => {
-    const positionRow=flatten().find(({node})=>["position","role","supervision"].includes(node.kind) && (normalize(position)===normalize(node.name) || normalize(position)===normalize(display(node))));
-    if(positionRow) return assignmentFor(positionRow.node.id);
-    const deptRow=flatten().find(({node})=>["department","division"].includes(node.kind) && (normalize(department)===normalize(node.name) || normalize(department)===normalize(display(node))));
-    if(deptRow) return assignmentFor(deptRow.node.id);
-    if(normalize(department).includes("วิชาการ")) return assignmentFor("academic");
-    return {department,departmentNodeId:"",position:position||"พนักงาน",positionNodeId:""};
+    const normDept = normalize(department);
+    const normPos = normalize(position);
+
+    // 1. If department is provided, match department node FIRST
+    if (normDept) {
+      const allRows = flatten();
+      // Try ID match first
+      let deptRow = allRows.find(r => r.node.id === department);
+
+      // Try exact name or display name match on department/division/supervision/project
+      if (!deptRow) {
+        deptRow = allRows.find(({node}) => 
+          ["department", "division", "supervision", "project"].includes(node.kind) &&
+          (normDept === normalize(node.name) || normDept === normalize(display(node)))
+        );
+      }
+
+      // Try stripped / clean name match
+      if (!deptRow) {
+        const strippedDept = cleanNodeName(department).toLocaleLowerCase("th").trim();
+        if (strippedDept) {
+          deptRow = allRows.find(({node}) => {
+            if (!["department", "division", "supervision", "project"].includes(node.kind)) return false;
+            const nName = normalize(node.name);
+            const nDisp = normalize(display(node));
+            return nName.includes(strippedDept) || strippedDept.includes(nName) || nDisp.includes(strippedDept) || strippedDept.includes(nDisp);
+          });
+        }
+      }
+
+      if (deptRow) {
+        // Find position inside this department's subtree ONLY
+        if (normPos) {
+          const subRows = flatten(deptRow.node);
+          // 1. Exact match within subtree
+          let posRow = subRows.find(({node}) => 
+            ["position", "role", "supervision"].includes(node.kind) &&
+            (normPos === normalize(node.name) || normPos === normalize(display(node)))
+          );
+          // 2. Head/Leader match within subtree
+          if (!posRow && (normPos.includes("หัวหน้า") || normPos.includes("leader"))) {
+            posRow = subRows.find(({node}) => 
+              ["position", "role", "supervision"].includes(node.kind) &&
+              (node.name.includes("หัวหน้า") || node.kind === "position")
+            );
+          }
+          // 3. Worker/Member match within subtree
+          if (!posRow && (normPos.includes("พนักงาน") || normPos.includes("worker") || normPos.includes("เจ้าหน้าที่"))) {
+            posRow = subRows.find(({node}) => 
+              ["position", "role"].includes(node.kind) &&
+              !node.name.includes("หัวหน้า") && node.id !== deptRow.node.id
+            );
+          }
+          if (posRow) {
+            return assignmentFor(posRow.node.id);
+          }
+        }
+
+        const deptAssignment = assignmentFor(deptRow.node.id);
+        return {
+          department: deptAssignment?.department || department,
+          departmentNodeId: deptAssignment?.departmentNodeId || deptRow.node.id,
+          position: position || "พนักงาน",
+          positionNodeId: ""
+        };
+      }
+    }
+
+    // 2. If no department match or department not provided, search across position nodes
+    if (normPos) {
+      const positionRow = flatten().find(({node}) => 
+        ["position", "role", "supervision"].includes(node.kind) &&
+        (normPos === normalize(node.name) || normPos === normalize(display(node)))
+      );
+      if (positionRow) return assignmentFor(positionRow.node.id);
+    }
+
+    if (normDept.includes("วิชาการ") && !normPos.includes("หัวหน้า") && !normPos.startsWith("4.")) return assignmentFor("academic");
+    return { department, departmentNodeId: "", position: position || "พนักงาน", positionNodeId: "" };
   };
 
   window.switchWorkspaceTab = function(tab) {

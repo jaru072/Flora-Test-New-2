@@ -576,11 +576,12 @@
 
       let database = window.db;
       if (!database) {
-        const dbId = cfg.firestoreDatabaseId;
-        if (dbId && dbId !== "(default)") {
-          database = initializeFirestore(appInstance, {}, dbId);
-        } else {
-          database = getFirestore(appInstance);
+        const dbId = (cfg.firestoreDatabaseId && cfg.firestoreDatabaseId !== "(default)") ? cfg.firestoreDatabaseId : undefined;
+        const fsSettings = { experimentalForceLongPolling: true, useFetchStreams: false };
+        try {
+          database = dbId ? initializeFirestore(appInstance, fsSettings, dbId) : initializeFirestore(appInstance, fsSettings);
+        } catch (eFs) {
+          database = dbId ? getFirestore(appInstance, dbId) : getFirestore(appInstance);
         }
         window.db = database;
       }

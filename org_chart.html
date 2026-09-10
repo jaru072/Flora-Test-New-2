@@ -665,18 +665,49 @@
       user-select: none;
     }
 
-    /* Floating Popup Context Menu for Employee Click */
-    #empContextMenu {
+    /* Floating Popup Context Menu for Employee & Org Node Click */
+    #empContextMenu, #orgNodeActionMenu {
       position: fixed;
       display: none;
       z-index: 10000;
-      min-width: 220px;
+      min-width: 240px;
       background: #ffffff;
       border-radius: 12px;
       box-shadow: 0 12px 32px rgba(13, 34, 88, 0.22), 0 2px 8px rgba(0,0,0,0.08);
       border: 1px solid rgba(13, 34, 88, 0.12);
       padding: 6px;
       animation: popInMenu 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .node-card-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 24px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.92);
+      color: #64748b;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      z-index: 15;
+      padding: 0;
+      line-height: 1;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .node-card-btn:hover {
+      background: #ffffff;
+      color: #0d2258;
+      border-color: #94a3b8;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.14);
+      transform: scale(1.1);
+    }
+    .node-card-btn:active {
+      transform: scale(0.95);
     }
     @keyframes popInMenu {
       from { opacity: 0; transform: scale(0.92) translateY(-4px); }
@@ -1201,6 +1232,12 @@
           <span class="text-success">ทำซ้ำ</span>
         </button>
       </div>
+
+      <!-- Add Division/Department to Org Structure Button (Admin Only) -->
+      <button type="button" id="btnOrgAddNode" class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-1 fw-semibold shadow-sm personnel-admin-only d-flex align-items-center gap-1 text-nowrap flex-shrink-0" onclick="window.openAddDivisionModal ? window.openAddDivisionModal() : null" title="เพิ่มฝ่าย หรือแผนกใหม่ลงในโครงสร้างองค์กร">
+        <i class="bi bi-plus-circle-fill fs-6 text-success"></i>
+        <span>เพิ่มฝ่าย/แผนก</span>
+      </button>
 
       <!-- Search Match Navigator (แสดงเมื่อมีการค้นหา) -->
       <div id="searchNavControls" class="d-none align-items-center gap-1.5 bg-white border rounded-pill px-2.5 py-1 shadow-xs">
@@ -1776,62 +1813,27 @@
                         <input type="text" id="formEmpNickname" class="form-control" placeholder="ชื่อที่ใช้เรียก" />
                       </div>
 
-                      <!-- Position Selection (Strict Hierarchy) -->
-                      <div class="col-12 col-sm-5">
-                        <label class="form-label fw-bold text-dark fs-7" for="formEmpPositionSelect">ตำแหน่งงานในโครงสร้าง</label>
-                        <select id="formEmpPositionSelect" class="form-select fw-semibold" onchange="handlePositionSelectChange(this.value)">
-                          <option value="">-- กรุณาเลือกตำแหน่ง --</option>
-                          <optgroup label="ระดับบริหารและประสานงาน">
-                            <option value="ประธานโครงการ">ประธานโครงการ</option>
-                            <option value="ที่ปรึกษาโครงการ">ที่ปรึกษาโครงการ</option>
-                            <option value="ผู้ประสานงานโครงการ">ผู้ประสานงานโครงการ</option>
-                          </optgroup>
-                          <optgroup label="หัวหน้างานฝ่ายหลัก">
-                            <option value="หัวหน้างานส่วนกลาง">หัวหน้างานส่วนกลาง</option>
-                            <option value="หัวหน้างานกุหลาบ/งานทดลอง">หัวหน้างานกุหลาบ/งานทดลอง</option>
-                            <option value="หัวหน้างานรัตนบุปผา">หัวหน้างานรัตนบุปผา</option>
-                            <option value="หัวหน้างานธรรมยาตรา">หัวหน้างานธรรมยาตรา</option>
-                          </optgroup>
-                          <optgroup label="สายวิชาการ">
-                            <option value="นักวิชาการ">🌟 นักวิชาการ</option>
-                          </optgroup>
-                          <optgroup label="หัวหน้าแผนก">
-                            <option value="หัวหน้าแผนกธุรการ">หัวหน้าแผนกธุรการ</option>
-                            <option value="หัวหน้าแผนกงานทดลอง">หัวหน้าแผนกงานทดลอง</option>
-                            <option value="หัวหน้าแผนก">หัวหน้าแผนก (ทั่วไป)</option>
-                          </optgroup>
-                          <optgroup label="เจ้าหน้าที่และพนักงาน">
-                            <option value="พระภิกษุ">พระภิกษุ</option>
-                            <option value="เจ้าหน้าที่ธุรการ">เจ้าหน้าที่ธุรการ</option>
-                            <option value="นักวิชาการ">นักวิชาการ</option>
-                            <option value="พนักงาน">พนักงานปฏิบัติการ</option>
-                          </optgroup>
-                        </select>
-                        <input type="text" id="formEmpPosition" class="form-control form-control-sm mt-1 fs-8" placeholder="หรือพิมพ์ตำแหน่งเพิ่มเติม..." />
-                      </div>
-
-                      <!-- Department Selection -->
+                      <!-- Department Selection (แผนก / สายงาน มาก่อนอยู่ซ้าย) -->
                       <div class="col-12 col-sm-6">
-                        <label class="form-label fw-bold text-dark fs-7" for="formEmpDept">แผนก / สายงาน <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold text-dark fs-7" for="formEmpDept">
+                          <i class="bi bi-diagram-3 text-success me-1"></i> แผนก / สายงาน <span class="text-danger">*</span>
+                        </label>
                         <div class="input-group">
-                          <select id="formEmpDept" class="form-select fw-semibold" required>
-                            <option value="1.1 งานธุรการ / งานบุคคล">งานธุรการ / งานบุคคล</option>
-                            <option value="1.2 งานสวัสดิการ">งานสวัสดิการ</option>
-                            <option value="1.3 งานระบบน้ำ">งานระบบน้ำ</option>
-                            <option value="1.4 งานตัดหญ้า">งานตัดหญ้า</option>
-                            <option value="2.1 งานทดลอง">งานทดลอง</option>
-                            <option value="2.2 งานกุหลาบ">งานกุหลาบ</option>
-                            <option value="3.1 งานเจดีย์">งานเจดีย์</option>
-                            <option value="3.2 งานวิหารหลวงปู่">งานวิหารหลวงปู่</option>
-                            <option value="3.3 งานถนนธรรมชัย / เฟื่องฟ้า">งานถนนธรรมชัย / เฟื่องฟ้า</option>
-                            <option value="3.4 งานผสมแกลบ / งานโต๊ะกลาง">งานผสมแกลบ / งานโต๊ะกลาง</option>
-                            <option value="4.1 แปลง A / B">แปลง A / B</option>
-                            <option value="4.2 แปลง E / P11">แปลง E / P11</option>
-                            <option value="4.3 งานไม้กระถางหลังวิหารคด 13-20">งานไม้กระถางหลังวิหารคด 13-20</option>
-                            <option value="งานวิชาการ">งานวิชาการ</option>
-                            <option value="ฝ่ายบริหารและอำนวยการ">ฝ่ายบริหารและอำนวยการ</option>
+                          <select id="formEmpDept" class="form-select fw-semibold" required onchange="handleDepartmentSelectChange(this.value)">
+                            <option value="">-- กรุณาเลือกแผนก / สายงาน --</option>
                           </select>
                         </div>
+                      </div>
+
+                      <!-- Position Selection (ตำแหน่งงานในโครงสร้าง อยู่ขวา กรองตามแผนก) -->
+                      <div class="col-12 col-sm-6">
+                        <label class="form-label fw-bold text-dark fs-7" for="formEmpPositionSelect">
+                          <i class="bi bi-person-badge text-primary me-1"></i> ตำแหน่งงานในโครงสร้าง
+                        </label>
+                        <select id="formEmpPositionSelect" class="form-select fw-semibold" onchange="handlePositionSelectChange(this.value)">
+                          <option value="">-- กรุณาเลือกแผนกก่อน --</option>
+                        </select>
+                        <input type="text" id="formEmpPosition" class="form-control form-control-sm mt-1 fs-8" placeholder="หรือพิมพ์ตำแหน่งเพิ่มเติม..." />
                       </div>
 
                       <!-- Phone Number -->
@@ -2130,6 +2132,32 @@
     <button type="button" class="context-menu-item danger-item" onclick="executeContextMenuAction('deleteFromSystem')">
       <i class="bi bi-trash3-fill fs-6"></i>
       <span>ลบออกจากระบบสารบบ</span>
+    </button>
+  </div>
+
+  <!-- Org Node Popup Action Menu (Admin Only: 3-dots / Gear action) -->
+  <div id="orgNodeActionMenu" class="org-node-action-menu">
+    <div class="context-menu-header">
+      <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary" style="width: 36px; height: 36px; flex-shrink: 0;">
+        <i class="bi bi-diagram-3-fill fs-6"></i>
+      </div>
+      <div class="overflow-hidden">
+        <div id="nodeMenuTitle" class="fw-bold text-dark fs-7 text-truncate">ชื่อหน่วยงาน</div>
+        <div id="nodeMenuSubtitle" class="fs-9 text-muted text-truncate">ประเภทโหนด</div>
+      </div>
+    </div>
+    <button type="button" class="context-menu-item" onclick="executeNodeAction('edit')">
+      <i class="bi bi-pencil-square text-primary fs-6"></i>
+      <span>แก้ไขข้อมูล (ชื่อ / รหัส / รายละเอียด)</span>
+    </button>
+    <button type="button" class="context-menu-item" onclick="executeNodeAction('add')">
+      <i class="bi bi-plus-circle-fill text-success fs-6"></i>
+      <span>เพิ่มโหนดย่อย (แผนก / ตำแหน่ง)</span>
+    </button>
+    <div class="context-menu-divider" id="nodeMenuDivider"></div>
+    <button type="button" id="nodeMenuDeleteBtn" class="context-menu-item danger-item" onclick="executeNodeAction('delete')">
+      <i class="bi bi-trash3-fill fs-6"></i>
+      <span>ลบโหนดนี้ออกจากผัง</span>
     </button>
   </div>
 
@@ -2591,6 +2619,7 @@
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
       getFirestore, 
+      initializeFirestore,
       collection, 
       doc, 
       getDoc,
@@ -2763,7 +2792,12 @@
           : undefined;
 
         const app = getApps().length === 0 ? initializeApp(config) : getApps()[0];
-        window.db = targetDbId ? getFirestore(app, targetDbId) : getFirestore(app);
+        const fsSettings = { experimentalForceLongPolling: true, useFetchStreams: false };
+        try {
+          window.db = targetDbId ? initializeFirestore(app, fsSettings, targetDbId) : initializeFirestore(app, fsSettings);
+        } catch (eFs) {
+          window.db = targetDbId ? getFirestore(app, targetDbId) : getFirestore(app);
+        }
         window.storage = getStorage(app);
         window.personnelAuth = getAuth(app);
         googleProvider = new GoogleAuthProvider();
@@ -3385,19 +3419,37 @@
               const data = docSnap.data();
               list.push({ id: docSnap.id, ...data });
             });
+            window.employees = list;
+            try {
+              if (typeof window.syncFloraEmployeesToTree === 'function') window.syncFloraEmployeesToTree(false);
+            } catch (err) {
+              console.warn("syncFloraEmployeesToTree notice:", err);
+            }
+            syncToLocalStorage();
           } else {
-            list = [];
+            // If cloud collection is currently empty, preserve any cached personnel data from localStorage
+            let cached = null;
+            try {
+              const saved = getScopedLocalStorageItem('flora_employees') || localStorage.getItem('flora_employees');
+              if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > 0) cached = parsed;
+              }
+            } catch (e) {}
+            if (cached && cached.length > 0) {
+              window.employees = cached;
+            } else {
+              window.employees = [];
+            }
           }
 
-          // Firestore is authoritative whenever the listener succeeds. Never
-          // merge browser-local personnel into a valid server snapshot because
-          // deleted or stale people could reappear on one device.
-          window.employees = list;
-          if (typeof window.syncFloraEmployeesToTree === 'function') window.syncFloraEmployeesToTree(false);
-          syncToLocalStorage();
-          renderOrgChart();
-          renderPersonnelAttendanceControls();
-          window.dispatchEvent(new CustomEvent('flora-personnel-data-changed', { detail: { count: list.length } }));
+          try {
+            renderOrgChart();
+            renderPersonnelAttendanceControls();
+            window.dispatchEvent(new CustomEvent('flora-personnel-data-changed', { detail: { count: window.employees ? window.employees.length : 0 } }));
+          } catch (err) {
+            console.error("renderOrgChart notice:", err);
+          }
         }, (error) => {
           console.warn("Firestore snapshot notice:", error);
           loadFromLocalStorageOrSeed();
@@ -4041,20 +4093,61 @@
 
     function loadFromLocalStorageOrSeed() {
       try {
+        let bestEmployees = null;
         const saved = getScopedLocalStorageItem('flora_employees');
         if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            window.employees = parsed;
-            if (typeof window.syncFloraEmployeesToTree === 'function') window.syncFloraEmployeesToTree(false);
-            renderOrgChart();
-            return;
-          }
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              bestEmployees = parsed;
+            }
+          } catch (e) {}
         }
-      } catch (e) {}
+        // If scoped only has 5 or fewer dummy seed items, look for richer cache across localStorage
+        if (!bestEmployees || bestEmployees.length <= 5) {
+          try {
+            const raw = localStorage.getItem('flora_employees');
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed) && parsed.length > (bestEmployees ? bestEmployees.length : 0)) {
+                bestEmployees = parsed;
+              }
+            }
+          } catch (e) {}
+          try {
+            for (let i = 0; i < localStorage.length; i++) {
+              const k = localStorage.key(i);
+              if (k && k.startsWith('flora_employees')) {
+                const val = localStorage.getItem(k);
+                if (val) {
+                  const parsed = JSON.parse(val);
+                  if (Array.isArray(parsed) && parsed.length > (bestEmployees ? bestEmployees.length : 0)) {
+                    bestEmployees = parsed;
+                  }
+                }
+              }
+            }
+          } catch (e) {}
+        }
+
+        if (Array.isArray(bestEmployees) && bestEmployees.length > 0) {
+          window.employees = bestEmployees;
+          try {
+            if (typeof window.syncFloraEmployeesToTree === 'function') window.syncFloraEmployeesToTree(false);
+          } catch (err) {
+            console.warn("syncFloraEmployeesToTree notice:", err);
+          }
+          renderOrgChart();
+          return;
+        }
+      } catch (e) {
+        console.warn("loadFromLocalStorageOrSeed notice:", e);
+      }
 
       window.employees = generateSeedEmployees();
-      if (typeof window.syncFloraEmployeesToTree === 'function') window.syncFloraEmployeesToTree(false);
+      try {
+        if (typeof window.syncFloraEmployeesToTree === 'function') window.syncFloraEmployeesToTree(false);
+      } catch (err) {}
       syncToLocalStorage();
       renderOrgChart();
     }
@@ -4405,10 +4498,20 @@
         return !dept || dept === 'ยังไม่ระบุ' || dept === 'ยังไม่ระบุแผนก' || dept === 'ทั่วไป' || dept === 'Unassigned' || dept === '-';
       };
 
+      // Track placed employees across the poster chart to prevent duplicate appearance
+      const placedEmployeeIds = new Set();
+      const markPlaced = (emp) => {
+        if (!emp) return;
+        const id = emp.id || emp.code;
+        if (id) placedEmployeeIds.add(String(id));
+      };
+
       // Helper to match section leader strictly or by prefix
       const matchLeader = (leaderTitle, leaderCode, deptName) => {
         return list.find(e => {
           if (isUnassigned(e)) return false;
+          const eid = String(e.id || e.code);
+          if (placedEmployeeIds.has(eid)) return false;
           const pos = e.position || '';
           const dept = e.department || '';
           return pos === leaderTitle || 
@@ -4424,54 +4527,147 @@
         return emp.positionNodeId ? emp.positionNodeId === nodeId : emp.position === legacyLabel;
       };
       const president = list.find(e => matchesExecutivePosition(e, 'pos-1', 'ประธานโครงการ')) || null;
-      const advisors = list.filter(e => matchesExecutivePosition(e, 'pos-2', 'ที่ปรึกษาโครงการ')).slice(0, 2);
+      if (president) markPlaced(president);
+
+      const advisors = list.filter(e => {
+        if (!matchesExecutivePosition(e, 'pos-2', 'ที่ปรึกษาโครงการ')) return false;
+        const eid = String(e.id || e.code);
+        return !placedEmployeeIds.has(eid);
+      }).slice(0, 2);
       const advisor1 = advisors[0] || null;
+      if (advisor1) markPlaced(advisor1);
       const advisor2 = advisors[1] || null;
-      const coordinator = list.find(e => matchesExecutivePosition(e, 'pos-3', 'ผู้ประสานงานโครงการ')) || null;
+      if (advisor2) markPlaced(advisor2);
+
+      const coordinator = list.find(e => {
+        if (!matchesExecutivePosition(e, 'pos-3', 'ผู้ประสานงานโครงการ')) return false;
+        const eid = String(e.id || e.code);
+        return !placedEmployeeIds.has(eid);
+      }) || null;
+      if (coordinator) markPlaced(coordinator);
       
-      // Academic Supervisor / Academic Staff (งานวิชาการ - เฉพาะผู้ที่ถูกกำหนดสังกัดงานวิชาการและไม่ใช่คนรอลงผัง)
-      const academicList = list.filter(e => 
-        !isUnassigned(e) && (
-          e.position === 'นักวิชาการ' || 
-          (e.department && e.department.includes('วิชาการ')) || 
-          (e.position && e.position.includes('วิชาการ')) ||
-          (e.note && e.note.includes('วิชาการ'))
-        )
-      );
+      // Auto-repair any section heads whose departmentNodeId was erroneously saved as 'academic'
+      list.forEach(e => {
+        if (!e) return;
+        const pNode = e.positionNodeId || '';
+        const pName = e.position || '';
+        if (pNode === 'pos-4-1' || pName.includes('หัวหน้างานส่วนกลาง') || pName.startsWith('4.1')) {
+          if (e.departmentNodeId === 'academic') e.departmentNodeId = 'division-1';
+        } else if (pNode === 'pos-4-2' || pName.includes('หัวหน้างานกุหลาบ') || pName.startsWith('4.2')) {
+          if (e.departmentNodeId === 'academic') e.departmentNodeId = 'division-2';
+        } else if (pNode === 'pos-4-3' || pName.includes('หัวหน้างานรัตนบุปผา') || pName.startsWith('4.3')) {
+          if (e.departmentNodeId === 'academic') e.departmentNodeId = 'division-3';
+        } else if (pNode === 'pos-4-4' || pName.includes('หัวหน้างานธรรมยาตรา') || pName.startsWith('4.4')) {
+          if (e.departmentNodeId === 'academic') e.departmentNodeId = 'division-4';
+        }
+      });
 
-      // Section Heads for 4 Main Pillars (หัวหน้าส่วนงานทั้ง 4 - ต้องไม่เป็นบุคลากรรอลงผัง)
-      const headCentral = list.find(e => 
-        !isUnassigned(e) && (
-          e.position === '4.1 หัวหน้างานส่วนกลาง' || 
-          e.position === 'หัวหน้างานส่วนกลาง' || 
-          ((e.department || '').includes('ส่วนกลาง') && ((e.position || '').includes('หัวหน้า') || e.role === 'MANAGER'))
-        )
-      ) || null;
+      // Section Heads for 4 Main Pillars (หัวหน้าส่วนงานทั้ง 4 - ต้องไม่เป็นบุคลากรรอลงผัง และให้สิทธิ์วางตำแหน่งก่อน)
+      const headCentral = list.find(e => {
+        if (isUnassigned(e)) return false;
+        const eid = String(e.id || e.code);
+        if (placedEmployeeIds.has(eid)) return false;
+        const pos = e.position || '';
+        const dept = e.department || '';
+        const posNode = e.positionNodeId || '';
+        const deptNode = e.departmentNodeId || '';
+        return (
+          posNode === 'pos-4-1' ||
+          pos === '4.1 หัวหน้างานส่วนกลาง' || 
+          pos === 'หัวหน้างานส่วนกลาง' || 
+          pos.includes('หัวหน้างานส่วนกลาง') ||
+          (deptNode === 'division-1' && pos.includes('หัวหน้า') && !posNode.startsWith('pos-5-')) ||
+          (dept.includes('งานส่วนกลาง') && pos.includes('หัวหน้า') && !pos.includes('1.1') && !pos.includes('1.2') && !pos.includes('1.3') && !pos.includes('1.4') && !posNode.startsWith('pos-5-'))
+        );
+      }) || null;
+      if (headCentral) markPlaced(headCentral);
 
-      const headRoseExp = list.find(e => 
-        !isUnassigned(e) && (
-          e.position === '4.2 หัวหน้างานกุหลาบ/งานทดลอง' || 
-          e.position === 'หัวหน้างานกุหลาบ/งานทดลอง' || 
-          e.position === 'หัวหน้างานกุหลาบ' || 
-          (((e.department || '').includes('กุหลาบ') || (e.department || '').includes('ทดลอง')) && ((e.position || '').includes('หัวหน้า') || e.role === 'MANAGER'))
-        )
-      ) || null;
+      const headRoseExp = list.find(e => {
+        if (isUnassigned(e)) return false;
+        const eid = String(e.id || e.code);
+        if (placedEmployeeIds.has(eid)) return false;
+        const pos = e.position || '';
+        const dept = e.department || '';
+        const posNode = e.positionNodeId || '';
+        const deptNode = e.departmentNodeId || '';
+        return (
+          posNode === 'pos-4-2' ||
+          pos === '4.2 หัวหน้างานกุหลาบ/งานทดลอง' || 
+          pos === 'หัวหน้างานกุหลาบ/งานทดลอง' || 
+          pos.includes('หัวหน้างานกุหลาบ/งานทดลอง') ||
+          (pos.includes('หัวหน้างานกุหลาบ') && !pos.includes('2.2')) ||
+          (deptNode === 'division-2' && pos.includes('หัวหน้า') && !posNode.startsWith('pos-5-')) ||
+          ((dept.includes('กุหลาบ') || dept.includes('ทดลอง')) && (dept.includes('2.') || dept.includes('2 ') || dept === 'งานกุหลาบ / งานทดลอง') && pos.includes('หัวหน้า') && !pos.includes('2.1') && !pos.includes('2.2') && !posNode.startsWith('pos-5-'))
+        );
+      }) || null;
+      if (headRoseExp) markPlaced(headRoseExp);
 
-      const headRattanabuppha = list.find(e => 
-        !isUnassigned(e) && (
-          e.position === '4.3 หัวหน้างานรัตนบุปผา' || 
-          e.position === 'หัวหน้างานรัตนบุปผา' || 
-          ((e.department || '').includes('รัตนบุปผา') && ((e.position || '').includes('หัวหน้า') || e.role === 'MANAGER'))
-        )
-      ) || null;
+      const headRattanabuppha = list.find(e => {
+        if (isUnassigned(e)) return false;
+        const eid = String(e.id || e.code);
+        if (placedEmployeeIds.has(eid)) return false;
+        const pos = e.position || '';
+        const dept = e.department || '';
+        const posNode = e.positionNodeId || '';
+        const deptNode = e.departmentNodeId || '';
+        return (
+          posNode === 'pos-4-3' ||
+          pos === '4.3 หัวหน้างานรัตนบุปผา' || 
+          pos === 'หัวหน้างานรัตนบุปผา' || 
+          pos.includes('หัวหน้างานรัตนบุปผา') ||
+          (deptNode === 'division-3' && pos.includes('หัวหน้า') && !posNode.startsWith('pos-5-')) ||
+          (dept.includes('รัตนบุปผา') && (dept.includes('3.') || dept.includes('3 ') || dept === 'งานรัตนบุปผา') && pos.includes('หัวหน้า') && !pos.includes('3.1') && !pos.includes('3.2') && !pos.includes('3.3') && !pos.includes('3.4') && !posNode.startsWith('pos-5-'))
+        );
+      }) || null;
+      if (headRattanabuppha) markPlaced(headRattanabuppha);
 
-      const headDhammayatra = list.find(e => 
-        !isUnassigned(e) && (
-          e.position === '4.4 หัวหน้างานธรรมยาตรา' || 
-          e.position === 'หัวหน้างานธรรมยาตรา' || 
-          ((e.department || '').includes('ธรรมยาตรา') && ((e.position || '').includes('หัวหน้า') || e.role === 'MANAGER'))
-        )
-      ) || null;
+      const headDhammayatra = list.find(e => {
+        if (isUnassigned(e)) return false;
+        const eid = String(e.id || e.code);
+        if (placedEmployeeIds.has(eid)) return false;
+        const pos = e.position || '';
+        const dept = e.department || '';
+        const posNode = e.positionNodeId || '';
+        const deptNode = e.departmentNodeId || '';
+        return (
+          posNode === 'pos-4-4' ||
+          pos === '4.4 หัวหน้างานธรรมยาตรา' || 
+          pos === 'หัวหน้างานธรรมยาตรา' || 
+          pos.includes('หัวหน้างานธรรมยาตรา') ||
+          (deptNode === 'division-4' && pos.includes('หัวหน้า') && !posNode.startsWith('pos-5-')) ||
+          (dept.includes('ธรรมยาตรา') && (dept.includes('4.') || dept.includes('4 ') || dept === 'งานธรรมยาตรา') && pos.includes('หัวหน้า') && !pos.includes('4.1') && !pos.includes('4.2') && !pos.includes('4.3') && !posNode.startsWith('pos-5-'))
+        );
+      }) || null;
+      if (headDhammayatra) markPlaced(headDhammayatra);
+
+      // Academic Supervisor / Academic Staff (งานวิชาการ - เฉพาะผู้ที่ถูกกำหนดสังกัดงานวิชาการ และไม่เอาหัวหน้าส่วนงาน/ฝ่าย)
+      const academicList = list.filter(e => {
+        if (isUnassigned(e)) return false;
+        const eid = String(e.id || e.code);
+        if (placedEmployeeIds.has(eid)) return false;
+        const pos = e.position || '';
+        const dept = e.department || '';
+        const posNode = e.positionNodeId || '';
+        const deptNode = e.departmentNodeId || '';
+
+        // Strict Exclusion: Never include Section Heads (4.1, 4.2, 4.3, 4.4) or Division Heads
+        if (['pos-4-1', 'pos-4-2', 'pos-4-3', 'pos-4-4'].includes(posNode)) return false;
+        if (['division-1', 'division-2', 'division-3', 'division-4'].includes(deptNode)) return false;
+        if (pos.startsWith('4.1') || pos.startsWith('4.2') || pos.startsWith('4.3') || pos.startsWith('4.4')) return false;
+        if (pos.includes('หัวหน้างานส่วนกลาง') || pos.includes('หัวหน้างานกุหลาบ') || pos.includes('หัวหน้างานรัตนบุปผา') || pos.includes('หัวหน้างานธรรมยาตรา')) return false;
+        if (posNode.startsWith('pos-5-') || deptNode.startsWith('dept-')) return false;
+        if (pos.includes('หัวหน้า') && !pos.includes('วิชาการ')) return false;
+
+        // Inclusion: Must be strictly academic position or assigned to academic department
+        return (
+          posNode === 'academic' ||
+          posNode === 'pos-academic' ||
+          pos === 'นักวิชาการ' ||
+          pos.includes('วิชาการ') ||
+          ((deptNode === 'academic' || dept === 'งานวิชาการ' || dept === 'สายวิชาการและเทคนิคการผลิต') && (pos === 'นักวิชาการ' || pos === '' || !pos.includes('หัวหน้า')))
+        );
+      });
+      academicList.forEach(markPlaced);
 
       // Group workers by specific sections (ต้องไม่เป็นบุคลากรรอลงผัง)
       function getEmpsForKeywords(keywords, requiredPrefix = '') {
@@ -4559,6 +4755,7 @@
 
       function renderSubSectionCard({
         nodeId = '',
+        isLegacyKnownDept = false,
         theme = 'blue',
         title = '',
         deptName = '',
@@ -4568,6 +4765,7 @@
         keywords = [],
         customIcon = ''
       }) {
+        const isCustomNode = !isLegacyKnownDept;
         const departmentNode = nodeId && typeof window.getFloraOrgNode === 'function' ? window.getFloraOrgNode(nodeId) : null;
         const departmentAssignment = nodeId && typeof window.getFloraOrgAssignment === 'function' ? window.getFloraOrgAssignment(nodeId) : null;
         const roleNodes = (departmentNode?.children || []).filter(node => ['position', 'role', 'supervision'].includes(node.kind));
@@ -4580,36 +4778,88 @@
           leaderCode = leaderNode?.code || leaderCode;
           leaderTitle = leaderNode ? `${leaderNode.code} ${leaderNode.name}`.trim() : leaderTitle;
           defaultMemberPos = memberNode?.name || defaultMemberPos;
-          keywords = Array.from(new Set([...keywords, departmentNode.name, leaderNode?.name, memberNode?.name].filter(Boolean)));
+          if (isLegacyKnownDept) {
+            keywords = Array.from(new Set([...keywords, departmentNode.name, leaderNode?.name, memberNode?.name].filter(Boolean)));
+          } else {
+            keywords = [];
+          }
+        } else if (isCustomNode) {
+          keywords = [];
         }
 
-        // Match leader specifically (must not be unassigned)
+        // Match leader specifically (must not be unassigned and not already placed elsewhere)
         const leader = list.find(e => {
           if (isUnassigned(e)) return false;
+          const eid = String(e.id || e.code);
+          if (placedEmployeeIds.has(eid)) return false;
           const pos = e.position || '';
-          return (leaderNode && e.positionNodeId === leaderNode.id) || pos === leaderTitle || pos.includes(leaderCode) || (pos.includes('หัวหน้า') && (e.department || '').includes(deptName) && !pos.includes('4.'));
+          const dept = e.department || '';
+
+          // 1. Authoritative positionNodeId match
+          if (leaderNode && e.positionNodeId === leaderNode.id) return true;
+
+          // 2. Exact match on leaderTitle within this department
+          if (leaderTitle && pos === leaderTitle && (e.departmentNodeId === nodeId || dept === deptName || dept === title)) return true;
+
+          // 3. Head title within this department
+          if ((e.departmentNodeId === nodeId || dept === deptName || (dept && deptName && (dept.includes(deptName) || deptName.includes(dept)))) && 
+              pos.includes('หัวหน้า') && !pos.startsWith('4.')) {
+            return true;
+          }
+
+          // 4. Substring matching allowed ONLY for legacy seed departments without explicit departmentNodeId
+          if (isLegacyKnownDept && !e.departmentNodeId) {
+            if (leaderCode && pos.includes(leaderCode)) return true;
+          }
+          return false;
         }) || null;
 
-        // Get members excluding section heads, executive tier, unassigned, and excluding this leader
+        if (leader) markPlaced(leader);
+
+        // Get members excluding section heads, executive tier, unassigned, and already placed employees
         const memberMap = new Map();
-        getEmpsForKeywords(keywords, leaderCode).forEach(emp => memberMap.set(emp.id || emp.code, emp));
+
+        // 1. Direct departmentNodeId or role positionNodeId match (HIGHEST PRIORITY)
         if (nodeId) {
-          list.filter(emp => emp.departmentNodeId === nodeId || roleNodes.some(node => emp.positionNodeId === node.id))
-            .forEach(emp => memberMap.set(emp.id || emp.code, emp));
+          list.filter(emp => {
+            if (isUnassigned(emp)) return false;
+            const eid = String(emp.id || emp.code);
+            if (placedEmployeeIds.has(eid)) return false;
+            return emp.departmentNodeId === nodeId || roleNodes.some(node => emp.positionNodeId === node.id);
+          }).forEach(emp => memberMap.set(String(emp.id || emp.code), emp));
         }
-        list.filter(emp => emp.department === deptName || emp.department === title || (nodeId && emp.departmentNodeId === nodeId))
-          .forEach(emp => memberMap.set(emp.id || emp.code, emp));
+
+        // 2. Exact department name match (HIGHEST PRIORITY)
+        list.filter(emp => {
+          if (isUnassigned(emp)) return false;
+          const eid = String(emp.id || emp.code);
+          if (placedEmployeeIds.has(eid)) return false;
+          return emp.department === deptName || emp.department === title;
+        }).forEach(emp => memberMap.set(String(emp.id || emp.code), emp));
+
+        // 3. Keyword search ONLY as fallback for unlinked legacy employees without another assigned department
+        if (isLegacyKnownDept && keywords && keywords.length > 0) {
+          getEmpsForKeywords(keywords, leaderCode).forEach(emp => {
+            const eid = String(emp.id || emp.code);
+            if (placedEmployeeIds.has(eid) || memberMap.has(eid)) return;
+            const empDept = emp.department || '';
+            const hasOtherDept = allDeptNodes.some(d => d.id !== nodeId && (emp.departmentNodeId === d.id || empDept === d.name || empDept === `${d.code} ${d.name}`.trim()));
+            if (!hasOtherDept) {
+              memberMap.set(eid, emp);
+            }
+          });
+        }
+
         const rawMembers = Array.from(memberMap.values());
         const members = rawMembers.filter(e => {
           if (isUnassigned(e)) return false;
-          const eid = e.id || e.code;
-          if (leader && (leader.id || leader.code) === eid) return false;
-          if (headCentral && (headCentral.id || headCentral.code) === eid) return false;
-          if (headRoseExp && (headRoseExp.id || headRoseExp.code) === eid) return false;
-          if (headRattanabuppha && (headRattanabuppha.id || headRattanabuppha.code) === eid) return false;
-          if (headDhammayatra && (headDhammayatra.id || headDhammayatra.code) === eid) return false;
+          const eid = String(e.id || e.code);
+          if (placedEmployeeIds.has(eid)) return false;
           return true;
         });
+
+        // Register all members placed in this card so they won't appear in subsequent cards
+        members.forEach(markPlaced);
 
         const cardBorderClass = `dept-card-${theme}`;
         const badgeClass = `badge-${theme}`;
@@ -4669,12 +4919,20 @@
         }
 
         return `
-          <div class="dept-card ${cardBorderClass} text-center"
+          <div class="dept-card ${cardBorderClass} text-center position-relative"
                data-target-dept="${escapeHtml(deptName)}"
                data-target-pos="${escapeHtml(defaultMemberPos)}"
                ondragover="handleSlotDragOver(event)"
                ondragleave="handleSlotDragLeave(event)"
                ondrop="handleSlotDrop(event, '${escapeHtml(deptName)}', '${escapeHtml(defaultMemberPos)}')">
+            ${nodeId ? `
+              <button type="button" 
+                      class="node-card-btn personnel-admin-only" 
+                      onclick="openNodeActionMenu(event, '${escapeHtml(nodeId)}')" 
+                      title="จัดการแผนกนี้ (เพิ่ม/แก้ไข/ลบ)">
+                <i class="bi bi-three-dots-vertical"></i>
+              </button>
+            ` : ''}
             <div class="dept-title-badge ${badgeClass}">${customIcon ? `<i class="bi ${customIcon} me-1"></i>` : ''}${escapeHtml(stripStructureCode(title))}</div>
             ${leaderHtml}
             ${renderAvatarMatrix(members, deptName, defaultMemberPos)}
@@ -4682,22 +4940,289 @@
         `;
       }
 
-      const empsAdmin = getEmpsForKeywords(['ธุรการ', 'บุคคล']);
-      const empsWelfare = getEmpsForKeywords(['สวัสดิการ']);
-      const empsWater = getEmpsForKeywords(['ระบบน้ำ', 'น้ำ']);
-      const empsGrass = getEmpsForKeywords(['ตัดหญ้า', 'หญ้า', 'สนับสนุน']);
-      
-      const empsExp = getEmpsForKeywords(['ทดลอง', 'วิจัย']);
-      const empsRose = getEmpsForKeywords(['กุหลาบ']);
+      // ==================== DYNAMIC PILLARS BUILDER (FROM ORG TREE) ====================
+      const KNOWN_DEPT_META = {
+        'dept-1-1': { theme: 'blue', customIcon: 'bi-file-earmark-person-fill', keywords: ['ธุรการ', 'บุคคล'] },
+        'dept-1-2': { theme: 'blue', customIcon: 'bi-heart-pulse-fill', keywords: ['สวัสดิการ'] },
+        'dept-1-3-water': { theme: 'blue', customIcon: 'bi-droplet-fill', keywords: ['ระบบน้ำ', 'น้ำ'] },
+        'dept-1-3-grass': { theme: 'blue', customIcon: 'bi-scissors', keywords: ['ตัดหญ้า', 'หญ้า', 'สนับสนุน'] },
+        'dept-2-1': { theme: 'pink', customIcon: 'bi-funnel-fill', keywords: ['ทดลอง', 'วิจัย'] },
+        'dept-2-2': { theme: 'pink', customIcon: 'bi-flower3', keywords: ['กุหลาบ'] },
+        'dept-3-1': { theme: 'orange', customIcon: 'bi-bank2', keywords: ['เจดีย์', 'แปลง g'] },
+        'dept-3-2': { theme: 'orange', customIcon: 'bi-house-door-fill', keywords: ['วิหารหลวงปู่', 'วิหาร'] },
+        'dept-3-3': { theme: 'orange', customIcon: 'bi-tree-fill', keywords: ['ถนน', 'ธรรมชัย', 'เฟื่องฟ้า'] },
+        'dept-3-4': { theme: 'orange', customIcon: 'bi-boxes', keywords: ['ผสมแกลบ', 'โต๊ะกลาง', 'ผสมดิน', 'แกลบ'] },
+        'dept-4-1': { theme: 'green', customIcon: 'bi-grid-3x3-gap-fill', keywords: ['แปลง a', 'แปลง b', 'แปลง a-b', 'แปลง a / b'] },
+        'dept-4-2': { theme: 'green', customIcon: 'bi-flower2', keywords: ['แปลง e', 'p11', 'แปลง e / p11'] },
+        'dept-4-3': { theme: 'green', customIcon: 'bi-archive-fill', keywords: ['วิหารคด', 'ไม้กระถาง', '13-20', 'ปอ'] }
+      };
 
-      const empsChedi = getEmpsForKeywords(['เจดีย์', 'แปลง g']);
-      const empsVihara = getEmpsForKeywords(['วิหารหลวงปู่', 'วิหาร']);
-      const empsRoad = getEmpsForKeywords(['ถนน', 'ธรรมชัย', 'เฟื่องฟ้า']);
-      const empsSoil = getEmpsForKeywords(['ผสมแกลบ', 'โต๊ะกลาง', 'ผสมดิน', 'แกลบ']);
+      const STANDARD_DIVISIONS = [
+        {
+          id: 'division-1',
+          theme: 'blue',
+          defaultName: '1. งานส่วนกลาง',
+          headBoxId: 'slot-head-central',
+          headDefaultPos: '4.1 หัวหน้างานส่วนกลาง',
+          headTitleText: 'หัวหน้างานส่วนกลาง',
+          headNameClass: 'text-primary',
+          headKeywords: ['ส่วนกลาง'],
+          defaultDeptIds: ['dept-1-1', 'dept-1-2', 'dept-1-3-water', 'dept-1-3-grass']
+        },
+        {
+          id: 'division-2',
+          theme: 'pink',
+          defaultName: '2. งานกุหลาบ / งานทดลอง',
+          headBoxId: 'slot-head-rose-exp',
+          headDefaultPos: '4.2 หัวหน้างานกุหลาบ/งานทดลอง',
+          headTitleText: 'หัวหน้างานกุหลาบ/ทดลอง',
+          headNameClass: 'text-danger',
+          headKeywords: ['กุหลาบ', 'ทดลอง'],
+          defaultDeptIds: ['dept-2-1', 'dept-2-2']
+        },
+        {
+          id: 'division-3',
+          theme: 'orange',
+          defaultName: '3. งานรัตนบุปผา',
+          headBoxId: 'slot-head-rattanabuppha',
+          headDefaultPos: '4.3 หัวหน้างานรัตนบุปผา',
+          headTitleText: 'หัวหน้างานรัตนบุปผา',
+          headNameClass: 'text-warning',
+          headStyle: 'color: #e65100 !important;',
+          headKeywords: ['รัตนบุปผา'],
+          defaultDeptIds: ['dept-3-1', 'dept-3-2', 'dept-3-3', 'dept-3-4']
+        },
+        {
+          id: 'division-4',
+          theme: 'green',
+          defaultName: '4. งานธรรมยาตรา',
+          headBoxId: 'slot-head-dhammayatra',
+          headDefaultPos: '4.4 หัวหน้างานธรรมยาตรา',
+          headTitleText: 'หัวหน้างานธรรมยาตรา',
+          headNameClass: 'text-success',
+          headKeywords: ['ธรรมยาตรา'],
+          defaultDeptIds: ['dept-4-1', 'dept-4-2', 'dept-4-3']
+        }
+      ];
 
-      const empsPlotsAB = getEmpsForKeywords(['แปลง a', 'แปลง b', 'แปลง a-b', 'แปลง a / b']);
-      const empsPlotsEP11 = getEmpsForKeywords(['แปลง e', 'p11', 'แปลง e / p11']);
-      const empsPotPlants = getEmpsForKeywords(['วิหารคด', 'ไม้กระถาง', '13-20', 'ปอ']);
+      function collectNodesByKind(node, kind) {
+        if (!node) return [];
+        const result = [];
+        if (node.kind === kind) result.push(node);
+        if (node.children && Array.isArray(node.children)) {
+          for (const child of node.children) {
+            result.push(...collectNodesByKind(child, kind));
+          }
+        }
+        return result;
+      }
+
+      function findNodeInTree(node, id) {
+        if (!node) return null;
+        if (node.id === id) return node;
+        if (node.children && Array.isArray(node.children)) {
+          for (const child of node.children) {
+            const found = findNodeInTree(child, id);
+            if (found) return found;
+          }
+        }
+        return null;
+      }
+
+      const liveTree = typeof window.getFloraOrgTree === 'function' ? window.getFloraOrgTree() : null;
+      const allDivNodes = liveTree ? collectNodesByKind(liveTree, 'division') : [];
+      const allDeptNodes = liveTree ? collectNodesByKind(liveTree, 'department') : [];
+
+      const renderedDeptIds = new Set();
+      const dynamicColumns = [];
+      const THEME_CYCLE = ['blue', 'pink', 'orange', 'green', 'blue', 'pink', 'orange', 'green'];
+
+      // Process standard divisions first
+      STANDARD_DIVISIONS.forEach((std) => {
+        const divNode = liveTree ? findNodeInTree(liveTree, std.id) : null;
+        const divName = divNode ? (divNode.code ? `${divNode.code}. ${divNode.name}` : divNode.name) : std.defaultName;
+        
+        const headNode = divNode ? ((divNode.children || []).find(c => ['position', 'role', 'supervision'].includes(c.kind) && (c.name.includes('หัวหน้า') || String(c.code).startsWith('4.'))) ||
+                         (divNode.children || []).find(c => ['position', 'role'].includes(c.kind)) || null) : null;
+
+        let headEmp = null;
+        if (std.id === 'division-1') headEmp = headCentral;
+        else if (std.id === 'division-2') headEmp = headRoseExp;
+        else if (std.id === 'division-3') headEmp = headRattanabuppha;
+        else if (std.id === 'division-4') headEmp = headDhammayatra;
+        else if (headNode) {
+          headEmp = list.find(e => !isUnassigned(e) && (e.positionNodeId === headNode.id || e.position === headNode.name || (e.department || '').includes(divNode.name))) || null;
+        }
+
+        const divDepts = divNode ? collectNodesByKind(divNode, 'department') : [];
+        const deptListForCol = [];
+
+        if (divDepts.length > 0) {
+          divDepts.forEach(d => {
+            deptListForCol.push(d);
+            renderedDeptIds.add(d.id);
+          });
+        } else {
+          std.defaultDeptIds.forEach(did => {
+            const dn = allDeptNodes.find(d => d.id === did) || { id: did, code: '', name: did, kind: 'department', children: [] };
+            deptListForCol.push(dn);
+            renderedDeptIds.add(did);
+          });
+        }
+
+        dynamicColumns.push({
+          id: std.id,
+          theme: std.theme,
+          divName: divName,
+          headBoxId: std.headBoxId,
+          headTitle: headNode ? (headNode.code ? `${headNode.code} ${headNode.name}`.trim() : headNode.name) : std.headDefaultPos,
+          headTitleText: headNode ? headNode.name : std.headTitleText,
+          headEmp: headEmp,
+          headNameClass: std.headNameClass,
+          headStyle: std.headStyle || '',
+          departments: deptListForCol
+        });
+      });
+
+      // Include any newly added divisions from tree
+      allDivNodes.forEach((divNode, idx) => {
+        if (STANDARD_DIVISIONS.some(std => std.id === divNode.id)) return;
+        const isAutoCodeStr = (c) => !c || c === 'ORG-ROOT' || /^AUTO[-_]/i.test(String(c).trim()) || /^POS-\d+/i.test(String(c).trim());
+        const cleanNameStr = (n) => String(n || '').replace(/^AUTO-[A-Z0-9_-]+\s*/i, '').trim();
+        const theme = THEME_CYCLE[(4 + idx) % THEME_CYCLE.length];
+        const cleanDivName = cleanNameStr(divNode.name);
+        const divName = (divNode.code && !isAutoCodeStr(divNode.code)) ? `${divNode.code}. ${cleanDivName}` : cleanDivName;
+        const headNode = (divNode.children || []).find(c => ['position', 'role', 'supervision'].includes(c.kind) && (c.name.includes('หัวหน้า') || String(c.code).startsWith('4.'))) ||
+                         (divNode.children || []).find(c => ['position', 'role'].includes(c.kind)) || null;
+        const headEmp = headNode ? list.find(e => {
+          if (isUnassigned(e)) return false;
+          const eid = String(e.id || e.code);
+          if (placedEmployeeIds.has(eid)) return false;
+          return (e.positionNodeId === headNode.id || e.position === headNode.name);
+        }) || null : null;
+        if (headEmp) markPlaced(headEmp);
+
+        const divDepts = collectNodesByKind(divNode, 'department');
+        divDepts.forEach(d => renderedDeptIds.add(d.id));
+
+        const cleanHeadNodeName = headNode ? cleanNameStr(headNode.name) : `หัวหน้า${cleanDivName}`;
+        dynamicColumns.push({
+          id: divNode.id,
+          theme: theme,
+          divName: divName,
+          headBoxId: `slot-head-${divNode.id}`,
+          headTitle: headNode ? (headNode.code && !isAutoCodeStr(headNode.code) ? `${headNode.code} ${cleanHeadNodeName}`.trim() : cleanHeadNodeName) : `หัวหน้า${cleanDivName}`,
+          headTitleText: cleanHeadNodeName,
+          headEmp: headEmp,
+          headNameClass: 'text-primary',
+          headStyle: '',
+          departments: divDepts
+        });
+      });
+
+      // Include any orphan departments that do not belong to any division
+      const orphanDepts = allDeptNodes.filter(d => !renderedDeptIds.has(d.id));
+      if (orphanDepts.length > 0) {
+        dynamicColumns.push({
+          id: 'division-custom-extra',
+          theme: 'blue',
+          divName: 'ฝ่าย / แผนกเพิ่มเติม',
+          headBoxId: 'slot-head-extra',
+          headTitle: 'หัวหน้างาน',
+          headTitleText: 'แผนกเพิ่มเติม',
+          headEmp: null,
+          headNameClass: 'text-primary',
+          headStyle: '',
+          departments: orphanDepts
+        });
+      }
+
+      function renderDeptCardDynamic(deptNode, colTheme) {
+        const isAutoCodeStr = (c) => !c || c === 'ORG-ROOT' || /^AUTO[-_]/i.test(String(c).trim()) || /^POS-\d+/i.test(String(c).trim());
+        const cleanNameStr = (n) => String(n || '').replace(/^AUTO-[A-Z0-9_-]+\s*/i, '').trim();
+        const isLegacyKnownDept = Boolean(KNOWN_DEPT_META[deptNode.id]);
+        const meta = KNOWN_DEPT_META[deptNode.id] || {};
+        const assignment = typeof window.getFloraOrgAssignment === 'function' ? window.getFloraOrgAssignment(deptNode.id) : null;
+        const cleanDeptName = cleanNameStr(deptNode.name);
+        const deptTitle = assignment?.department ? cleanNameStr(assignment.department) : (deptNode.code && !isAutoCodeStr(deptNode.code) ? `${deptNode.code} ${cleanDeptName}` : cleanDeptName);
+
+        const roleNodes = (deptNode.children || []).filter(c => ['position', 'role', 'supervision'].includes(c.kind));
+        const leaderNode = roleNodes.find(c => (c.name || '').includes('หัวหน้า')) || roleNodes[0] || null;
+        const memberNode = roleNodes.find(c => c.id !== leaderNode?.id) || null;
+
+        const leaderCode = (leaderNode?.code && !isAutoCodeStr(leaderNode.code)) ? leaderNode.code : '';
+        const cleanLeaderName = leaderNode ? cleanNameStr(leaderNode.name) : `หัวหน้า${cleanDeptName}`;
+        const leaderTitle = leaderNode ? (leaderCode ? `${leaderCode} ${cleanLeaderName}`.trim() : cleanLeaderName) : `หัวหน้า${cleanDeptName}`;
+        const defaultMemberPos = memberNode ? cleanNameStr(memberNode.name) : 'พนักงาน';
+
+        let icon = meta.customIcon || '';
+        if (!icon) {
+          const n = (deptNode.name || '').toLowerCase();
+          if (n.includes('ธุรการ') || n.includes('บุคคล')) icon = 'bi-file-earmark-person-fill';
+          else if (n.includes('สวัสดิการ')) icon = 'bi-heart-pulse-fill';
+          else if (n.includes('น้ำ')) icon = 'bi-droplet-fill';
+          else if (n.includes('หญ้า')) icon = 'bi-scissors';
+          else if (n.includes('ทดลอง') || n.includes('วิจัย')) icon = 'bi-funnel-fill';
+          else if (n.includes('กุหลาบ')) icon = 'bi-flower3';
+          else if (n.includes('เจดีย์')) icon = 'bi-bank2';
+          else if (n.includes('วิหาร')) icon = 'bi-house-door-fill';
+          else if (n.includes('ถนน')) icon = 'bi-tree-fill';
+          else if (n.includes('แกลบ') || n.includes('ดิน')) icon = 'bi-boxes';
+          else if (n.includes('แปลง') && (n.includes('a') || n.includes('b'))) icon = 'bi-grid-3x3-gap-fill';
+          else if (n.includes('กระถาง')) icon = 'bi-archive-fill';
+          else if (n.includes('รถ') || n.includes('ยาน')) icon = 'bi-truck';
+          else if (n.includes('คลัง') || n.includes('พัสดุ')) icon = 'bi-box-seam';
+          else if (n.includes('ดอกไม้') || n.includes('พืช')) icon = 'bi-flower1';
+          else icon = 'bi-diagram-3-fill';
+        }
+
+        return renderSubSectionCard({
+          nodeId: deptNode.id,
+          isLegacyKnownDept: isLegacyKnownDept,
+          theme: meta.theme || colTheme,
+          title: deptTitle,
+          deptName: deptTitle,
+          leaderCode: leaderCode,
+          leaderTitle: leaderTitle,
+          defaultMemberPos: defaultMemberPos,
+          keywords: isLegacyKnownDept ? (meta.keywords || [deptNode.name]) : [],
+          customIcon: icon
+        });
+      }
+
+      const dynamicColumnsHtml = dynamicColumns.map(col => `
+        <div class="d-flex flex-column">
+          <!-- Section Head -->
+          <div class="section-head-box head-${col.theme} position-relative" 
+               id="${col.headBoxId}"
+               ondragover="handleSlotDragOver(event)"
+               ondragleave="handleSlotDragLeave(event)"
+               ondrop="handleSlotDrop(event, '${escapeHtml(col.divName)}', '${escapeHtml(col.headTitle)}')"
+               onclick="${col.headEmp ? `handleAvatarClick(event, '${escapeHtml(col.headEmp.id || col.headEmp.code)}')` : `openAddModalForSlot('${escapeHtml(col.divName)}', '${escapeHtml(col.headTitle)}')`}" 
+               title="คลิกเพื่อเลือกเมนู / ลากคนมาวางเพื่อกำหนดเป็น${escapeHtml(col.headTitleText)}">
+            <button type="button" 
+                    class="node-card-btn personnel-admin-only" 
+                    onclick="openNodeActionMenu(event, '${escapeHtml(col.id)}')" 
+                    title="จัดการฝ่ายนี้ (เพิ่มแผนก/แก้ไข/ลบ)">
+              <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <span class="head-tag tag-${col.theme}">หัวหน้างาน</span>
+            <div class="head-avatar avatar-bg-${col.theme}"
+                 ${col.headEmp ? `draggable="true" ondragstart="handleAvatarDragStart(event, '${escapeHtml(col.headEmp.id || col.headEmp.code)}')"` : ''}>
+              ${col.headEmp && (col.headEmp.photoUrl || col.headEmp.photo) ? `<img src="${col.headEmp.photoUrl || col.headEmp.photo}" alt="${escapeHtml(col.headEmp.name)}">` : `<i class="bi bi-person-badge-fill"></i>`}
+            </div>
+            <div class="text-start">
+              <div class="fw-bold fs-7 text-dark lh-1">${escapeHtml(col.headTitleText)}</div>
+              <div class="${col.headNameClass} fs-8 fw-bold mt-1" ${col.headStyle ? `style="${col.headStyle}"` : ''}>
+                ${col.headEmp ? escapeHtml(col.headEmp.name) : '<span class="text-muted opacity-75">+ กำหนดรายชื่อ</span>'}
+              </div>
+            </div>
+          </div>
+
+          <!-- Departments in this Division -->
+          ${col.departments.map(dept => renderDeptCardDynamic(dept, col.theme)).join('')}
+        </div>
+      `).join('');
 
       let posterHtml = `
         <div class="chart-poster" id="chartPosterArea">
@@ -4748,7 +5273,7 @@
             
             <!-- Level 1: ประธานโครงการ (Center Top - อยู่สูงกว่าที่ปรึกษา) -->
             <div class="mb-3 d-flex justify-content-center w-100 px-2">
-              <div class="exec-box shadow-sm" 
+              <div class="exec-box shadow-sm position-relative" 
                    id="slot-exec-president"
                    style="width: clamp(260px, 85vw, 320px); border-width: 2.5px; border-color: #0d2258;" 
                    ondragover="handleSlotDragOver(event)"
@@ -4756,6 +5281,12 @@
                    ondrop="handleSlotDrop(event, 'ฝ่ายบริหารและอำนวยการ', 'ประธานโครงการ')"
                    onclick="${president ? `handleAvatarClick(event, '${escapeHtml(president.id || president.code)}')` : `openAddModalForSlot('ฝ่ายบริหารและอำนวยการ', 'ประธานโครงการ')`}" 
                    title="คลิกเพื่อเลือกเมนู / ลากคนมาวางเพื่อกำหนดเป็นประธานโครงการ">
+                <button type="button" 
+                        class="node-card-btn personnel-admin-only" 
+                        onclick="openNodeActionMenu(event, 'pos-1')" 
+                        title="จัดการตำแหน่งประธาน (แก้ไข/เพิ่มโหนด)">
+                  <i class="bi bi-three-dots-vertical"></i>
+                </button>
                 <div class="exec-avatar" 
                      style="width: 52px; height: 52px; background: #0d2258;"
                      ${president ? `draggable="true" ondragstart="handleAvatarDragStart(event, '${escapeHtml(president.id || president.code)}')"` : ''}>
@@ -4773,7 +5304,7 @@
             <div class="d-flex align-items-center justify-content-center gap-5 mb-3 w-100">
               
               <!-- ที่ปรึกษาโครงการ (ท่านที่ 1 - ซ้าย) -->
-              <div class="exec-box" 
+              <div class="exec-box position-relative" 
                    id="slot-exec-advisor1"
                    style="width: 270px;" 
                    ondragover="handleSlotDragOver(event)"
@@ -4781,6 +5312,12 @@
                    ondrop="handleSlotDrop(event, 'ฝ่ายบริหารและอำนวยการ', 'ที่ปรึกษาโครงการ')"
                    onclick="${advisor1 ? `handleAvatarClick(event, '${escapeHtml(advisor1.id || advisor1.code)}')` : `openAddModalForSlot('ฝ่ายบริหารและอำนวยการ', 'ที่ปรึกษาโครงการ')`}" 
                    title="คลิกเพื่อเลือกเมนู / ลากคนมาวางเพื่อกำหนดเป็นที่ปรึกษาโครงการ">
+                <button type="button" 
+                        class="node-card-btn personnel-admin-only" 
+                        onclick="openNodeActionMenu(event, 'pos-2')" 
+                        title="จัดการตำแหน่งที่ปรึกษา (แก้ไข/เพิ่มโหนด)">
+                  <i class="bi bi-three-dots-vertical"></i>
+                </button>
                 <div class="exec-avatar"
                      ${advisor1 ? `draggable="true" ondragstart="handleAvatarDragStart(event, '${escapeHtml(advisor1.id || advisor1.code)}')"` : ''}>
                   ${advisor1 && advisor1.photoUrl ? `<img src="${advisor1.photoUrl}" alt="${advisor1.name}">` : `<i class="bi bi-person-fill"></i>`}
@@ -4793,7 +5330,7 @@
               </div>
 
               <!-- ที่ปรึกษาโครงการ (ท่านที่ 2 - ขวา) -->
-              <div class="exec-box" 
+              <div class="exec-box position-relative" 
                    id="slot-exec-advisor2"
                    style="width: 270px;" 
                    ondragover="handleSlotDragOver(event)"
@@ -4801,6 +5338,12 @@
                    ondrop="handleSlotDrop(event, 'ฝ่ายบริหารและอำนวยการ', 'ที่ปรึกษาโครงการ')"
                    onclick="${advisor2 ? `handleAvatarClick(event, '${escapeHtml(advisor2.id || advisor2.code)}')` : `openAddModalForSlot('ฝ่ายบริหารและอำนวยการ', 'ที่ปรึกษาโครงการ')`}" 
                    title="คลิกเพื่อเลือกเมนู / ลากคนมาวางเพื่อกำหนดเป็นที่ปรึกษาโครงการ">
+                <button type="button" 
+                        class="node-card-btn personnel-admin-only" 
+                        onclick="openNodeActionMenu(event, 'pos-2')" 
+                        title="จัดการตำแหน่งที่ปรึกษา (แก้ไข/เพิ่มโหนด)">
+                  <i class="bi bi-three-dots-vertical"></i>
+                </button>
                 <div class="exec-avatar"
                      ${advisor2 ? `draggable="true" ondragstart="handleAvatarDragStart(event, '${escapeHtml(advisor2.id || advisor2.code)}')"` : ''}>
                   ${advisor2 && advisor2.photoUrl ? `<img src="${advisor2.photoUrl}" alt="${advisor2.name}">` : `<i class="bi bi-person-fill"></i>`}
@@ -4816,7 +5359,7 @@
 
             <!-- Level 3: ผู้ประสานงานโครงการ (Center) -->
             <div class="mb-3">
-              <div class="exec-box exec-box-green" 
+              <div class="exec-box exec-box-green position-relative" 
                    id="slot-exec-coordinator"
                    style="width: 320px; border-width: 2.2px;" 
                    ondragover="handleSlotDragOver(event)"
@@ -4824,6 +5367,12 @@
                    ondrop="handleSlotDrop(event, 'ฝ่ายบริหารและอำนวยการ', 'ผู้ประสานงานโครงการ')"
                    onclick="${coordinator ? `handleAvatarClick(event, '${escapeHtml(coordinator.id || coordinator.code)}')` : `openAddModalForSlot('ฝ่ายบริหารและอำนวยการ', 'ผู้ประสานงานโครงการ')`}" 
                    title="คลิกเพื่อเลือกเมนู / ลากคนมาวางเพื่อกำหนดเป็นผู้ประสานงานโครงการ">
+                <button type="button" 
+                        class="node-card-btn personnel-admin-only" 
+                        onclick="openNodeActionMenu(event, 'pos-3')" 
+                        title="จัดการตำแหน่งผู้ประสานงาน (แก้ไข/เพิ่มโหนด)">
+                  <i class="bi bi-three-dots-vertical"></i>
+                </button>
                 <div class="exec-avatar exec-avatar-green" 
                      style="width: 48px; height: 48px;"
                      ${coordinator ? `draggable="true" ondragstart="handleAvatarDragStart(event, '${escapeHtml(coordinator.id || coordinator.code)}')"` : ''}>
@@ -4839,7 +5388,13 @@
 
             <!-- Level 4: งานวิชาการ (ใส่เพิ่มได้หลายคน - กำกับดูแลและมีเส้นลงมายังส่วนงานทั้ง 3 ด้านล่าง 4.2, 4.3, 4.4) -->
             <div class="mb-2">
-              <div class="academic-middle-box" id="academic-supervision-box" style="min-width: 520px; max-width: 780px;">
+              <div class="academic-middle-box position-relative" id="academic-supervision-box" style="min-width: 520px; max-width: 780px;">
+                <button type="button" 
+                        class="node-card-btn personnel-admin-only" 
+                        onclick="openNodeActionMenu(event, 'academic')" 
+                        title="จัดการสายวิชาการ (แก้ไข/เพิ่มตำแหน่ง)">
+                  <i class="bi bi-three-dots-vertical"></i>
+                </button>
                 <span class="academic-tag-header">สายวิชาการและเทคนิคการผลิต</span>
                 
                 <div class="d-flex align-items-center gap-3 w-100 flex-wrap">
@@ -4905,267 +5460,9 @@
 
           </div>
 
-          <!-- ==================== 3. FOUR MAIN PILLARS ==================== -->
-          <div class="columns-grid">
-            
-            <!-- ==================== COLUMN 1: 1. งานส่วนกลาง ==================== -->
-            <div class="d-flex flex-column">
-              <!-- 4.1 หัวหน้างานส่วนกลาง (Section Head) -->
-              <div class="section-head-box head-blue" 
-                   id="slot-head-central"
-                   ondragover="handleSlotDragOver(event)"
-                   ondragleave="handleSlotDragLeave(event)"
-                   ondrop="handleSlotDrop(event, '1. งานส่วนกลาง', '4.1 หัวหน้างานส่วนกลาง')"
-                   onclick="${headCentral ? `handleAvatarClick(event, '${escapeHtml(headCentral.id || headCentral.code)}')` : `openAddModalForSlot('1. งานส่วนกลาง', '4.1 หัวหน้างานส่วนกลาง')`}" 
-                   title="คลิกเพื่อเลือกเมนู / ลากคนมาวางเพื่อกำหนดเป็นหัวหน้างานส่วนกลาง">
-                <span class="head-tag tag-blue">หัวหน้างาน</span>
-                <div class="head-avatar avatar-bg-blue"
-                     ${headCentral ? `draggable="true" ondragstart="handleAvatarDragStart(event, '${escapeHtml(headCentral.id || headCentral.code)}')"` : ''}>
-                  ${headCentral && headCentral.photoUrl ? `<img src="${headCentral.photoUrl}" alt="${headCentral.name}">` : `<i class="bi bi-person-badge-fill"></i>`}
-                </div>
-                <div class="text-start">
-                  <div class="fw-bold fs-7 text-dark lh-1">หัวหน้างานส่วนกลาง</div>
-                  <div class="text-primary fs-8 fw-bold mt-1">${headCentral ? escapeHtml(headCentral.name) : '<span class="text-muted opacity-75">+ กำหนดรายชื่อ</span>'}</div>
-                </div>
-              </div>
-
-              <!-- 1.1 งานธุรการ / งานบุคคล -> 5.1 หัวหน้างานธุรการ / งานบุคคล -->
-              ${renderSubSectionCard({
-                nodeId: 'dept-1-1',
-                theme: 'blue',
-                title: '1.1 งานธุรการ / งานบุคคล',
-                deptName: '1.1 งานธุรการ / งานบุคคล',
-                leaderCode: '5.1',
-                leaderTitle: '5.1 หัวหน้างานธุรการ / งานบุคคล',
-                defaultMemberPos: 'เจ้าหน้าที่ธุรการ',
-                keywords: ['ธุรการ', 'บุคคล'],
-                customIcon: 'bi-file-earmark-person-fill'
-              })}
-
-              <!-- 1.2 งานสวัสดิการ -> 5.2 หัวหน้างานสวัสดิการ -->
-              ${renderSubSectionCard({
-                nodeId: 'dept-1-2',
-                theme: 'blue',
-                title: '1.2 งานสวัสดิการ',
-                deptName: '1.2 งานสวัสดิการ',
-                leaderCode: '5.2',
-                leaderTitle: '5.2 หัวหน้างานสวัสดิการ',
-                defaultMemberPos: 'พนักงานสวัสดิการ',
-                keywords: ['สวัสดิการ'],
-                customIcon: 'bi-heart-pulse-fill'
-              })}
-
-              <!-- 1.3 งานระบบน้ำ -> 5.3 หัวหน้างานระบบน้ำ -->
-              ${renderSubSectionCard({
-                nodeId: 'dept-1-3-water',
-                theme: 'blue',
-                title: '1.3 งานระบบน้ำ',
-                deptName: '1.3 งานระบบน้ำ',
-                leaderCode: '5.3',
-                leaderTitle: '5.3 หัวหน้างานระบบน้ำ',
-                defaultMemberPos: 'พนักงานดูแลระบบน้ำ',
-                keywords: ['ระบบน้ำ', 'น้ำ'],
-                customIcon: 'bi-droplet-fill'
-              })}
-
-              <!-- 1.4 งานตัดหญ้า -> 5.3.1 หัวหน้างานตัดหญ้า -->
-              ${renderSubSectionCard({
-                nodeId: 'dept-1-3-grass',
-                theme: 'blue',
-                title: '1.4 งานตัดหญ้า',
-                deptName: '1.4 งานตัดหญ้า',
-                leaderCode: '5.3.1',
-                leaderTitle: '5.3.1 หัวหน้างานตัดหญ้า',
-                defaultMemberPos: 'พนักงานตัดหญ้า',
-                keywords: ['ตัดหญ้า', 'หญ้า', 'สนับสนุน'],
-                customIcon: 'bi-scissors'
-              })}
-            </div>
-
-            <!-- ==================== COLUMN 2: 2. งานกุหลาบ / งานทดลอง ==================== -->
-            <div class="d-flex flex-column">
-              <!-- 4.2 หัวหน้างานกุหลาบ/งานทดลอง (Section Head) -->
-              <div class="section-head-box head-pink" 
-                   id="slot-head-rose-exp"
-                   ondragover="handleSlotDragOver(event)"
-                   ondragleave="handleSlotDragLeave(event)"
-                   ondrop="handleSlotDrop(event, '2. งานกุหลาบ / งานทดลอง', '4.2 หัวหน้างานกุหลาบ/งานทดลอง')"
-                   onclick="${headRoseExp ? `handleAvatarClick(event, '${escapeHtml(headRoseExp.id || headRoseExp.code)}')` : `openAddModalForSlot('2. งานกุหลาบ / งานทดลอง', '4.2 หัวหน้างานกุหลาบ/งานทดลอง')`}" 
-                   title="คลิกเพื่อเลือกเมนู / ลากคนมาวางเพื่อกำหนดเป็นหัวหน้างานกุหลาบ/งานทดลอง">
-                <span class="head-tag tag-pink">หัวหน้างาน</span>
-                <div class="head-avatar avatar-bg-pink"
-                     ${headRoseExp ? `draggable="true" ondragstart="handleAvatarDragStart(event, '${escapeHtml(headRoseExp.id || headRoseExp.code)}')"` : ''}>
-                  ${headRoseExp && headRoseExp.photoUrl ? `<img src="${headRoseExp.photoUrl}" alt="${headRoseExp.name}">` : `<i class="bi bi-person-badge-fill"></i>`}
-                </div>
-                <div class="text-start">
-                  <div class="fw-bold fs-7 text-dark lh-1">หัวหน้างานกุหลาบ/ทดลอง</div>
-                  <div class="text-danger fs-8 fw-bold mt-1">${headRoseExp ? escapeHtml(headRoseExp.name) : '<span class="text-muted opacity-75">+ กำหนดรายชื่อ</span>'}</div>
-                </div>
-              </div>
-
-              <!-- 2.1 งานทดลอง -> 5.4 หัวหน้างานทดลอง -->
-              ${renderSubSectionCard({
-                nodeId: 'dept-2-1',
-                theme: 'pink',
-                title: '2.1 งานทดลอง',
-                deptName: '2.1 งานทดลอง',
-                leaderCode: '5.4',
-                leaderTitle: '5.4 หัวหน้างานทดลอง',
-                defaultMemberPos: 'พนักงานงานทดลอง',
-                keywords: ['ทดลอง', 'วิจัย'],
-                customIcon: 'bi-funnel-fill'
-              })}
-
-              <!-- 2.2 งานกุหลาบ -> 5.5 หัวหน้างานกุหลาบ -->
-              ${renderSubSectionCard({
-                nodeId: 'dept-2-2',
-                theme: 'pink',
-                title: '2.2 งานกุหลาบ',
-                deptName: '2.2 งานกุหลาบ',
-                leaderCode: '5.5',
-                leaderTitle: '5.5 หัวหน้างานกุหลาบ',
-                defaultMemberPos: 'พนักงานดูแลกุหลาบ',
-                keywords: ['กุหลาบ'],
-                customIcon: 'bi-flower3'
-              })}
-            </div>
-
-            <!-- ==================== COLUMN 3: 3. งานรัตนบุปผา ==================== -->
-            <div class="d-flex flex-column">
-              <!-- 4.3 หัวหน้างานรัตนบุปผา (Section Head) -->
-              <div class="section-head-box head-orange" 
-                   id="slot-head-rattanabuppha"
-                   ondragover="handleSlotDragOver(event)"
-                   ondragleave="handleSlotDragLeave(event)"
-                   ondrop="handleSlotDrop(event, '3. งานรัตนบุปผา', '4.3 หัวหน้างานรัตนบุปผา')"
-                   onclick="${headRattanabuppha ? `handleAvatarClick(event, '${escapeHtml(headRattanabuppha.id || headRattanabuppha.code)}')` : `openAddModalForSlot('3. งานรัตนบุปผา', '4.3 หัวหน้างานรัตนบุปผา')`}" 
-                   title="คลิกเพื่อเลือกเมนู / ลากคนมาวางเพื่อกำหนดเป็นหัวหน้างานรัตนบุปผา">
-                <span class="head-tag tag-orange">หัวหน้างาน</span>
-                <div class="head-avatar avatar-bg-orange"
-                     ${headRattanabuppha ? `draggable="true" ondragstart="handleAvatarDragStart(event, '${escapeHtml(headRattanabuppha.id || headRattanabuppha.code)}')"` : ''}>
-                  ${headRattanabuppha && headRattanabuppha.photoUrl ? `<img src="${headRattanabuppha.photoUrl}" alt="${headRattanabuppha.name}">` : `<i class="bi bi-person-badge-fill"></i>`}
-                </div>
-                <div class="text-start">
-                  <div class="fw-bold fs-7 text-dark lh-1">หัวหน้างานรัตนบุปผา</div>
-                  <div class="text-warning fs-8 fw-bold mt-1" style="color: #e65100 !important;">${headRattanabuppha ? escapeHtml(headRattanabuppha.name) : '<span class="text-muted opacity-75">+ กำหนดรายชื่อ</span>'}</div>
-                </div>
-              </div>
-
-              <!-- 3.1 งานเจดีย์ -> 5.6 หัวหน้างานเจดีย์ -->
-              ${renderSubSectionCard({
-                nodeId: 'dept-3-1',
-                theme: 'orange',
-                title: '3.1 งานเจดีย์',
-                deptName: '3.1 งานเจดีย์',
-                leaderCode: '5.6',
-                leaderTitle: '5.6 หัวหน้างานเจดีย์',
-                defaultMemberPos: 'พนักงานงานเจดีย์',
-                keywords: ['เจดีย์', 'แปลง g'],
-                customIcon: 'bi-bank2'
-              })}
-
-              <!-- 3.2 งานวิหารหลวงปู่ -> 5.7 หัวหน้างานวิหารหลวงปู่ -->
-              ${renderSubSectionCard({
-                nodeId: 'dept-3-2',
-                theme: 'orange',
-                title: '3.2 งานวิหารหลวงปู่',
-                deptName: '3.2 งานวิหารหลวงปู่',
-                leaderCode: '5.7',
-                leaderTitle: '5.7 หัวหน้างานวิหารหลวงปู่',
-                defaultMemberPos: 'พนักงานงานวิหารหลวงปู่',
-                keywords: ['วิหารหลวงปู่', 'วิหาร'],
-                customIcon: 'bi-house-door-fill'
-              })}
-
-              <!-- 3.3 งานถนนธรรมชัย / เฟื่องฟ้า -> 5.8 หัวหน้างานถนนธรรมชัย / เฟื่องฟ้า -->
-              ${renderSubSectionCard({
-                nodeId: 'dept-3-3',
-                theme: 'orange',
-                title: '3.3 งานถนนธรรมชัย / เฟื่องฟ้า',
-                deptName: '3.3 งานถนนธรรมชัย / เฟื่องฟ้า',
-                leaderCode: '5.8',
-                leaderTitle: '5.8 หัวหน้างานถนนธรรมชัย / เฟื่องฟ้า',
-                defaultMemberPos: 'พนักงานดูแลถนนธรรมชัย',
-                keywords: ['ถนน', 'ธรรมชัย', 'เฟื่องฟ้า'],
-                customIcon: 'bi-tree-fill'
-              })}
-
-              <!-- 3.4 งานผสมแกลบ / งานโต๊ะกลาง -> 5.9 หัวหน้างานผสมแกลบ / โต๊ะกลาง -->
-              ${renderSubSectionCard({
-                nodeId: 'dept-3-4',
-                theme: 'orange',
-                title: '3.4 งานผสมแกลบ / งานโต๊ะกลาง',
-                deptName: '3.4 งานผสมแกลบ / งานโต๊ะกลาง',
-                leaderCode: '5.9',
-                leaderTitle: '5.9 หัวหน้างานผสมแกลบ / โต๊ะกลาง',
-                defaultMemberPos: 'พนักงานผสมแกลบ',
-                keywords: ['ผสมแกลบ', 'โต๊ะกลาง', 'ผสมดิน', 'แกลบ'],
-                customIcon: 'bi-boxes'
-              })}
-            </div>
-
-            <!-- ==================== COLUMN 4: 4. งานธรรมยาตรา ==================== -->
-            <div class="d-flex flex-column">
-              <!-- 4.4 หัวหน้างานธรรมยาตรา (Section Head) -->
-              <div class="section-head-box head-green" 
-                   id="slot-head-dhammayatra"
-                   ondragover="handleSlotDragOver(event)"
-                   ondragleave="handleSlotDragLeave(event)"
-                   ondrop="handleSlotDrop(event, '4. งานธรรมยาตรา', '4.4 หัวหน้างานธรรมยาตรา')"
-                   onclick="${headDhammayatra ? `handleAvatarClick(event, '${escapeHtml(headDhammayatra.id || headDhammayatra.code)}')` : `openAddModalForSlot('4. งานธรรมยาตรา', '4.4 หัวหน้างานธรรมยาตรา')`}" 
-                   title="คลิกเพื่อเลือกเมนู / ลากคนมาวางเพื่อกำหนดเป็นหัวหน้างานธรรมยาตรา">
-                <span class="head-tag tag-green">หัวหน้างาน</span>
-                <div class="head-avatar avatar-bg-green"
-                     ${headDhammayatra ? `draggable="true" ondragstart="handleAvatarDragStart(event, '${escapeHtml(headDhammayatra.id || headDhammayatra.code)}')"` : ''}>
-                  ${headDhammayatra && headDhammayatra.photoUrl ? `<img src="${headDhammayatra.photoUrl}" alt="${headDhammayatra.name}">` : `<i class="bi bi-person-badge-fill"></i>`}
-                </div>
-                <div class="text-start">
-                  <div class="fw-bold fs-7 text-dark lh-1">หัวหน้างานธรรมยาตรา</div>
-                  <div class="text-success fs-8 fw-bold mt-1">${headDhammayatra ? escapeHtml(headDhammayatra.name) : '<span class="text-muted opacity-75">+ กำหนดรายชื่อ</span>'}</div>
-                </div>
-              </div>
-
-              <!-- 4.1 แปลง A / B -> 5.10 หัวหน้างานแปลง A / B -->
-              ${renderSubSectionCard({
-                nodeId: 'dept-4-1',
-                theme: 'green',
-                title: '4.1 แปลง A / B',
-                deptName: '4.1 แปลง A / B',
-                leaderCode: '5.10',
-                leaderTitle: '5.10 หัวหน้างานแปลง A / B',
-                defaultMemberPos: 'พนักงานดูแลแปลง A/B',
-                keywords: ['แปลง a', 'แปลง b', 'แปลง a-b', 'แปลง a / b'],
-                customIcon: 'bi-grid-3x3-gap-fill'
-              })}
-
-              <!-- 4.2 แปลง E / P11 -> 5.11 หัวหน้างานแปลง E / P11 -->
-              ${renderSubSectionCard({
-                nodeId: 'dept-4-2',
-                theme: 'green',
-                title: '4.2 แปลง E / P11',
-                deptName: '4.2 แปลง E / P11',
-                leaderCode: '5.11',
-                leaderTitle: '5.11 หัวหน้างานแปลง E / P11',
-                defaultMemberPos: 'พนักงานดูแลแปลง E/P11',
-                keywords: ['แปลง e', 'p11', 'แปลง e / p11'],
-                customIcon: 'bi-flower2'
-              })}
-
-              <!-- 4.3 งานไม้กระถางหลังวิหารคด 13-20 -> 5.12 หัวหน้างานไม้กระถางหลังวิหารคด 13-20 -->
-              ${renderSubSectionCard({
-                nodeId: 'dept-4-3',
-                theme: 'green',
-                title: '4.3 งานไม้กระถางหลังวิหารคด 13-20',
-                deptName: '4.3 งานไม้กระถางหลังวิหารคด 13-20',
-                leaderCode: '5.12',
-                leaderTitle: '5.12 หัวหน้างานไม้กระถางหลังวิหารคด 13-20',
-                defaultMemberPos: 'พนักงานดูแลไม้กระถาง',
-                keywords: ['วิหารคด', 'ไม้กระถาง', '13-20', 'ปอ'],
-                customIcon: 'bi-archive-fill'
-              })}
-
-            </div>
-
+          <!-- ==================== 3. MAIN PILLARS (DYNAMIC FROM TREE) ==================== -->
+          <div class="columns-grid" style="${dynamicColumns.length !== 4 ? `grid-template-columns: repeat(${dynamicColumns.length}, minmax(330px, 1fr));` : ''}">
+            ${dynamicColumnsHtml}
           </div>
 
         </div>
@@ -5296,7 +5593,8 @@
       window.targetAssignPos = treeAssignment?.position || posDefault || 'พนักงาน';
       window.targetAssignDeptNodeId = treeAssignment?.departmentNodeId || '';
       window.targetAssignPosNodeId = treeAssignment?.positionNodeId || '';
-      updatePositionDropdownOptions(); updateDepartmentDropdownOptions();
+      updateDepartmentDropdownOptions();
+      updatePositionDropdownOptions(window.targetAssignDept, window.targetAssignPos);
 
       // Show Tab 1 (Create New) by default & Tab navigation
       document.getElementById('empModalTabs').classList.remove('d-none');
@@ -5342,14 +5640,19 @@
       if (document.getElementById('formPhotoFileInput')) document.getElementById('formPhotoFileInput').value = '';
       if (document.getElementById('formPhotoCameraInput')) document.getElementById('formPhotoCameraInput').value = '';
 
-      if (deptDefault) document.getElementById('formEmpDept').value = deptDefault;
+      if (deptDefault) {
+        document.getElementById('formEmpDept').value = deptDefault;
+        const deptOption = Array.from(document.getElementById('formEmpDept').options).find(o => o.dataset.nodeId === window.targetAssignDeptNodeId);
+        if (deptOption) deptOption.selected = true;
+      }
+      // Populate positions filtered by selected department
+      updatePositionDropdownOptions(document.getElementById('formEmpDept').value, posDefault);
+
       if (posDefault) {
         document.getElementById('formEmpPosition').value = posDefault;
         document.getElementById('formEmpPositionSelect').value = posDefault;
       }
-      const deptOption = Array.from(document.getElementById('formEmpDept').options).find(o => o.dataset.nodeId === window.targetAssignDeptNodeId);
       const posOption = Array.from(document.getElementById('formEmpPositionSelect').options).find(o => o.dataset.nodeId === window.targetAssignPosNodeId);
-      if (deptOption) deptOption.selected = true;
       if (posOption) { posOption.selected = true; document.getElementById('formEmpPosition').value = posOption.value; }
 
       updateSupervisorDropdown('');
@@ -5492,18 +5795,22 @@
       document.getElementById('btnDeleteEmployee').classList.remove('d-none');
       if (document.getElementById('btnPrintEmployeeBadgeModal')) document.getElementById('btnPrintEmployeeBadgeModal').classList.remove('d-none');
 
-      updatePositionDropdownOptions(); updateDepartmentDropdownOptions();
+      updateDepartmentDropdownOptions();
+      document.getElementById('formEmpDept').value = emp.department || '1.1 งานธุรการ / งานบุคคล';
+      const departmentNodeOption = Array.from(document.getElementById('formEmpDept').options).find(o => o.dataset.nodeId === emp.departmentNodeId);
+      if (departmentNodeOption) departmentNodeOption.selected = true;
+
+      // Filter positions for the employee's department
+      updatePositionDropdownOptions(document.getElementById('formEmpDept').value, emp.position);
+
       document.getElementById('formEmpCode').value = emp.code || emp.id || '';
       document.getElementById('formEmpName').value = emp.name || '';
       if (document.getElementById('formEmpNickname')) document.getElementById('formEmpNickname').value = emp.nickname || '';
       document.getElementById('formEmpRole').value = emp.role || 'WORKER';
       document.getElementById('formEmpPosition').value = emp.position || '';
       document.getElementById('formEmpPositionSelect').value = emp.position || '';
-      document.getElementById('formEmpDept').value = emp.department || '1.1 งานธุรการ / งานบุคคล';
       const positionNodeOption = Array.from(document.getElementById('formEmpPositionSelect').options).find(o => o.dataset.nodeId === emp.positionNodeId);
-      const departmentNodeOption = Array.from(document.getElementById('formEmpDept').options).find(o => o.dataset.nodeId === emp.departmentNodeId);
       if (positionNodeOption) positionNodeOption.selected = true;
-      if (departmentNodeOption) departmentNodeOption.selected = true;
       document.getElementById('formEmpPhone').value = emp.phone || '';
       document.getElementById('formEmpStatus').value = emp.status || 'ปฏิบัติงาน';
       document.getElementById('formEmpNote').value = emp.note || '';
@@ -5673,10 +5980,14 @@
         : null;
       document.getElementById('formEmpPosition').value = assignment?.position || posVal;
 
-      if (assignment?.departmentNodeId) {
-        const departmentSelect = document.getElementById('formEmpDept');
+      // Only update department if department isn't selected yet
+      const departmentSelect = document.getElementById('formEmpDept');
+      if (departmentSelect && !departmentSelect.value && assignment?.departmentNodeId) {
         const departmentOption = Array.from(departmentSelect?.options || []).find(item => item.dataset.nodeId === assignment.departmentNodeId);
-        if (departmentOption) departmentOption.selected = true;
+        if (departmentOption) {
+          departmentOption.selected = true;
+          updatePositionDropdownOptions(departmentSelect.value, posVal);
+        }
       }
 
       const category = option?.dataset?.category || '';
@@ -5691,68 +6002,325 @@
       if (roleByCategory[category]) document.getElementById('formEmpRole').value = roleByCategory[category];
     };
 
-    function getPositionDropdownGroups() {
+    window.handleDepartmentSelectChange = function(deptVal) {
+      const deptSelect = document.getElementById('formEmpDept');
+      const val = deptVal !== undefined ? deptVal : (deptSelect?.value || '');
+      const selectedOption = deptSelect?.selectedOptions?.[0];
+      if (selectedOption?.dataset?.nodeId) {
+        deptSelect.dataset.selectedNodeId = selectedOption.dataset.nodeId;
+      }
+
+      // Update position dropdown to filter by the selected department
+      updatePositionDropdownOptions(val);
+
+      const posSelect = document.getElementById('formEmpPositionSelect');
+      const posInput = document.getElementById('formEmpPosition');
+      if (posSelect && posSelect.options.length > 1) {
+        const currentTyped = posInput?.value?.trim() || '';
+        const matchOpt = Array.from(posSelect.options).find(o => o.value && (o.value === currentTyped || stripStructureCode(o.value) === stripStructureCode(currentTyped)));
+        if (matchOpt) {
+          matchOpt.selected = true;
+          handlePositionSelectChange(matchOpt.value);
+        } else {
+          // Default to the first worker or first available non-empty option
+          const defaultOpt = Array.from(posSelect.options).find(o => o.dataset.category === 'worker' || o.dataset.category === 'staff') || posSelect.options[1];
+          if (defaultOpt) {
+            defaultOpt.selected = true;
+            handlePositionSelectChange(defaultOpt.value);
+          }
+        }
+      } else if (posInput && !val) {
+        posInput.value = '';
+      }
+    };
+
+    function getPositionDropdownGroups(deptFilter = '') {
+      // Structure groups strictly by Leader (หัวหน้า) and Worker (พนักงาน)
       const groups = {
-        executive: { label: 'ผู้บริหารและประสานงาน', items: [] },
-        section_head: { label: 'หัวหน้างานส่วนหลัก', items: [] },
-        academic: { label: 'สายวิชาการ', items: [] },
-        team_leader: { label: 'หัวหน้าทีม / หัวหน้าแปลง', items: [] },
-        staff: { label: 'เจ้าหน้าที่ / พระภิกษุ', items: [] },
-        worker: { label: 'พนักงานปฏิบัติการ', items: [] }
+        leader: { label: '👑 ระดับหัวหน้า', items: [] },
+        worker: { label: '👷 ระดับพนักงาน / ปฏิบัติการ', items: [] }
       };
 
+      const rawDept = String(deptFilter || '').trim();
+      if (!rawDept) return groups;
+
+      const cleanDept = stripStructureCode(rawDept).toLowerCase();
+      const codeMatch = rawDept.match(/^(\d+\.\d+|\d+)/);
+      const deptCode = codeMatch ? codeMatch[1] : '';
+
+      // Special Case 1: Executive / Board
+      if (rawDept.includes('บริหาร') || rawDept.includes('อำนวยการ') || rawDept.includes('executive')) {
+        groups.leader.label = '👑 ระดับบริหารและประสานงาน';
+        (window.positionsList || []).forEach(pos => {
+          const name = typeof pos === 'string' ? pos : (pos.name || '');
+          const cat = typeof pos === 'object' ? (pos.category || '') : '';
+          const nodeId = typeof pos === 'object' ? (pos.nodeId || pos.id || '') : '';
+          if (cat === 'executive' || name.includes('ประธาน') || name.includes('ที่ปรึกษา') || name.includes('ผู้ประสานงาน')) {
+            groups.leader.items.push({ name, displayName: stripStructureCode(name), nodeId, category: 'executive' });
+          }
+        });
+        groups.worker.items.push({ name: 'พนักงานปฏิบัติการ', displayName: 'พนักงานปฏิบัติการ', nodeId: 'pos-6-14', category: 'worker' });
+        return groups;
+      }
+
+      // Special Case 2: Academic
+      if (rawDept.includes('วิชาการ') || rawDept.includes('academic')) {
+        groups.leader.label = '🔬 สายวิชาการ';
+        (window.positionsList || []).forEach(pos => {
+          const name = typeof pos === 'string' ? pos : (pos.name || '');
+          const cat = typeof pos === 'object' ? (pos.category || '') : '';
+          const nodeId = typeof pos === 'object' ? (pos.nodeId || pos.id || '') : '';
+          if (cat === 'academic' || name.includes('วิชาการ')) {
+            groups.leader.items.push({ name, displayName: stripStructureCode(name), nodeId, category: 'academic' });
+          }
+        });
+        groups.worker.items.push({ name: 'พนักงานปฏิบัติการ', displayName: 'พนักงานปฏิบัติการ', nodeId: 'pos-6-14', category: 'worker' });
+        return groups;
+      }
+
+      // 1. Try matching directly from Org Tree Node Children
+      try {
+        if (typeof window.getFloraOrgDepartments === 'function' && typeof window.getFloraOrgNode === 'function') {
+          const depts = window.getFloraOrgDepartments() || [];
+          const found = depts.find(d => 
+            (d.id && (d.id === rawDept || d.nodeId === rawDept)) ||
+            (d.name && d.name.trim() === rawDept) ||
+            (d.display && d.display.trim() === rawDept) ||
+            (d.code && deptCode && d.code === deptCode) ||
+            (d.cleanName && d.cleanName === cleanDept)
+          );
+          if (found) {
+            const node = window.getFloraOrgNode(found.id || found.nodeId);
+            if (node && Array.isArray(node.children)) {
+              const roleNodes = node.children.filter(c => ['role', 'position', 'supervision'].includes(c.kind));
+              roleNodes.forEach(rn => {
+                const rnName = rn.name || '';
+                const isLeader = rnName.includes('หัวหน้า') || rn.kind === 'supervision' || rn.kind === 'position';
+                const item = {
+                  name: rnName,
+                  displayName: stripStructureCode(rnName),
+                  nodeId: rn.id || '',
+                  category: isLeader ? 'team_leader' : 'worker'
+                };
+                if (isLeader) {
+                  if (!groups.leader.items.some(x => x.name === rnName)) groups.leader.items.push(item);
+                } else {
+                  if (!groups.worker.items.some(x => x.name === rnName)) groups.worker.items.push(item);
+                }
+              });
+            }
+          }
+        }
+      } catch (e) {}
+
+      // 2. Keyword & Standard Department Mapping for 13 Divisions
+      const departmentKeywordsMap = [
+        { code: '1.1', kw: ['ธุรการ', 'บุคคล'], leaderKw: ['ธุรการ', 'บุคคล'], workerKw: ['ธุรการ'] },
+        { code: '1.2', kw: ['สวัสดิการ'], leaderKw: ['สวัสดิการ'], workerKw: ['สวัสดิการ'] },
+        { code: '1.3', kw: ['ระบบน้ำ'], leaderKw: ['ระบบน้ำ'], workerKw: ['ระบบน้ำ'] },
+        { code: '1.4', kw: ['ตัดหญ้า'], leaderKw: ['ตัดหญ้า'], workerKw: ['ตัดหญ้า'] },
+        { code: '2.1', kw: ['ทดลอง'], leaderKw: ['ทดลอง'], workerKw: ['ทดลอง'] },
+        { code: '2.2', kw: ['กุหลาบ'], leaderKw: ['กุหลาบ'], workerKw: ['กุหลาบ'] },
+        { code: '3.1', kw: ['เจดีย์'], leaderKw: ['เจดีย์'], workerKw: ['เจดีย์'] },
+        { code: '3.2', kw: ['วิหารหลวงปู่'], leaderKw: ['วิหารหลวงปู่'], workerKw: ['วิหารหลวงปู่'] },
+        { code: '3.3', kw: ['ถนนธรรมชัย', 'เฟื่องฟ้า'], leaderKw: ['ถนนธรรมชัย', 'เฟื่องฟ้า'], workerKw: ['ถนนธรรมชัย', 'เฟื่องฟ้า'] },
+        { code: '3.4', kw: ['ผสมแกลบ', 'โต๊ะกลาง'], leaderKw: ['ผสมแกลบ', 'โต๊ะกลาง'], workerKw: ['ผสมแกลบ', 'โต๊ะกลาง'] },
+        { code: '4.1', kw: ['แปลง a', 'แปลง b', 'a / b', 'a/b'], leaderKw: ['แปลง a / b', 'แปลง a/b', 'แปลง a'], workerKw: ['แปลง a/b', 'แปลง a'] },
+        { code: '4.2', kw: ['แปลง e', 'p11', 'e / p11', 'e/p11'], leaderKw: ['แปลง e / p11', 'แปลง e/p11', 'แปลง e'], workerKw: ['แปลง e/p11', 'แปลง e'] },
+        { code: '4.3', kw: ['ไม้กระถาง', 'วิหารคด'], leaderKw: ['ไม้กระถาง', 'วิหารคด'], workerKw: ['ไม้กระถาง'] },
+        // Main Division heads
+        { code: '1', kw: ['ส่วนกลาง'], leaderKw: ['ส่วนกลาง'], workerKw: ['ธุรการ'] },
+        { code: '2', kw: ['กุหลาบและงานทดลอง', 'กุหลาบ/งานทดลอง'], leaderKw: ['กุหลาบ/งานทดลอง', 'กุหลาบและงานทดลอง'], workerKw: ['ทดลอง'] },
+        { code: '3', kw: ['รัตนบุปผา'], leaderKw: ['รัตนบุปผา'], workerKw: [] },
+        { code: '4', kw: ['ธรรมยาตรา'], leaderKw: ['ธรรมยาตรา'], workerKw: [] }
+      ];
+
+      const matchedConfig = departmentKeywordsMap.find(cfg => 
+        (deptCode && cfg.code === deptCode) ||
+        cfg.kw.some(k => cleanDept.includes(k) || rawDept.toLowerCase().includes(k))
+      );
+
       (window.positionsList || []).forEach(pos => {
-        const name = typeof pos === 'string' ? pos : pos.name;
-        const cat = typeof pos === 'object' && pos.category ? pos.category : 'worker';
-        const nodeId = typeof pos === 'object' ? (pos.nodeId || pos.id || '') : '';
-        const item = { name, displayName: stripStructureCode(name), nodeId, category: cat };
-        if (groups[cat]) {
-          groups[cat].items.push(item);
+        const pName = typeof pos === 'string' ? pos : (pos.name || '');
+        const pDisp = stripStructureCode(pName);
+        const pCat = typeof pos === 'object' ? (pos.category || '') : '';
+        const pNodeId = typeof pos === 'object' ? (pos.nodeId || pos.id || '') : '';
+        const isLeaderRole = pCat === 'team_leader' || pCat === 'section_head' || pName.includes('หัวหน้า');
+
+        if (matchedConfig) {
+          if (isLeaderRole) {
+            const matchesLeader = matchedConfig.leaderKw.some(k => pName.toLowerCase().includes(k.toLowerCase()));
+            if (matchesLeader && !groups.leader.items.some(x => x.name === pName)) {
+              groups.leader.items.push({ name: pName, displayName: pDisp, nodeId: pNodeId, category: 'team_leader' });
+            }
+          } else {
+            const matchesWorker = matchedConfig.workerKw.some(k => pName.toLowerCase().includes(k.toLowerCase()));
+            if (matchesWorker && !groups.worker.items.some(x => x.name === pName)) {
+              groups.worker.items.push({ name: pName, displayName: pDisp, nodeId: pNodeId, category: 'worker' });
+            }
+          }
+        }
+      });
+
+      // If no leader found yet, synthesize a clean department leader
+      if (groups.leader.items.length === 0) {
+        const syntheticLeader = `หัวหน้า${cleanDept}`;
+        groups.leader.items.push({
+          name: syntheticLeader,
+          displayName: syntheticLeader,
+          nodeId: '',
+          category: 'team_leader'
+        });
+      }
+
+      // Always ensure general operational worker "พนักงานปฏิบัติการ" is available in worker group
+      if (!groups.worker.items.some(x => x.name === 'พนักงานปฏิบัติการ' || x.displayName === 'พนักงานปฏิบัติการ')) {
+        groups.worker.items.push({
+          name: 'พนักงานปฏิบัติการ',
+          displayName: 'พนักงานปฏิบัติการ',
+          nodeId: 'pos-6-14',
+          category: 'worker'
+        });
+      }
+
+      return groups;
+    }
+
+    function updatePositionDropdownOptions(selectedDeptVal, preferredPosVal) {
+      const select = document.getElementById('formEmpPositionSelect');
+      if (!select) return;
+      
+      const deptSelect = document.getElementById('formEmpDept');
+      const currentDept = selectedDeptVal !== undefined ? selectedDeptVal : (deptSelect?.value || '');
+      const currentPos = preferredPosVal !== undefined ? preferredPosVal : (select.value || '');
+
+      if (!currentDept) {
+        select.innerHTML = '<option value="">-- กรุณาเลือกแผนก / สายงานก่อน --</option>';
+        return;
+      }
+
+      const groups = getPositionDropdownGroups(currentDept);
+
+      let html = '<option value="">-- กรุณาเลือกตำแหน่ง --</option>';
+      let hasSelected = false;
+
+      for (const [key, grp] of Object.entries(groups)) {
+        if (grp.items && grp.items.length > 0) {
+          html += `<optgroup label="${escapeHtml(grp.label)}">`;
+          grp.items.forEach(item => {
+            const isSel = (!hasSelected && currentPos && (item.name === currentPos || item.displayName === currentPos || stripStructureCode(item.name) === stripStructureCode(currentPos)));
+            if (isSel) hasSelected = true;
+            html += `<option value="${escapeHtml(item.name)}" data-node-id="${escapeHtml(item.nodeId || '')}" data-category="${escapeHtml(item.category || key)}" ${isSel ? 'selected' : ''}>${escapeHtml(item.displayName)}</option>`;
+          });
+          html += '</optgroup>';
+        }
+      }
+
+      // If an existing employee has a custom or previous position outside the filtered list, preserve it
+      if (currentPos && !hasSelected) {
+        html += `<optgroup label="📌 ตำแหน่งเดิมที่บันทึกไว้">`;
+        html += `<option value="${escapeHtml(currentPos)}" selected>${escapeHtml(stripStructureCode(currentPos))}</option>`;
+        html += `</optgroup>`;
+      }
+
+      select.innerHTML = html;
+    }
+
+    function getDepartmentDropdownGroups() {
+      const groups = {
+        central: { label: '🏢 สายงานส่วนกลาง (1)', items: [] },
+        rose: { label: '🌹 สายงานกุหลาบและงานทดลอง (2)', items: [] },
+        ratana: { label: '🪷 สายงานรัตนบุปผา (3)', items: [] },
+        dhamma: { label: '🌾 สายงานธรรมยาตรา (4)', items: [] },
+        admin: { label: '👑 ฝ่ายบริหารและอำนวยการ', items: [] },
+        academic: { label: '🔬 สายวิชาการและเทคนิคการผลิต', items: [] },
+        other: { label: '📁 แผนกทั่วไป / อื่นๆ', items: [] }
+      };
+
+      const rawDepts = typeof window.getFloraOrgDepartments === 'function'
+        ? window.getFloraOrgDepartments()
+        : (window.departmentsList || []);
+
+      rawDepts.forEach((dept, idx) => {
+        const id = typeof dept === 'object' ? (dept.id || dept.nodeId || `dept-${idx}`) : `dept-${idx}`;
+        const code = typeof dept === 'object' ? (dept.code || '') : '';
+        const rawName = typeof dept === 'object' ? (dept.display || dept.label || dept.name || '') : String(dept);
+        const cleanName = typeof dept === 'object' ? (dept.cleanName || dept.name || rawName) : rawName;
+        const grp = typeof dept === 'object' ? (dept.group || '') : '';
+
+        const item = {
+          id,
+          code,
+          name: rawName,
+          displayName: rawName,
+          cleanName: stripStructureCode(cleanName),
+          nodeId: id,
+          group: grp
+        };
+
+        if (grp.includes('ส่วนกลาง') || code.startsWith('1.') || id.includes('dept-1') || id === 'division-1') {
+          groups.central.items.push(item);
+        } else if (grp.includes('กุหลาบ') || grp.includes('ทดลอง') || code.startsWith('2.') || id.includes('dept-2') || id === 'division-2') {
+          groups.rose.items.push(item);
+        } else if (grp.includes('รัตนบุปผา') || code.startsWith('3.') || id.includes('dept-3') || id === 'division-3') {
+          groups.ratana.items.push(item);
+        } else if (grp.includes('ธรรมยาตรา') || (code.startsWith('4.') && !code.startsWith('4.5')) || id.includes('dept-4') || id === 'division-4') {
+          groups.dhamma.items.push(item);
+        } else if (id === 'academic' || id === 'pos-academic' || grp.includes('วิชาการ') || code.startsWith('4.5') || rawName.includes('วิชาการ')) {
+          groups.academic.items.push(item);
+        } else if (id === 'executive-admin' || grp.includes('บริหาร') || rawName.includes('บริหาร') || rawName.includes('ประธาน')) {
+          groups.admin.items.push(item);
         } else {
-          groups.worker.items.push(item);
+          groups.other.items.push(item);
         }
       });
 
       return groups;
     }
 
-    function updatePositionDropdownOptions() {
-      const select = document.getElementById('formEmpPositionSelect');
-      if (!select) return;
-      
-      const currentVal = select.value;
-      const groups = getPositionDropdownGroups();
-
-      let html = '<option value="">-- เลือกจากตำแหน่งในโครงสร้าง --</option>';
-      for (const [key, grp] of Object.entries(groups)) {
-        if (grp.items.length > 0) {
-          html += `<optgroup label="${escapeHtml(grp.label)}">`;
-          grp.items.forEach(item => {
-            html += `<option value="${escapeHtml(item.name)}" data-node-id="${escapeHtml(item.nodeId)}" data-category="${escapeHtml(item.category)}" ${item.name === currentVal ? 'selected' : ''}>${escapeHtml(item.displayName)}</option>`;
-          });
-          html += '</optgroup>';
-        }
-      }
-      select.innerHTML = html;
-    }
-
     function updateDepartmentDropdownOptions() {
       const select = document.getElementById('formEmpDept');
       const filterSelect = document.getElementById('deptFilterSelect');
-      
-      const depts = (window.departmentsList || []).map(d => typeof d === 'string' ? { name:d, nodeId:'' } : { name:d.name, nodeId:d.nodeId || d.id || '' });
+      const groups = getDepartmentDropdownGroups();
 
       if (select) {
         const currentVal = select.value;
-        select.innerHTML = depts.map(d => `<option value="${escapeHtml(d.name)}" data-node-id="${escapeHtml(d.nodeId)}" ${d.name === currentVal ? 'selected' : ''}>${escapeHtml(stripStructureCode(d.name))}</option>`).join('');
+        let html = '<option value="">-- กรุณาเลือกแผนก / สายงาน --</option>';
+        let hasSelected = false;
+
+        for (const [key, grp] of Object.entries(groups)) {
+          if (grp.items.length > 0) {
+            html += `<optgroup label="${escapeHtml(grp.label)}">`;
+            grp.items.forEach(item => {
+              const isSelected = item.name === currentVal || item.displayName === currentVal || (item.nodeId && select.dataset.selectedNodeId === item.nodeId);
+              if (isSelected) hasSelected = true;
+              html += `<option value="${escapeHtml(item.name)}" data-node-id="${escapeHtml(item.nodeId)}" data-code="${escapeHtml(item.code)}" ${isSelected ? 'selected' : ''}>${escapeHtml(item.displayName)}</option>`;
+            });
+            html += '</optgroup>';
+          }
+        }
+
+        if (currentVal && !hasSelected) {
+          html += `<optgroup label="แผนกเดิม / นอกโครงสร้าง">`;
+          html += `<option value="${escapeHtml(currentVal)}" selected>${escapeHtml(stripStructureCode(currentVal))} (เดิม)</option>`;
+          html += `</optgroup>`;
+        }
+
+        select.innerHTML = html;
       }
 
       if (filterSelect) {
         const currentFilter = filterSelect.value;
         let filterHtml = '<option value="ALL">🏢 ทุกสายงานและแผนก</option>';
-        depts.forEach(d => {
-          filterHtml += `<option value="${escapeHtml(d.name)}" ${d.name === currentFilter ? 'selected' : ''}>${escapeHtml(stripStructureCode(d.name))}</option>`;
-        });
+        for (const [key, grp] of Object.entries(groups)) {
+          if (grp.items.length > 0) {
+            filterHtml += `<optgroup label="${escapeHtml(grp.label)}">`;
+            grp.items.forEach(item => {
+              filterHtml += `<option value="${escapeHtml(item.name)}" ${item.name === currentFilter ? 'selected' : ''}>${escapeHtml(item.displayName)}</option>`;
+            });
+            filterHtml += '</optgroup>';
+          }
+        }
         filterSelect.innerHTML = filterHtml;
       }
     }
@@ -6273,9 +6841,128 @@
       window.activeContextMenuEmpId = null;
     };
 
+    window.activeActionNodeId = null;
+
+    window.hideNodeActionMenu = function() {
+      const menu = document.getElementById('orgNodeActionMenu');
+      if (menu) menu.style.display = 'none';
+      window.activeActionNodeId = null;
+    };
+
+    window.openNodeActionMenu = function(event, nodeId) {
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      hideContextMenu();
+      if (window.requirePersonnelAdmin && !window.requirePersonnelAdmin('จัดการโครงสร้างผังองค์กร')) return;
+
+      const liveTree = typeof window.getFloraOrgTree === 'function' ? window.getFloraOrgTree() : null;
+      let node = typeof window.getFloraOrgNode === 'function' ? window.getFloraOrgNode(nodeId) : null;
+      if (!node && liveTree) {
+        function searchTree(n) {
+          if (!n) return null;
+          if (n.id === nodeId) return n;
+          for (const c of (n.children || [])) {
+            const found = searchTree(c);
+            if (found) return found;
+          }
+          return null;
+        }
+        node = searchTree(liveTree);
+      }
+      if (!node) {
+        if (typeof showToast === 'function') showToast('ไม่พบข้อมูลโครงสร้างของโหนดนี้');
+        return;
+      }
+
+      window.activeActionNodeId = nodeId;
+      const menu = document.getElementById('orgNodeActionMenu');
+      if (!menu) return;
+
+      const titleEl = document.getElementById('nodeMenuTitle');
+      const subtitleEl = document.getElementById('nodeMenuSubtitle');
+      const deleteBtn = document.getElementById('nodeMenuDeleteBtn');
+      const divider = document.getElementById('nodeMenuDivider');
+
+      const isRoot = liveTree && (liveTree.id === nodeId || nodeId === 'org-root');
+      const cleanName = String(node.name || '').replace(/^AUTO-[A-Z0-9_-]+\s*/i, '').trim();
+
+      let kindTh = 'หน่วยงาน';
+      if (node.kind === 'division') kindTh = 'ฝ่าย/สายงานหลัก';
+      else if (node.kind === 'department') kindTh = 'แผนก/งานย่อย';
+      else if (['position', 'role', 'supervision'].includes(node.kind)) kindTh = 'ตำแหน่ง/บทบาท';
+      else if (node.kind === 'organization') kindTh = 'องค์กรหลัก';
+
+      if (titleEl) titleEl.textContent = cleanName || 'หน่วยงาน';
+      if (subtitleEl) {
+        const isAuto = !node.code || node.code === 'ORG-ROOT' || /^AUTO[-_]/i.test(String(node.code).trim()) || /^POS-\d+/i.test(String(node.code).trim());
+        const codeText = (!isAuto && node.code) ? `รหัส: ${node.code}` : '';
+        subtitleEl.textContent = [kindTh, codeText].filter(Boolean).join(' • ');
+      }
+
+      if (deleteBtn) {
+        deleteBtn.style.display = isRoot ? 'none' : 'flex';
+      }
+      if (divider) {
+        divider.style.display = isRoot ? 'none' : 'block';
+      }
+
+      const rect = event.currentTarget.getBoundingClientRect();
+      const menuWidth = 260;
+      const menuHeight = isRoot ? 115 : 165;
+
+      let posX = rect.right - menuWidth;
+      let posY = rect.bottom + 6;
+
+      if (posX < 8) posX = 8;
+      if (posX + menuWidth > window.innerWidth - 8) {
+        posX = window.innerWidth - menuWidth - 8;
+      }
+      if (posY + menuHeight > window.innerHeight - 8) {
+        posY = rect.top - menuHeight - 6;
+      }
+
+      menu.style.left = `${Math.round(posX)}px`;
+      menu.style.top = `${Math.round(posY)}px`;
+      menu.style.display = 'block';
+    };
+
+    window.executeNodeAction = function(action) {
+      const nodeId = window.activeActionNodeId;
+      hideNodeActionMenu();
+      if (!nodeId) return;
+
+      if (action === 'edit') {
+        if (typeof window.floraTreeOpenEdit === 'function') {
+          window.floraTreeOpenEdit(nodeId);
+        }
+      } else if (action === 'add') {
+        if (typeof window.floraTreeOpenAdd === 'function') {
+          window.floraTreeOpenAdd(nodeId);
+        }
+      } else if (action === 'delete') {
+        if (typeof window.floraTreeDelete === 'function') {
+          window.floraTreeDelete(nodeId);
+        }
+      }
+    };
+
+    window.openAddDivisionModal = function() {
+      if (window.requirePersonnelAdmin && !window.requirePersonnelAdmin('เพิ่มโครงสร้างองค์กร')) return;
+      const liveTree = typeof window.getFloraOrgTree === 'function' ? window.getFloraOrgTree() : null;
+      const rootId = liveTree?.id || 'org-root';
+      if (typeof window.floraTreeOpenAdd === 'function') {
+        window.floraTreeOpenAdd(rootId);
+      }
+    };
+
     document.addEventListener('click', (e) => {
       if (!e.target.closest('#empContextMenu')) {
         hideContextMenu();
+      }
+      if (!e.target.closest('#orgNodeActionMenu') && !e.target.closest('.node-card-btn')) {
+        hideNodeActionMenu();
       }
     });
 
@@ -6941,18 +7628,25 @@
     window.currentDrawerTab = 'with_photo';
     window.drawerSearchKeyword = '';
 
+    let inUnassignedEmployeeCheck = false;
     window.isUnassignedEmployee = function(emp) {
       if (!emp) return false;
-      if (typeof window.isEmployeeAssignedToFloraTree === 'function' && window.isEmployeeAssignedToFloraTree(emp)) return false;
-      const dept = (emp.department || '').trim();
+      if (inUnassignedEmployeeCheck) return false;
+      inUnassignedEmployeeCheck = true;
+      try {
+        if (typeof window.isEmployeeAssignedToFloraTree === 'function' && window.isEmployeeAssignedToFloraTree(emp)) return false;
+        const dept = (emp.department || '').trim();
 
-      if (!dept || dept === 'ยังไม่ระบุ' || dept === 'ยังไม่ระบุแผนก' || dept === 'ทั่วไป' || dept === 'Unassigned' || dept === '-') {
-        return true;
+        if (!dept || dept === 'ยังไม่ระบุ' || dept === 'ยังไม่ระบุแผนก' || dept === 'ทั่วไป' || dept === 'Unassigned' || dept === '-') {
+          return true;
+        }
+        const normalizeLabel = value => String(value || '').replace(/^\s*\d+(?:\.\d+)*\s*/, '').replace(/\s+/g, ' ').trim().toLowerCase();
+        const deptMatch = (window.departmentsList || []).some(item => normalizeLabel(typeof item === 'object' ? item.name : item) === normalizeLabel(dept));
+        const posMatch = (window.positionsList || []).some(item => normalizeLabel(typeof item === 'object' ? item.name : item) === normalizeLabel(emp.position));
+        return !deptMatch && !posMatch;
+      } finally {
+        inUnassignedEmployeeCheck = false;
       }
-      const normalizeLabel = value => String(value || '').replace(/^\s*\d+(?:\.\d+)*\s*/, '').replace(/\s+/g, ' ').trim().toLowerCase();
-      const deptMatch = (window.departmentsList || []).some(item => normalizeLabel(typeof item === 'object' ? item.name : item) === normalizeLabel(dept));
-      const posMatch = (window.positionsList || []).some(item => normalizeLabel(typeof item === 'object' ? item.name : item) === normalizeLabel(emp.position));
-      return !deptMatch && !posMatch;
     };
 
     window.hasPhoto = function(emp) {
@@ -7346,7 +8040,7 @@
 
       wrapper.addEventListener('mousedown', (e) => {
         // Ignore dragging if clicking interactive components
-        if (e.target.closest('button, input, select, textarea, a, .avatar-item, .exec-box, .section-head-box, .team-leader-slot, #empContextMenu, .modal, .dropdown-menu')) {
+        if (e.target.closest('button, input, select, textarea, a, .avatar-item, .exec-box, .section-head-box, .team-leader-slot, #empContextMenu, #orgNodeActionMenu, .node-card-btn, .modal, .dropdown-menu')) {
           return;
         }
         isDown = true;

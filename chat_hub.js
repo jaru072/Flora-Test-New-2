@@ -26,11 +26,13 @@
   }
 
   // ==================== NOTIFICATION SOUND ====================
+  // 1. General broadcast message chime
   function playPleasantChime() {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
+      if (ctx.state === "suspended") ctx.resume();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -45,10 +47,77 @@
     } catch (e) {}
   }
 
+  // 2. Distinct alert sound specifically for direct personal messages (เสียงเตือนที่เครื่องของบุคคลปลายทาง)
+  function playDirectAlertSound() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      if (ctx.state === "suspended") ctx.resume();
+
+      const now = ctx.currentTime;
+      // Melodic arpeggio (C5 -> E5 -> G5 -> C6) clear and noticeable
+      const notes = [
+        { freq: 523.25, start: 0.00, dur: 0.09 },
+        { freq: 659.25, start: 0.08, dur: 0.09 },
+        { freq: 783.99, start: 0.16, dur: 0.10 },
+        { freq: 1046.50, start: 0.24, dur: 0.45 }
+      ];
+
+      notes.forEach(n => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(n.freq, now + n.start);
+        gain.gain.setValueAtTime(0.12, now + n.start);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + n.start + n.dur);
+        osc.start(now + n.start);
+        osc.stop(now + n.start + n.dur);
+      });
+    } catch (e) {
+      console.warn("Direct alert audio error:", e);
+    }
+  }
+
+  // Browser tab title alert for direct messages
+  let originalDocumentTitle = document.title;
+  let titleAlertInterval = null;
+
+  function triggerDirectMessageTitleAlert(senderName) {
+    if (document.hasFocus && document.hasFocus() && isChatOpen && activeTab === "team") return;
+    if (titleAlertInterval) clearInterval(titleAlertInterval);
+
+    originalDocumentTitle = document.title.replace(/^🔔\s*\[ข้อความใหม่\]\s*/, "");
+    let toggle = false;
+    titleAlertInterval = setInterval(() => {
+      toggle = !toggle;
+      document.title = toggle
+        ? `🔔 [ข้อความเฉพาะบุคคล] จากคุณ ${senderName || "เพื่อนร่วมงาน"}`
+        : originalDocumentTitle;
+    }, 1100);
+
+    const clearAlert = () => {
+      if (titleAlertInterval) {
+        clearInterval(titleAlertInterval);
+        titleAlertInterval = null;
+      }
+      document.title = originalDocumentTitle;
+      window.removeEventListener("focus", clearAlert);
+      document.removeEventListener("click", clearAlert);
+    };
+
+    window.addEventListener("focus", clearAlert, { once: true });
+    document.addEventListener("click", clearAlert, { once: true });
+  }
+
   // ==================== STATE MANAGEMENT ====================
   const STORAGE_KEY_TEAM_MSGS = "flora_team_chat_messages_v2";
   const STORAGE_KEY_BOT_MSGS = "flora_bot_chat_messages_v2";
   const STORAGE_KEY_USER_NAME = "flora_chat_custom_username";
+  const STORAGE_KEY_USER_EMP_ID = "flora_chat_custom_emp_id";
+  const STORAGE_KEY_USER_EMP_ROLE = "flora_chat_custom_emp_role";
 
   // Dynamic project title from Org Chart (Node 1) or Global settings
   function getChatProjectTitle() {
@@ -78,12 +147,50 @@
   }
 
   let isChatOpen = false;
-  let activeTab = "assistant"; // "assistant" | "team"
+  let activeTab = "team"; // ล็อคอยู่ที่แท็บเพื่อนเสมอ
   let unreadTeamCount = 0;
   let selectedTeamTag = "ทั่วไป";
+  let selectedRecipient = null; // null = ทุกคน (ทั้งองค์กร), or { id, name, department, position, photoUrl }
+  let teamFilter = "all"; // "all" | "direct" | "broadcast"
   let broadcastChannel = null;
   let firestoreDb = null;
   let unsubscribeFirestore = null;
+  let isFirstFirestoreLoad = true;
+  let isConnectingFirestore = false;
+  const pendingOutgoingMessages = [];
+  let cachedOrgEmployees = [];
+
+  // Load organization personnel for recipient targeting
+  function getOrganizationEmployees() {
+    let list = [];
+    if (window.employees && Array.isArray(window.employees) && window.employees.length > 0) {
+      list = window.employees;
+    } else if (window.employeeList && Array.isArray(window.employeeList) && window.employeeList.length > 0) {
+      list = window.employeeList;
+    } else {
+      try {
+        const stored = (typeof window.getScopedLocalStorageItem === "function"
+          ? window.getScopedLocalStorageItem("flora_employees")
+          : null) || localStorage.getItem("flora_employees");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) list = parsed;
+        }
+      } catch (e) {}
+    }
+
+    if (list.length > 0) {
+      cachedOrgEmployees = list.map(emp => ({
+        id: emp.id || emp.code || emp.name,
+        code: emp.code || "",
+        name: emp.name || "ไม่ระบุชื่อ",
+        department: emp.department || "ทั่วไป",
+        position: emp.position || emp.role || "เจ้าหน้าที่",
+        photoUrl: emp.photoUrl || emp.avatar || ""
+      }));
+    }
+    return cachedOrgEmployees;
+  }
 
   try {
     if (typeof BroadcastChannel !== "undefined") {
@@ -99,8 +206,12 @@
   // ==================== USER IDENTITY HELPER ====================
   function getCurrentUserIdentity() {
     let customName = "";
+    let customEmpId = "";
+    let customRole = "";
     try {
       customName = localStorage.getItem(STORAGE_KEY_USER_NAME) || "";
+      customEmpId = localStorage.getItem(STORAGE_KEY_USER_EMP_ID) || "";
+      customRole = localStorage.getItem(STORAGE_KEY_USER_EMP_ROLE) || "";
     } catch (e) {}
 
     const authUser = window.auth?.currentUser || window.currentAuthUser;
@@ -108,7 +219,8 @@
 
     let name = customName || authUser?.displayName || profile?.displayName || "";
     let email = authUser?.email || profile?.email || "";
-    let role = profile?.role || window.currentUserRole || "เจ้าหน้าที่";
+    let role = customRole || profile?.role || window.currentUserRole || "เจ้าหน้าที่";
+    let empId = customEmpId || authUser?.uid || profile?.uid || "";
 
     if (!name && email) {
       name = email.split("@")[0];
@@ -117,11 +229,24 @@
       name = "เจ้าหน้าที่ปฏิบัติงาน";
     }
 
+    // Auto-match employee if ID is missing
+    if (!empId) {
+      const emps = getOrganizationEmployees();
+      const matched = emps.find(e => e.name && e.name.trim().toLowerCase() === name.trim().toLowerCase());
+      if (matched) {
+        empId = matched.id;
+        if (!customRole && matched.position) role = matched.position;
+      } else {
+        empId = "user_" + name.trim().replace(/\s+/g, "_");
+      }
+    }
+
     return {
       name: name,
       email: email,
       role: role,
-      id: authUser?.uid || profile?.uid || "user_" + Math.random().toString(36).substring(2, 8)
+      id: empId,
+      employeeId: customEmpId || empId
     };
   }
 
@@ -342,14 +467,14 @@
 
         <!-- Tab Switcher Bar -->
         <div class="flora-chat-nav-tabs">
-          <button type="button" class="flora-chat-tab-btn is-active" id="floraTabAssistantBtn">
-            <i class="bi bi-stars text-warning"></i>
-            <span>ผู้ช่วย</span>
-          </button>
-          <button type="button" class="flora-chat-tab-btn" id="floraTabTeamBtn">
+          <button type="button" class="flora-chat-tab-btn is-active" id="floraTabTeamBtn">
             <i class="bi bi-people-fill"></i>
             <span>เพื่อน</span>
             <span class="flora-chat-tab-badge d-none" id="floraTeamTabBadge">0</span>
+          </button>
+          <button type="button" class="flora-chat-tab-btn" id="floraTabAssistantBtn">
+            <i class="bi bi-stars text-warning"></i>
+            <span>ผู้ช่วย</span>
           </button>
         </div>
       </div>
@@ -358,7 +483,7 @@
       <div class="flora-chat-body">
         
         <!-- ===== TAB 1: ASSISTANT CONTENT ===== -->
-        <div class="flora-chat-tab-content is-active" id="floraAssistantTabContent">
+        <div class="flora-chat-tab-content" id="floraAssistantTabContent">
           <div class="flora-chat-messages" id="floraAssistantMessageList"></div>
 
           <!-- Quick Suggestion Prompt Chips -->
@@ -399,19 +524,33 @@
           </div>
         </div>
 
-        <!-- ===== TAB 2: TEAM / PEER CONTENT ===== -->
-        <div class="flora-chat-tab-content" id="floraTeamTabContent">
+        <!-- ===== TAB 2: TEAM / PEER CONTENT (ACTIVE BY DEFAULT) ===== -->
+        <div class="flora-chat-tab-content is-active" id="floraTeamTabContent">
           <!-- Identity Sub-Bar -->
           <div class="flora-team-bar">
             <div class="flora-team-user-info">
               <div class="flora-team-user-avatar" id="floraTeamCurrentAvatar">คุณ</div>
               <div>
-                <span class="text-muted" style="font-size: 10.5px;">ชื่อของคุณ:</span>
-                <span class="flora-team-user-name" id="floraTeamCurrentName">ผู้ใช้งาน</span>
+                <span class="text-muted" style="font-size: 10px;">ตัวตนของคุณในระบบ:</span>
+                <div class="flora-team-user-name" id="floraTeamCurrentName">ผู้ใช้งาน</div>
               </div>
             </div>
-            <button type="button" class="flora-team-edit-btn" id="floraTeamChangeNameBtn">
-              <i class="bi bi-pencil-square"></i> เปลี่ยนชื่อ
+            <button type="button" class="flora-team-edit-btn" id="floraTeamChangeNameBtn" title="เลือกตัวตนจากรายชื่อบุคลากรหรือเปลี่ยนชื่อ">
+              <i class="bi bi-person-check-fill text-success"></i> ระบุตัวตน
+            </button>
+          </div>
+
+          <!-- Team Filter Bar (ทั้งหมด / เฉพาะบุคคล / ข้อความรวม) -->
+          <div class="flora-team-filter-bar">
+            <button type="button" class="flora-filter-btn is-active" id="floraFilterAllBtn" data-filter="all">
+              <i class="bi bi-chat-left-text"></i> ทั้งหมด
+            </button>
+            <button type="button" class="flora-filter-btn" id="floraFilterDirectBtn" data-filter="direct">
+              <i class="bi bi-lock-fill text-purple"></i> เฉพาะบุคคล
+              <span class="flora-filter-badge" id="floraDirectFilterBadge">0</span>
+            </button>
+            <button type="button" class="flora-filter-btn" id="floraFilterBroadcastBtn" data-filter="broadcast">
+              <i class="bi bi-broadcast"></i> ข้อความรวม
             </button>
           </div>
 
@@ -420,6 +559,22 @@
 
           <!-- Team Input Footer -->
           <div class="flora-chat-footer">
+            <!-- Recipient Selector Bar (ส่งถึงทุกคน หรือ ส่งเฉพาะเจาะจงบุคคล) -->
+            <div class="flora-recipient-bar">
+              <div class="flora-recipient-info">
+                <span class="flora-recipient-label"><i class="bi bi-send-arrow-up"></i> ส่งถึง:</span>
+                <span class="flora-recipient-pill is-public" id="floraRecipientPill">
+                  <i class="bi bi-broadcast"></i> ทุกคน (ทั้งองค์กร)
+                </span>
+                <button type="button" class="flora-recipient-clear-btn d-none" id="floraRecipientClearBtn" title="ยกเลิก ส่งถึงทุกคน">
+                  <i class="bi bi-x-circle-fill"></i>
+                </button>
+              </div>
+              <button type="button" class="flora-recipient-pick-btn" id="floraRecipientPickBtn" title="เลือกบุคคลปลายทางที่จะส่งข้อความถึง">
+                <i class="bi bi-person-lines-fill"></i> เลือกผู้รับ
+              </button>
+            </div>
+
             <!-- Tag Selection -->
             <div class="flora-tag-selector">
               <span class="text-muted" style="font-size: 11px;">ประเภท:</span>
@@ -437,6 +592,24 @@
           </div>
         </div>
 
+      </div>
+
+      <!-- Recipient / Identity Selection Modal Overlay -->
+      <div class="flora-chat-modal-overlay" id="floraChatModalOverlay">
+        <div class="flora-chat-modal-card">
+          <div class="flora-chat-modal-header">
+            <h5 class="flora-chat-modal-title" id="floraModalTitle">
+              <i class="bi bi-people-fill text-success"></i> เลือกผู้รับข้อความ
+            </h5>
+            <button type="button" class="flora-chat-modal-close" id="floraModalCloseBtn">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <div class="flora-chat-modal-body">
+            <input type="text" class="flora-chat-modal-search" id="floraModalSearch" placeholder="พิมพ์ชื่อ แผนก หรือตำแหน่ง เพื่อค้นหา...">
+            <div id="floraModalContentList"></div>
+          </div>
+        </div>
       </div>
     `;
 
@@ -460,6 +633,16 @@
     const teamSendBtn = document.getElementById("floraTeamSendBtn");
     const clearAssistantBtn = document.getElementById("floraClearAssistantBtn");
     const changeNameBtn = document.getElementById("floraTeamChangeNameBtn");
+
+    const recipientPickBtn = document.getElementById("floraRecipientPickBtn");
+    const recipientClearBtn = document.getElementById("floraRecipientClearBtn");
+    const modalCloseBtn = document.getElementById("floraModalCloseBtn");
+    const modalOverlay = document.getElementById("floraChatModalOverlay");
+    const modalSearch = document.getElementById("floraModalSearch");
+
+    const filterAllBtn = document.getElementById("floraFilterAllBtn");
+    const filterDirectBtn = document.getElementById("floraFilterDirectBtn");
+    const filterBroadcastBtn = document.getElementById("floraFilterBroadcastBtn");
 
     if (closeBtn) closeBtn.addEventListener("click", closeChatPanel);
     if (minBtn) minBtn.addEventListener("click", closeChatPanel);
@@ -506,9 +689,45 @@
       });
     }
 
-    // Change custom user name
+    // Identity picker modal
     if (changeNameBtn) {
-      changeNameBtn.addEventListener("click", promptChangeUserName);
+      changeNameBtn.addEventListener("click", openIdentityPickerModal);
+    }
+
+    // Recipient picker modal
+    if (recipientPickBtn) {
+      recipientPickBtn.addEventListener("click", openRecipientPickerModal);
+    }
+    if (recipientClearBtn) {
+      recipientClearBtn.addEventListener("click", () => {
+        setRecipient(null);
+      });
+    }
+
+    // Modal controls
+    if (modalCloseBtn) {
+      modalCloseBtn.addEventListener("click", closeChatModal);
+    }
+    if (modalOverlay) {
+      modalOverlay.addEventListener("click", (e) => {
+        if (e.target === modalOverlay) closeChatModal();
+      });
+    }
+    if (modalSearch) {
+      modalSearch.addEventListener("input", () => {
+        filterModalList(modalSearch.value);
+      });
+    }
+
+    // Filter bar controls
+    if (filterAllBtn) {
+      filterAllBtn.addEventListener("click", () => setTeamFilter("all"));
+    }
+    if (filterDirectBtn) {
+      filterDirectBtn.addEventListener("click", () => setTeamFilter("direct"));
+    }
+    if (filterBroadcastBtn) {
+      filterBroadcastBtn.addEventListener("click", () => setTeamFilter("broadcast"));
     }
 
     // Quick prompt chips
@@ -558,24 +777,23 @@
     panel.classList.add("is-open");
     isChatOpen = true;
 
-    // Reset unread if opening team tab
-    if (activeTab === "team") {
-      resetUnreadTeamCount();
-    }
+    // ล็อคอยู่ที่แท็บเพื่อนเสมอเมื่อเปิดแชท
+    switchTab("team");
+
+    // Reset unread count
+    resetUnreadTeamCount();
 
     // Update user identity display
     updateUserIdentityHeader();
 
-    // Auto focus active input
+    // Re-render and show messages immediately
+    renderTeamMessages();
+
+    // Auto focus active input and scroll down
     setTimeout(() => {
-      if (activeTab === "assistant") {
-        document.getElementById("floraAssistantInput")?.focus();
-        scrollMessageContainer("floraAssistantMessageList");
-      } else {
-        document.getElementById("floraTeamInput")?.focus();
-        scrollMessageContainer("floraTeamMessageList");
-      }
-    }, 150);
+      document.getElementById("floraTeamInput")?.focus();
+      scrollMessageContainer("floraTeamMessageList");
+    }, 120);
   }
 
   function closeChatPanel() {
@@ -626,16 +844,295 @@
     }
   }
 
-  function promptChangeUserName() {
-    const current = getCurrentUserIdentity();
-    const newName = prompt("ระบุชื่อหรือตำแหน่งของคุณที่ต้องการแสดงในการสนทนากลุ่ม:", current.name);
-    if (newName && newName.trim() && newName.trim() !== current.name) {
-      try {
-        localStorage.setItem(STORAGE_KEY_USER_NAME, newName.trim());
-      } catch (e) {}
-      updateUserIdentityHeader();
-      renderTeamMessages();
+  // ==================== RECIPIENT & IDENTITY MODALS ====================
+  let currentModalMode = "recipient"; // "recipient" | "identity"
+
+  function openRecipientPickerModal() {
+    currentModalMode = "recipient";
+    const overlay = document.getElementById("floraChatModalOverlay");
+    const title = document.getElementById("floraModalTitle");
+    const search = document.getElementById("floraModalSearch");
+    if (!overlay) return;
+
+    if (title) {
+      title.innerHTML = `<i class="bi bi-person-lines-fill text-success"></i> เลือกผู้รับข้อความเฉพาะบุคคล`;
     }
+    if (search) {
+      search.value = "";
+      search.placeholder = "พิมพ์ชื่อ แผนก หรือตำแหน่ง เพื่อค้นหา...";
+    }
+
+    renderModalRecipientList("");
+    overlay.classList.add("is-open");
+    setTimeout(() => search?.focus(), 120);
+  }
+
+  function openIdentityPickerModal() {
+    currentModalMode = "identity";
+    const overlay = document.getElementById("floraChatModalOverlay");
+    const title = document.getElementById("floraModalTitle");
+    const search = document.getElementById("floraModalSearch");
+    if (!overlay) return;
+
+    if (title) {
+      title.innerHTML = `<i class="bi bi-person-badge text-primary"></i> ระบุตัวตนของคุณในระบบ`;
+    }
+    if (search) {
+      search.value = "";
+      search.placeholder = "ค้นหาชื่อของคุณจากรายชื่อบุคลากร...";
+    }
+
+    renderModalIdentityList("");
+    overlay.classList.add("is-open");
+    setTimeout(() => search?.focus(), 120);
+  }
+
+  function closeChatModal() {
+    const overlay = document.getElementById("floraChatModalOverlay");
+    if (overlay) overlay.classList.remove("is-open");
+  }
+
+  function filterModalList(query) {
+    if (currentModalMode === "recipient") {
+      renderModalRecipientList(query);
+    } else {
+      renderModalIdentityList(query);
+    }
+  }
+
+  function renderModalRecipientList(query) {
+    const container = document.getElementById("floraModalContentList");
+    if (!container) return;
+
+    const q = (query || "").trim().toLowerCase();
+    const emps = getOrganizationEmployees();
+    const currentUser = getCurrentUserIdentity();
+
+    let html = `
+      <!-- Option 1: ทุกคน (ทั้งองค์กร) -->
+      <div class="flora-emp-list-item ${!selectedRecipient ? 'is-selected' : ''}" id="floraModalPickPublic">
+        <div class="flora-emp-avatar" style="background: #e2e8f0; color: #0f172a;">
+          <i class="bi bi-broadcast"></i>
+        </div>
+        <div class="flora-emp-details">
+          <div class="flora-emp-name">ทุกคน (ทั้งองค์กร)</div>
+          <div class="flora-emp-sub">ส่งข้อความรวมถึงบุคลากรทุกคนในระบบ</div>
+        </div>
+        ${!selectedRecipient ? '<i class="bi bi-check-circle-fill text-success ms-auto"></i>' : ''}
+      </div>
+      <div class="my-2 text-muted px-1" style="font-size: 11px; font-weight: 600;">
+        รายชื่อบุคลากรในองค์กร (แชทเฉพาะบุคคล พร้อมส่งเสียงเตือนเฉพาะเครื่อง):
+      </div>
+    `;
+
+    const filtered = emps.filter(emp => {
+      if (emp.name && emp.name.trim().toLowerCase() === currentUser.name.trim().toLowerCase()) return false;
+      if (!q) return true;
+      const matchName = emp.name && emp.name.toLowerCase().includes(q);
+      const matchDept = emp.department && emp.department.toLowerCase().includes(q);
+      const matchPos = emp.position && emp.position.toLowerCase().includes(q);
+      const matchCode = emp.code && emp.code.toLowerCase().includes(q);
+      return matchName || matchDept || matchPos || matchCode;
+    });
+
+    if (filtered.length === 0) {
+      html += `
+        <div class="text-center py-4 text-muted" style="font-size: 12px;">
+          <i class="bi bi-search d-block mb-1 fs-4 text-secondary"></i>
+          ไม่พบบุคลากรที่ตรงกับคำค้นหา
+        </div>
+      `;
+    } else {
+      filtered.forEach(emp => {
+        const isSelected = selectedRecipient && (selectedRecipient.id === emp.id || selectedRecipient.name === emp.name);
+        const avatarInitial = (emp.name || "บ")[0];
+        const avatarContent = emp.photoUrl 
+          ? `<img src="${escapeHtml(emp.photoUrl)}" class="flora-emp-avatar" alt="${escapeHtml(emp.name)}">`
+          : `<div class="flora-emp-avatar">${avatarInitial}</div>`;
+
+        html += `
+          <div class="flora-emp-list-item ${isSelected ? 'is-selected' : ''}" data-emp-id="${escapeHtml(emp.id)}" data-emp-name="${escapeHtml(emp.name)}" data-emp-pos="${escapeHtml(emp.position)}" data-emp-dept="${escapeHtml(emp.department)}">
+            ${avatarContent}
+            <div class="flora-emp-details">
+              <div class="flora-emp-name">${escapeHtml(emp.name)}</div>
+              <div class="flora-emp-sub">${escapeHtml(emp.position)} • ${escapeHtml(emp.department)}</div>
+            </div>
+            ${isSelected ? '<i class="bi bi-check-circle-fill text-success ms-auto"></i>' : '<i class="bi bi-chat-text text-muted ms-auto"></i>'}
+          </div>
+        `;
+      });
+    }
+
+    container.innerHTML = html;
+
+    // Attach click events
+    const publicBtn = document.getElementById("floraModalPickPublic");
+    if (publicBtn) {
+      publicBtn.addEventListener("click", () => {
+        setRecipient(null);
+        closeChatModal();
+      });
+    }
+
+    container.querySelectorAll(".flora-emp-list-item[data-emp-name]").forEach(item => {
+      item.addEventListener("click", () => {
+        const id = item.getAttribute("data-emp-id");
+        const name = item.getAttribute("data-emp-name");
+        const pos = item.getAttribute("data-emp-pos");
+        const dept = item.getAttribute("data-emp-dept");
+        setRecipient({ id, name, position: pos, department: dept });
+        closeChatModal();
+      });
+    });
+  }
+
+  function renderModalIdentityList(query) {
+    const container = document.getElementById("floraModalContentList");
+    if (!container) return;
+
+    const q = (query || "").trim().toLowerCase();
+    const emps = getOrganizationEmployees();
+    const currentUser = getCurrentUserIdentity();
+
+    let html = `
+      <!-- Manual Name Input Form -->
+      <div class="p-2 mb-2 bg-light rounded-3 border" style="font-size: 12px;">
+        <div class="fw-bold mb-1 text-dark">
+          <i class="bi bi-pencil-square text-primary"></i> หรือพิมพ์ชื่อแสดงของคุณเอง:
+        </div>
+        <div class="d-flex gap-2">
+          <input type="text" id="floraManualIdentityInput" class="form-control form-control-sm" placeholder="ระบุชื่อของคุณ..." value="${escapeHtml(currentUser.name)}">
+          <button type="button" id="floraManualIdentityBtn" class="btn btn-primary btn-sm px-3 text-nowrap">
+            บันทึก
+          </button>
+        </div>
+      </div>
+      <div class="my-2 text-muted px-1" style="font-size: 11px; font-weight: 600;">
+        คลิกเลือกชื่อของคุณจากรายชื่อบุคลากร (เพื่อรับเสียงเตือนเฉพาะเครื่องของคุณ):
+      </div>
+    `;
+
+    const filtered = emps.filter(emp => {
+      if (!q) return true;
+      const matchName = emp.name && emp.name.toLowerCase().includes(q);
+      const matchDept = emp.department && emp.department.toLowerCase().includes(q);
+      const matchPos = emp.position && emp.position.toLowerCase().includes(q);
+      return matchName || matchDept || matchPos;
+    });
+
+    if (filtered.length === 0) {
+      html += `
+        <div class="text-center py-3 text-muted" style="font-size: 12px;">
+          ไม่พบบุคลากรที่ตรงกับคำค้นหา
+        </div>
+      `;
+    } else {
+      filtered.forEach(emp => {
+        const isCurrent = currentUser.name.trim().toLowerCase() === emp.name.trim().toLowerCase();
+        const avatarInitial = (emp.name || "บ")[0];
+        const avatarContent = emp.photoUrl 
+          ? `<img src="${escapeHtml(emp.photoUrl)}" class="flora-emp-avatar" alt="${escapeHtml(emp.name)}">`
+          : `<div class="flora-emp-avatar">${avatarInitial}</div>`;
+
+        html += `
+          <div class="flora-emp-list-item ${isCurrent ? 'is-selected' : ''}" data-emp-id="${escapeHtml(emp.id)}" data-emp-name="${escapeHtml(emp.name)}" data-emp-pos="${escapeHtml(emp.position)}">
+            ${avatarContent}
+            <div class="flora-emp-details">
+              <div class="flora-emp-name">${escapeHtml(emp.name)} ${isCurrent ? '<span class="badge bg-success ms-1" style="font-size: 9.5px;">คุณคือคนนี้</span>' : ''}</div>
+              <div class="flora-emp-sub">${escapeHtml(emp.position)} • ${escapeHtml(emp.department)}</div>
+            </div>
+            <button type="button" class="btn btn-outline-success btn-sm py-0 px-2" style="font-size: 11px;">
+              ${isCurrent ? 'กำลังใช้งาน' : 'ฉันคือคนนี้'}
+            </button>
+          </div>
+        `;
+      });
+    }
+
+    container.innerHTML = html;
+
+    // Manual save
+    const manualBtn = document.getElementById("floraManualIdentityBtn");
+    const manualInput = document.getElementById("floraManualIdentityInput");
+    if (manualBtn && manualInput) {
+      manualBtn.addEventListener("click", () => {
+        const newName = manualInput.value.trim();
+        if (newName) {
+          try {
+            localStorage.setItem(STORAGE_KEY_USER_NAME, newName);
+          } catch (e) {}
+          updateUserIdentityHeader();
+          renderTeamMessages();
+          closeChatModal();
+        }
+      });
+      manualInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          manualBtn.click();
+        }
+      });
+    }
+
+    // Pick from staff list
+    container.querySelectorAll(".flora-emp-list-item[data-emp-name]").forEach(item => {
+      item.addEventListener("click", () => {
+        const id = item.getAttribute("data-emp-id");
+        const name = item.getAttribute("data-emp-name");
+        const pos = item.getAttribute("data-emp-pos");
+        if (name) {
+          try {
+            localStorage.setItem(STORAGE_KEY_USER_NAME, name);
+            if (id) localStorage.setItem(STORAGE_KEY_USER_EMP_ID, id);
+            if (pos) localStorage.setItem(STORAGE_KEY_USER_EMP_ROLE, pos);
+          } catch (e) {}
+          updateUserIdentityHeader();
+          renderTeamMessages();
+          closeChatModal();
+        }
+      });
+    });
+  }
+
+  function setRecipient(recipient) {
+    selectedRecipient = recipient;
+    const pill = document.getElementById("floraRecipientPill");
+    const clearBtn = document.getElementById("floraRecipientClearBtn");
+
+    if (pill) {
+      if (!selectedRecipient) {
+        pill.className = "flora-recipient-pill is-public";
+        pill.innerHTML = `<i class="bi bi-broadcast"></i> ทุกคน (ทั้งองค์กร)`;
+      } else {
+        pill.className = "flora-recipient-pill is-private";
+        pill.innerHTML = `<i class="bi bi-lock-fill text-warning"></i> เฉพาะคุณ ${escapeHtml(selectedRecipient.name)}`;
+      }
+    }
+
+    if (clearBtn) {
+      if (selectedRecipient) {
+        clearBtn.classList.remove("d-none");
+      } else {
+        clearBtn.classList.add("d-none");
+      }
+    }
+
+    document.getElementById("floraTeamInput")?.focus();
+  }
+
+  function setTeamFilter(filter) {
+    teamFilter = filter;
+    const allBtn = document.getElementById("floraFilterAllBtn");
+    const directBtn = document.getElementById("floraFilterDirectBtn");
+    const broadcastBtn = document.getElementById("floraFilterBroadcastBtn");
+
+    [allBtn, directBtn, broadcastBtn].forEach(b => b?.classList.remove("is-active"));
+
+    if (filter === "all") allBtn?.classList.add("is-active");
+    if (filter === "direct") directBtn?.classList.add("is-active");
+    if (filter === "broadcast") broadcastBtn?.classList.add("is-active");
+
+    renderTeamMessages();
   }
 
   // ==================== ASSISTANT MESSAGING ====================
@@ -766,7 +1263,11 @@
       senderRole: user.role,
       text: text,
       tag: selectedTeamTag,
-      timestamp: new Date().toISOString()
+      recipientId: selectedRecipient ? selectedRecipient.id : null,
+      recipientName: selectedRecipient ? selectedRecipient.name : null,
+      isDirect: !!selectedRecipient,
+      timestamp: new Date().toISOString(),
+      status: "pending" // "pending" | "synced" | "failed"
     };
 
     // 1. Add locally
@@ -785,19 +1286,118 @@
     saveMessageToFirestore(newMsg);
   }
 
+  function retrySendMessage(msgId) {
+    const target = teamMessages.find(m => m.id === msgId);
+    if (!target) return;
+    target.status = "pending";
+    saveLocalTeamMessages(teamMessages);
+    renderTeamMessages();
+    saveMessageToFirestore(target);
+  }
+
+  // ==================== RESILIENT RECIPIENT & SENDER MATCHING ====================
+  function isUserRecipientOfMessage(msg, currentUser) {
+    if (!msg || !msg.isDirect) return false;
+
+    // 1. Direct ID matches
+    if (msg.recipientId) {
+      if (currentUser.employeeId && currentUser.employeeId === msg.recipientId) return true;
+      if (currentUser.id && currentUser.id === msg.recipientId) return true;
+    }
+
+    // 2. Normalize and check names and codes
+    const rName = (msg.recipientName || "").trim().toLowerCase();
+    const rId = (msg.recipientId || "").trim().toLowerCase();
+    const cName = (currentUser.name || "").trim().toLowerCase();
+    const cEmpId = (currentUser.employeeId || "").trim().toLowerCase();
+    const cId = (currentUser.id || "").trim().toLowerCase();
+
+    if (rName && cName) {
+      if (rName === cName) return true;
+      const cleanR = rName.replace(/^(คุณ|นาย|นางสาว|นาง|น\.ส\.)\s*/, "");
+      const cleanC = cName.replace(/^(คุณ|นาย|นางสาว|นาง|น\.ส\.)\s*/, "");
+      if (cleanR && cleanC && (cleanR === cleanC || cleanR.includes(cleanC) || cleanC.includes(cleanR))) {
+        return true;
+      }
+    }
+
+    if (rId && (rId === cEmpId || rId === cId)) return true;
+
+    // 3. Match against cached organization staff directory
+    const emps = getOrganizationEmployees();
+    const matchedRecipient = emps.find(e =>
+      (e.id && e.id === msg.recipientId) ||
+      (e.code && e.code === msg.recipientId) ||
+      (e.name && e.name.trim().toLowerCase() === rName)
+    );
+    if (matchedRecipient) {
+      if (cEmpId && (cEmpId === matchedRecipient.id || cEmpId === matchedRecipient.code)) return true;
+      const matchedName = (matchedRecipient.name || "").trim().toLowerCase();
+      if (cName && matchedName) {
+        const cleanM = matchedName.replace(/^(คุณ|นาย|นางสาว|นาง|น\.ส\.)\s*/, "");
+        const cleanC = cName.replace(/^(คุณ|นาย|นางสาว|นาง|น\.ส\.)\s*/, "");
+        if (cleanC && cleanM && (cleanC === cleanM || cleanC.includes(cleanM) || cleanM.includes(cleanC))) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  function isUserSenderOfMessage(msg, currentUser) {
+    if (!msg) return false;
+    if (msg.senderId && (msg.senderId === currentUser.id || msg.senderId === currentUser.employeeId)) return true;
+    const sName = (msg.senderName || "").trim().toLowerCase();
+    const cName = (currentUser.name || "").trim().toLowerCase();
+    if (sName && cName) {
+      if (sName === cName) return true;
+      const cleanS = sName.replace(/^(คุณ|นาย|นางสาว|นาง|น\.ส\.)\s*/, "");
+      const cleanC = cName.replace(/^(คุณ|นาย|นางสาว|นาง|น\.ส\.)\s*/, "");
+      if (cleanS && cleanC && (cleanS === cleanC || cleanS.includes(cleanC) || cleanC.includes(cleanS))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   function handleIncomingTeamMessage(msg, fromFirestore = false) {
     if (!msg || !msg.id) return;
     const exists = teamMessages.some(m => m.id === msg.id);
     if (exists) return;
+
+    // Messages received from Firestore have already been synced
+    if (fromFirestore) {
+      msg.status = "synced";
+    }
 
     teamMessages.push(msg);
     saveLocalTeamMessages(teamMessages);
     renderTeamMessages();
 
     const currentUser = getCurrentUserIdentity();
-    const isFromSelf = msg.senderId === currentUser.id || msg.senderName === currentUser.name;
+    const isFromSelf = isUserSenderOfMessage(msg, currentUser);
 
-    if (!isFromSelf) {
+    if (isFromSelf) return;
+
+    if (msg.isDirect) {
+      // Check if this device belongs to the designated recipient
+      const isRecipient = isUserRecipientOfMessage(msg, currentUser);
+
+      if (isRecipient) {
+        // PLAY SPECIAL ALERT SOUND SPECIFICALLY ON RECIPIENT'S MACHINE!
+        playDirectAlertSound();
+        if (navigator.vibrate) {
+          try { navigator.vibrate([200, 100, 200]); } catch (e) {}
+        }
+        triggerDirectMessageTitleAlert(msg.senderName);
+        if (!isChatOpen || activeTab !== "team") {
+          incrementUnreadTeamCount();
+        }
+      }
+      // If NOT recipient: completely silent and no alerts
+    } else {
+      // General team broadcast
       playPleasantChime();
       if (!isChatOpen || activeTab !== "team") {
         incrementUnreadTeamCount();
@@ -810,24 +1410,57 @@
     if (!list) return;
 
     list.innerHTML = "";
+    const currentUser = getCurrentUserIdentity();
 
-    if (teamMessages.length === 0) {
+    // 1. Calculate direct message count for badge
+    let directCount = 0;
+    teamMessages.forEach(m => {
+      if (m.isDirect) {
+        const isSelf = isUserSenderOfMessage(m, currentUser);
+        const isRecipient = isUserRecipientOfMessage(m, currentUser);
+        if (isSelf || isRecipient) directCount++;
+      }
+    });
+
+    const directBadge = document.getElementById("floraDirectFilterBadge");
+    if (directBadge) directBadge.textContent = directCount;
+
+    // 2. Filter messages for display (privacy: direct messages only visible to sender and recipient)
+    const visibleMessages = teamMessages.filter(msg => {
+      if (msg.isDirect) {
+        const isSelf = isUserSenderOfMessage(msg, currentUser);
+        const isRecipient = isUserRecipientOfMessage(msg, currentUser);
+
+        if (!isSelf && !isRecipient) return false;
+        if (teamFilter === "broadcast") return false;
+        return true;
+      } else {
+        if (teamFilter === "direct") return false;
+        return true;
+      }
+    });
+
+    if (visibleMessages.length === 0) {
+      let emptyText = "ยังไม่มีข้อความสนทนาในหมวดนี้";
+      if (teamFilter === "direct") {
+        emptyText = "ยังไม่มีข้อความเฉพาะบุคคลที่เกี่ยวข้องกับคุณ";
+      } else if (teamFilter === "broadcast") {
+        emptyText = "ยังไม่มีข้อความรวมในองค์กร";
+      }
       list.innerHTML = `
         <div class="flora-empty-chat">
           <div class="flora-empty-icon"><i class="bi bi-chat-heart"></i></div>
-          <div class="flora-empty-title">ยังไม่มีข้อความสนทนา</div>
-          <div class="flora-empty-desc">เริ่มพิมพ์ข้อความแรกเพื่อประสานงานกับเพื่อนร่วมงานในองค์กรได้เลยครับ</div>
+          <div class="flora-empty-title">${emptyText}</div>
+          <div class="flora-empty-desc">กดปุ่มเลือกผู้รับด้านล่างเพื่อเริ่มส่งข้อความถึงเพื่อนร่วมงานได้เลยครับ</div>
         </div>
       `;
       return;
     }
 
-    const currentUser = getCurrentUserIdentity();
-
-    teamMessages.forEach(msg => {
-      const isSelf = msg.senderId === currentUser.id || msg.senderName === currentUser.name;
+    visibleMessages.forEach(msg => {
+      const isSelf = isUserSenderOfMessage(msg, currentUser);
       const item = document.createElement("div");
-      item.className = `flora-msg-item ${isSelf ? "outgoing" : "incoming"}`;
+      item.className = `flora-msg-item ${isSelf ? "outgoing" : "incoming"} ${msg.isDirect ? "flora-msg-direct-container" : ""}`;
 
       let tagClass = "flora-msg-tag-general";
       let tagIcon = "bi-chat-dots";
@@ -847,6 +1480,50 @@
         </div>
       ` : "";
 
+      // Direct message header badge
+      let directHeader = "";
+      if (msg.isDirect) {
+        if (isSelf) {
+          directHeader = `
+            <div>
+              <span class="flora-msg-direct-header">
+                <i class="bi bi-lock-fill text-purple"></i> ส่งเฉพาะบุคคลถึง: คุณ${escapeHtml(msg.recipientName || "เพื่อนร่วมงาน")}
+              </span>
+            </div>
+          `;
+        } else {
+          directHeader = `
+            <div>
+              <span class="flora-msg-direct-header">
+                <i class="bi bi-lock-fill text-purple"></i> ข้อความเฉพาะถึงคุณ จาก: คุณ${escapeHtml(msg.senderName || "เพื่อนร่วมงาน")}
+              </span>
+            </div>
+          `;
+        }
+      }
+
+      // Delivery Status indicator for outgoing messages
+      let statusIndicator = "";
+      if (isSelf) {
+        if (msg.status === "synced") {
+          statusIndicator = `<span class="flora-msg-status synced" title="ส่งขึ้นระบบคลาวด์แล้ว"><i class="bi bi-check2-all"></i></span>`;
+        } else if (msg.status === "failed") {
+          statusIndicator = `<button type="button" class="flora-msg-retry-btn" data-retry-id="${escapeHtml(msg.id)}" title="ส่งไม่สำเร็จ แตะเพื่อลองส่งใหม่"><i class="bi bi-exclamation-circle-fill"></i> ลองส่งใหม่</button>`;
+        } else {
+          statusIndicator = `<span class="flora-msg-status pending" title="กำลังบันทึกและส่งข้อมูล..."><i class="bi bi-check2"></i></span>`;
+        }
+      }
+
+      // Quick action link on message
+      let replyLink = "";
+      if (!isSelf) {
+        replyLink = `
+          <button type="button" class="flora-msg-reply-link" data-sender-id="${escapeHtml(msg.senderId)}" data-sender-name="${escapeHtml(msg.senderName)}" data-sender-role="${escapeHtml(msg.senderRole || '')}">
+            <i class="bi ${msg.isDirect ? 'bi-reply-fill' : 'bi-chat-quote-fill'}"></i> ${msg.isDirect ? "ตอบกลับเฉพาะบุคคล" : "แชทเฉพาะบุคคล"}
+          </button>
+        `;
+      }
+
       const safeText = escapeHtml(msg.text).replace(/\n/g, "<br>");
 
       item.innerHTML = `
@@ -855,13 +1532,41 @@
           ${msg.senderRole && !isSelf ? `<span class="flora-msg-role-tag">${escapeHtml(msg.senderRole)}</span>` : ""}
         </div>
         <div class="flora-msg-bubble">
+          ${directHeader}
           ${tagBadge}
           <div>${safeText}</div>
         </div>
-        <div class="flora-msg-time">${formatThaiDateTime(msg.timestamp)}</div>
+        <div class="d-flex align-items-center justify-content-between mt-1">
+          <div class="flora-msg-time">
+            <span>${formatThaiDateTime(msg.timestamp)}</span>
+            ${statusIndicator}
+          </div>
+          ${replyLink}
+        </div>
       `;
 
       list.appendChild(item);
+    });
+
+    // Wire up retry buttons
+    list.querySelectorAll(".flora-msg-retry-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-retry-id");
+        if (id) retrySendMessage(id);
+      });
+    });
+
+    // Wire up quick reply buttons
+    list.querySelectorAll(".flora-msg-reply-link").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-sender-id");
+        const name = btn.getAttribute("data-sender-name");
+        const role = btn.getAttribute("data-sender-role");
+        if (name) {
+          setRecipient({ id: id || name, name: name, position: role || "เจ้าหน้าที่" });
+          document.getElementById("floraTeamInput")?.focus();
+        }
+      });
     });
 
     scrollMessageContainer("floraTeamMessageList");
@@ -900,50 +1605,143 @@
   // ==================== FIRESTORE INTEGRATION ====================
   async function initFirestoreListener() {
     try {
-      // Check if Firebase config is ready or wait for event
-      if (!window.firebaseConfig && !window.floraFirebaseConfig) {
-        window.addEventListener("flora-firebase-ready", () => {
-          connectFirestoreSync();
-        }, { once: true });
-      } else {
+      if (window.floraFirebaseBridge?.db || window.db || window.floraDb) {
         connectFirestoreSync();
       }
+      window.addEventListener("flora-firebase-ready", () => {
+        connectFirestoreSync();
+      });
+      // Fallback timers in case events fired earlier
+      setTimeout(() => {
+        if (!firestoreDb) connectFirestoreSync();
+      }, 400);
+      setTimeout(() => {
+        if (!firestoreDb) connectFirestoreSync();
+      }, 1500);
+
+      // Auto-reconnect and sync when device wakes up, tab regains focus, or network returns
+      window.addEventListener("online", () => {
+        connectFirestoreSync();
+        flushPendingOutgoingMessages();
+      });
+
+      window.addEventListener("focus", () => {
+        if (!firestoreDb || !unsubscribeFirestore) {
+          connectFirestoreSync();
+        } else {
+          flushPendingOutgoingMessages();
+        }
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          if (!firestoreDb || !unsubscribeFirestore) {
+            connectFirestoreSync();
+          } else {
+            flushPendingOutgoingMessages();
+          }
+        }
+      });
     } catch (e) {
       console.warn("Flora Chat Firestore initialization skipped:", e);
     }
   }
 
   async function connectFirestoreSync() {
+    if (isConnectingFirestore) return;
+    isConnectingFirestore = true;
+
     try {
-      let cfg = window.firebaseConfig || window.floraFirebaseConfig;
-      if (!cfg || !cfg.projectId) {
-        try {
-          const res = await fetch("firebase-applet-config.json");
-          if (res.ok) {
-            cfg = await res.json();
-            window.firebaseConfig = cfg;
-            window.floraFirebaseConfig = cfg;
-          }
-        } catch (e) {}
-      }
-      if (!cfg) return;
-
       const { initializeApp, getApps, getApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
-      const { getFirestore, initializeFirestore, collection, addDoc, onSnapshot, query, orderBy, limit } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+      const { getFirestore, initializeFirestore, collection, getDocs, setDoc, doc, onSnapshot, query, orderBy, limit } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
 
-      let app = getApps().length > 0 ? getApp() : initializeApp(cfg);
-      const dbId = cfg.firestoreDatabaseId;
-      if (dbId && dbId !== "(default)") {
-        firestoreDb = initializeFirestore(app, {}, dbId);
-      } else {
-        firestoreDb = getFirestore(app);
+      // 1. Prefer existing Firestore DB instance from main app bridge
+      let targetDb = window.floraFirebaseBridge?.db || window.db || window.floraDb;
+
+      // 2. If not yet initialized by main app, resolve independently
+      if (!targetDb) {
+        let cfg = window.firebaseConfig || window.floraFirebaseConfig;
+        if (!cfg || !cfg.projectId) {
+          try {
+            const res = await fetch("firebase-applet-config.json");
+            if (res.ok) {
+              cfg = await res.json();
+              window.firebaseConfig = cfg;
+              window.floraFirebaseConfig = cfg;
+            }
+          } catch (e) {}
+        }
+
+        if (cfg && cfg.projectId) {
+          const app = getApps().length > 0 ? getApp() : initializeApp(cfg);
+          const dbId = (cfg.firestoreDatabaseId && cfg.firestoreDatabaseId !== "(default)")
+            ? cfg.firestoreDatabaseId
+            : undefined;
+
+          const fsSettings = { experimentalForceLongPolling: true, useFetchStreams: false };
+          try {
+            targetDb = dbId ? initializeFirestore(app, fsSettings, dbId) : initializeFirestore(app, fsSettings);
+          } catch (e1) {
+            try {
+              targetDb = dbId ? getFirestore(app, dbId) : getFirestore(app);
+            } catch (e2) {
+              console.warn("Chat Firestore fallback warning:", e2);
+            }
+          }
+        }
       }
 
-      // Listen to team_chat_messages collection
+      if (!targetDb) {
+        isConnectingFirestore = false;
+        return;
+      }
+
+      // If already connected to this same DB instance, simply flush pending
+      if (firestoreDb === targetDb && unsubscribeFirestore) {
+        isConnectingFirestore = false;
+        flushPendingOutgoingMessages();
+        return;
+      }
+
+      // Clean up previous listener if re-connecting
+      if (unsubscribeFirestore) {
+        try { unsubscribeFirestore(); } catch (e) {}
+        unsubscribeFirestore = null;
+      }
+
+      firestoreDb = targetDb;
+      window.floraChatFirestoreDb = targetDb;
+
+      // Flush any queued messages that were sent before connection completed
+      flushPendingOutgoingMessages();
+
+      // Sync employees directory from Firestore for freshest staff list
+      try {
+        const empSnap = await getDocs(collection(firestoreDb, "employees"));
+        if (empSnap && !empSnap.empty) {
+          const fetched = [];
+          empSnap.forEach(d => {
+            const data = d.data();
+            fetched.push({
+              id: d.id,
+              code: data.code || "",
+              name: data.name || "ไม่ระบุชื่อ",
+              department: data.department || "ทั่วไป",
+              position: data.position || data.role || "เจ้าหน้าที่",
+              photoUrl: data.photoUrl || data.avatar || ""
+            });
+          });
+          if (fetched.length > 0) {
+            cachedOrgEmployees = fetched;
+          }
+        }
+      } catch (e) {}
+
+      // Listen to team_chat_messages collection for real-time updates
       const q = query(
         collection(firestoreDb, "team_chat_messages"),
         orderBy("timestamp", "asc"),
-        limit(100)
+        limit(150)
       );
 
       unsubscribeFirestore = onSnapshot(q, (snapshot) => {
@@ -958,50 +1756,104 @@
               senderRole: data.senderRole || "",
               text: data.text || "",
               tag: data.tag || "ทั่วไป",
-              timestamp: data.timestamp || new Date().toISOString()
+              recipientId: data.recipientId || null,
+              recipientName: data.recipientName || null,
+              isDirect: !!data.isDirect,
+              timestamp: data.timestamp || new Date().toISOString(),
+              status: "synced"
             };
 
-            const exists = teamMessages.some(m => m.id === msgObj.id || (m.timestamp === msgObj.timestamp && m.text === msgObj.text));
-            if (!exists) {
-              teamMessages.push(msgObj);
-              hasNew = true;
-              const currentUser = getCurrentUserIdentity();
-              if (msgObj.senderId !== currentUser.id && msgObj.senderName !== currentUser.name) {
-                if (!isChatOpen || activeTab !== "team") {
-                  incrementUnreadTeamCount();
-                }
+            const existingIdx = teamMessages.findIndex(m => m.id === msgObj.id || (m.timestamp === msgObj.timestamp && m.text === msgObj.text));
+            if (existingIdx >= 0) {
+              teamMessages[existingIdx].status = "synced";
+              teamMessages[existingIdx].id = msgObj.id;
+            } else {
+              if (isFirstFirestoreLoad) {
+                teamMessages.push(msgObj);
+                hasNew = true;
+              } else {
+                handleIncomingTeamMessage(msgObj, true);
               }
             }
           }
         });
 
-        if (hasNew) {
+        if (isFirstFirestoreLoad) {
+          isFirstFirestoreLoad = false;
+          teamMessages.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
+          saveLocalTeamMessages(teamMessages);
+          renderTeamMessages();
+        } else {
           saveLocalTeamMessages(teamMessages);
           renderTeamMessages();
         }
       }, (err) => {
         console.warn("Flora Chat Firestore onSnapshot error:", err);
       });
+
     } catch (err) {
       console.warn("Flora Chat Firestore connect warning:", err);
+    } finally {
+      isConnectingFirestore = false;
     }
   }
 
+  function flushPendingOutgoingMessages() {
+    if (!firestoreDb || pendingOutgoingMessages.length === 0) return;
+    const toSend = pendingOutgoingMessages.splice(0, pendingOutgoingMessages.length);
+    toSend.forEach(msg => {
+      saveMessageToFirestore(msg);
+    });
+  }
+
   async function saveMessageToFirestore(msg) {
-    if (!firestoreDb) return;
+    if (!firestoreDb) {
+      if (!pendingOutgoingMessages.some(m => m.id === msg.id)) {
+        pendingOutgoingMessages.push(msg);
+      }
+      connectFirestoreSync();
+      return;
+    }
     try {
-      const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-      await addDoc(collection(firestoreDb, "team_chat_messages"), {
+      const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+      const targetDocId = msg.id || ("team_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6));
+      await setDoc(doc(firestoreDb, "team_chat_messages", targetDocId), {
+        id: targetDocId,
         senderId: msg.senderId || "",
         senderName: msg.senderName || "",
         senderRole: msg.senderRole || "",
         text: msg.text || "",
         tag: msg.tag || "ทั่วไป",
+        recipientId: msg.recipientId || null,
+        recipientName: msg.recipientName || null,
+        isDirect: !!msg.isDirect,
         timestamp: msg.timestamp || new Date().toISOString(),
         createdAt: new Date().toISOString()
-      });
+      }, { merge: true });
+
+      // Mark message as synced in local memory and UI
+      const target = teamMessages.find(m => m.id === msg.id);
+      if (target) {
+        target.status = "synced";
+        target.id = targetDocId;
+        saveLocalTeamMessages(teamMessages);
+        renderTeamMessages();
+      }
     } catch (e) {
       console.warn("Save team chat message to Firestore error:", e);
+      // Mark as failed so user sees retry option
+      const target = teamMessages.find(m => m.id === msg.id);
+      if (target) {
+        target.status = "failed";
+        saveLocalTeamMessages(teamMessages);
+        renderTeamMessages();
+      }
+      if (!pendingOutgoingMessages.some(m => m.id === msg.id)) {
+        pendingOutgoingMessages.push(msg);
+      }
+      setTimeout(() => {
+        flushPendingOutgoingMessages();
+      }, 4000);
     }
   }
 

@@ -235,11 +235,12 @@ export async function initJobApplicationFirebase() {
     try { app = getApp(); } catch (err) { app = initializeApp(firebaseConfig); }
   }
 
-  const dbId = firebaseConfig.firestoreDatabaseId;
-  if (dbId && dbId !== "(default)") {
-    db = initializeFirestore(app, {}, dbId);
-  } else {
-    db = getFirestore(app);
+  const dbId = (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== "(default)") ? firebaseConfig.firestoreDatabaseId : undefined;
+  const fsSettings = { experimentalForceLongPolling: true, useFetchStreams: false };
+  try {
+    db = dbId ? initializeFirestore(app, fsSettings, dbId) : initializeFirestore(app, fsSettings);
+  } catch (eFs) {
+    db = dbId ? getFirestore(app, dbId) : getFirestore(app);
   }
 
   window.jobAppDb = db;

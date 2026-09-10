@@ -1,13 +1,12 @@
 📋 สรุปสิ่งที่เก็บไว้ในโปรเจกต์หลัก(Flora Garden New) 
 
-รบกวนช่วยตรวจสอบและตั้งค่าตามนี้: (ข้อ 1. ต้องทำ)
-1. ตรวจสอบไฟล์ firebase-applet-config.json (และ script.js, org_chart.html, payroll_system.js, job_application.js) ให้เชื่อมต่อกับ Database ID ของโปรเจกต์นี้ คือ:
-   👉 ai-studio-floragardennew-077d9b3a-d839-404a-986e-0ab7c5c9be6e
+รบกวนช่วยตรวจสอบและตั้งค่าตามนี้: 
+1. ตรวจสอบไฟล์ firebase-applet-config.json Database ID คือ ai-studio-floragardennew-077d9b3a-d839-404a-986e-0ab7c5c9be6e 
+   ถ้าไม่ใช่ให้ยกเลิกการแก้ไข ถ้าใช่ให้ตรวจสอบไฟล์ด้านล่างนี้ต่อและแก้ไข
+   script.js, org_chart.html, payroll_system.js, job_application.js ให้เชื่อมต่อกับ Database ID ของโปรเจกต์นี้ คือ:
+   👉 ai-studio-floragardennew-077d9b3a-d839-404a-986e-0ab7c5c9be6e 
 
-2. ปรับปุ่ม "ดึงข้อมูล" ในหน้าสำรองข้อมูล ให้ดึงต้นทางมาจาก Database ID:
-   👉 ai-studio-floragardenv2-c509b5a5-f4a3-4546-bbae-c5f21564ba7d
-
-3. ทำการ compile_applet ให้เรียบร้อย
+2. ทำการ compile_applet ให้เรียบร้อย
 
 *** หมายเหตุ Flora Garden New , Flora Garden V.2 , Flora Test New 2 
     ทั้งหมด ใช้ Bucket เดิม: flora-gaden.firebasestorage.app ร่วมกัน
