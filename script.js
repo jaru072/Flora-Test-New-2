@@ -2355,6 +2355,9 @@
       } else if (typeof clearTransCart === 'function') {
         clearTransCart();
       }
+      if (typeof window.hideTransStockOverPopup === 'function') {
+        window.hideTransStockOverPopup();
+      }
       const form = document.getElementById('transactionForm');
       if (form) form.reset();
       const stockInfo = document.getElementById('equipStockInfo');
@@ -4476,6 +4479,9 @@
 
     window.clearTransCart = function() {
       selectedTransItems = [];
+      if (typeof window.hideTransStockOverPopup === 'function') {
+        window.hideTransStockOverPopup();
+      }
       renderTransCartList();
     };
 
@@ -4586,6 +4592,42 @@
       container.innerHTML = html;
     };
 
+    window.showTransStockOverPopup = function(detailMsg) {
+      const popup = document.getElementById('transStockOverAlertPopup');
+      if (!popup) return;
+      const detailEl = document.getElementById('transStockOverAlertDetail');
+      if (detailEl) {
+        if (detailMsg) {
+          detailEl.textContent = detailMsg;
+          detailEl.classList.remove('d-none');
+        } else {
+          detailEl.classList.add('d-none');
+        }
+      }
+      popup.classList.remove('d-none');
+
+      const navHeight = document.querySelector('.navbar.sticky-top')?.offsetHeight || 60;
+      const rect = popup.getBoundingClientRect();
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const targetY = rect.top + scrollTop - navHeight - 16;
+      window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+
+      if (window._transStockOverPopupTimer) {
+        clearTimeout(window._transStockOverPopupTimer);
+      }
+      window._transStockOverPopupTimer = setTimeout(() => {
+        popup.classList.add('d-none');
+      }, 7000);
+    };
+
+    window.hideTransStockOverPopup = function() {
+      const popup = document.getElementById('transStockOverAlertPopup');
+      if (popup) popup.classList.add('d-none');
+      if (window._transStockOverPopupTimer) {
+        clearTimeout(window._transStockOverPopupTimer);
+      }
+    };
+
     // Transaction Submit (Supports Multi-Item Documents & Firestore Sync Verification)
     async function handleTransactionSubmit(e) {
       e.preventDefault();
@@ -4596,7 +4638,14 @@
       const note = document.getElementById('transNote').value.trim();
 
       if (!empId) {
-        alert("กรุณาเลือกรายชื่อพนักงานผู้ทำรายการ");
+        const empEl = document.getElementById('empSelect');
+        if (empEl) {
+          empEl.setCustomValidity('กรุณาเลือก หรือ พิมพ์รายชื่อผู้ทำรายการก่อน');
+          empEl.reportValidity();
+          empEl.focus();
+        } else {
+          alert("กรุณาเลือก หรือ พิมพ์รายชื่อผู้ทำรายการก่อน");
+        }
         return;
       }
 
@@ -4648,8 +4697,10 @@
       if (type === 'เบิกจ่าย' || type === 'ยืมอุปกรณ์') {
         for (const it of itemsToProcess) {
           const equipObj = equipmentList.find(x => x.id === it.equipmentId);
-          if (!equipObj || equipObj.quantity < it.quantity) {
-            alert(`❌ ยอดคงเหลือไม่พอสำหรับทำรายการ: "${it.equipmentName}" (คงเหลือปัจจุบัน: ${equipObj ? equipObj.quantity : 0} ${it.unit}, ต้องการ: ${it.quantity} ${it.unit})`);
+          const currentStock = equipObj ? equipObj.quantity : 0;
+          if (!equipObj || currentStock < it.quantity) {
+            const detail = `อุปกรณ์ "${it.equipmentName}" มีคงเหลือในคลังเพียง ${currentStock} ${it.unit} (ระบุในรายการ ${it.quantity} ${it.unit})`;
+            window.showTransStockOverPopup(detail);
             return;
           }
         }
@@ -8201,6 +8252,9 @@
 
       if (filtered.length === 1 && q.length > 0) {
         select.value = filtered[0].id;
+        select.setCustomValidity('');
+      } else if (select.value) {
+        select.setCustomValidity('');
       }
     };
 
@@ -12033,6 +12087,10 @@
 
     // Handle employee change in transaction form
     window.handleTransEmpSelectionChange = function() {
+      const select = document.getElementById('empSelect');
+      if (select) {
+        select.setCustomValidity('');
+      }
       const selectedType = document.querySelector('input[name="transType"]:checked')?.value;
       if (selectedType === 'คืนอุปกรณ์') {
         if (typeof window.refreshReturnActiveBorrowsUI === 'function') {

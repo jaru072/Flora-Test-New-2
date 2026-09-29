@@ -406,30 +406,6 @@
                   </div>
                 </button>
               </li>
-              <li>
-                <a class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center fw-semibold" href="org_chart.html">
-                  <i class="bi bi-diagram-3-fill text-success fs-5 text-center me-2" style="width: 20px;"></i>
-                  <span class="fs-7 text-dark fw-bold">ศูนย์ผังองค์กรและระบบงานบุคคล</span>
-                </a>
-              </li>
-              <li>
-                <a class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center fw-semibold" href="payroll.html">
-                  <i class="bi bi-cash-coin text-warning fs-5 text-center me-2" style="width: 20px;"></i>
-                  <span class="fs-7 text-dark fw-bold">ระบบเงินเดือน</span>
-                </a>
-              </li>
-              <li>
-                <a class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center fw-semibold" href="procurement.html">
-                  <i class="bi bi-cart-check-fill text-teal fs-5 text-center me-2" style="width: 20px; color: #0f766e;"></i>
-                  <span class="fs-7 text-dark fw-bold">ระบบจัดซื้อ-จัดจ้าง</span>
-                </a>
-              </li>
-              <li>
-                <a class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center fw-semibold" href="job_application.html">
-                  <i class="bi bi-file-earmark-person-fill text-primary fs-5 text-center me-2" style="width: 20px;"></i>
-                  <span class="fs-7 text-dark fw-bold">ระบบรับสมัครงานและฟอร์มใบสมัคร</span>
-                </a>
-              </li>
               <li><hr class="dropdown-divider my-1"></li>
               <li id="globalLogoMenuItem">
                 <button class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center gap-2 fw-semibold text-warning" onclick="openGlobalLogoModal()" title="จัดการและเลือกไฟล์รูปภาพโลโก้องค์กร (4 มุมผังองค์กร และเมนูหลัก)">
@@ -702,7 +678,7 @@
                     </div>
                     <div class="input-group">
                       <span class="input-group-text bg-light"><i class="bi bi-person-fill text-success"></i></span>
-                      <select id="empSelect" class="form-select fw-semibold" required onchange="handleTransEmpSelectionChange()">
+                      <select id="empSelect" class="form-select fw-semibold" required oninvalid="this.setCustomValidity('กรุณาเลือก หรือ พิมพ์รายชื่อผู้ทำรายการก่อน')" oninput="this.setCustomValidity('')" onchange="this.setCustomValidity(''); handleTransEmpSelectionChange()">
                         <option value="">-- กรุณาเลือกรายชื่อพนักงาน --</option>
                       </select>
                     </div>
@@ -839,6 +815,20 @@
                       <label class="form-check-label fw-bold text-dark cursor-pointer fs-7 user-select-none" for="transRequireVoucherDoc" style="cursor: pointer;">
                         <i class="bi bi-file-earmark-text-fill text-success me-1"></i>ต้องการ "เอกสารใบเบิก-จ่าย-ยืม-คืนอุปกรณ์การเกษตร"
                       </label>
+                    </div>
+                  </div>
+
+                  <!-- Popup Alert directly above submit button -->
+                  <div id="transStockOverAlertPopup" class="alert alert-danger border-2 border-danger shadow-sm rounded-4 p-3 mb-3 d-none" role="alert" style="scroll-margin-top: 100px;">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                      <div class="d-flex align-items-center gap-2.5">
+                        <span class="badge bg-danger rounded-circle p-2 fs-6 shadow-sm"><i class="bi bi-exclamation-triangle-fill text-white"></i></span>
+                        <div>
+                          <div class="fw-bold text-danger fs-6" id="transStockOverAlertTitle">บันทึกไม่ได้ จำนวนที่ระบุเกินสต๊อกที่มีอยู่!</div>
+                          <div class="text-danger-emphasis fs-8 mt-0.5" id="transStockOverAlertDetail">กรุณาตรวจสอบยอดคงเหลือและปรับลดจำนวนก่อนบันทึก</div>
+                        </div>
+                      </div>
+                      <button type="button" class="btn-close" onclick="hideTransStockOverPopup()" aria-label="Close"></button>
                     </div>
                   </div>
 
