@@ -2656,7 +2656,7 @@
     window.storage = null;
     window.personnelAuth = null;
     let personnelSessionAccess = null;
-    try { personnelSessionAccess = JSON.parse(sessionStorage.getItem('flora_personnel_access') || 'null'); } catch (e) {}
+    try { personnelSessionAccess = JSON.parse(sessionStorage.getItem('flora_personnel_access') || localStorage.getItem('flora_saved_user_profile') || 'null'); } catch (e) {}
     window.personnelAccess = personnelSessionAccess?.isAdmin === true && personnelSessionAccess?.email === 'jaru072@gmail.com'
       ? { loading: true, isAdmin: true, uid: personnelSessionAccess.uid || '', email: personnelSessionAccess.email, role: 'ADMIN' }
       : { loading: true, isAdmin: false, uid: personnelSessionAccess?.uid || '', email: personnelSessionAccess?.email || '', role: personnelSessionAccess?.role || 'VIEWER' };

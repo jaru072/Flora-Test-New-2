@@ -668,10 +668,10 @@ body {
   }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 768px) {
   .floating-scroll-nav {
-    bottom: 16px;
-    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    right: calc(16px + env(safe-area-inset-right, 0px));
   }
   .btn-flora-scroll {
     width: 40px;
@@ -831,5 +831,20 @@ body {
   border-radius: 1rem !important;
   position: relative;
   z-index: 10;
+}
+
+/* High Contrast for Barcode and Yellow Action Buttons */
+.btn-warning,
+.btn-warning:hover,
+.btn-warning:focus,
+.btn-warning:active {
+  color: #111827 !important;
+}
+
+.btn-warning i,
+.btn-warning span,
+.btn-warning .bi {
+  color: #111827 !important;
+  fill: #111827 !important;
 }
 

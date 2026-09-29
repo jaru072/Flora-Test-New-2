@@ -389,7 +389,7 @@
             }, 3500);
           }
         } else {
-          console.log("Firebase Auth User initialized without active session. Defaulting to Admin Thamma Srithong.");
+          console.log("Firebase Auth: No active user session detected.");
           if (lastKnownUserForLogout) {
             if (typeof window.recordUserLoginStatus === 'function') {
               window.recordUserLoginStatus('Offline', lastKnownUserForLogout);
@@ -399,22 +399,33 @@
           if (typeof window.trackUserLoginPresence === 'function') {
             window.trackUserLoginPresence(null);
           }
-          if (typeof window.subscribeToUserPresence === 'function') {
-            window.subscribeToUserPresence();
-          }
-          if (typeof window.handleQuickLogin === 'function') {
-            window.handleQuickLogin('ADMIN', 'ผู้ดูแลระบบ (Admin)', 'jaru072@gmail.com');
-          }
-          if (typeof window.hideMandatoryLoginScreen === 'function') {
-            window.hideMandatoryLoginScreen();
-          }
 
-          // Trigger automatic daily hybrid backup for Admin Default
-          setTimeout(() => {
-            if (typeof window.runHybridDailyBackup === 'function') {
-              window.runHybridDailyBackup(false).catch(e => console.warn("[AutoBackup]", e));
+          // Check if previously logged in user profile exists in localStorage or sessionStorage
+          let cachedAccess = null;
+          try {
+            cachedAccess = JSON.parse(sessionStorage.getItem('flora_personnel_access') || localStorage.getItem('flora_saved_user_profile') || 'null');
+          } catch(e) {}
+
+          if (cachedAccess && (cachedAccess.email || cachedAccess.displayName)) {
+            console.log("Restoring previous user session for:", cachedAccess.email || cachedAccess.displayName);
+            currentUserProfile = cachedAccess;
+            currentRole = cachedAccess.role || 'WORKER';
+            setRole(currentRole);
+            updateAuthUI();
+            if (typeof window.hideMandatoryLoginScreen === 'function') {
+              window.hideMandatoryLoginScreen();
             }
-          }, 3500);
+          } else {
+            // New user without existing session: enforce Google Login modal
+            currentRole = 'WORKER';
+            currentUserProfile = null;
+            currentAuthUser = null;
+            setRole('WORKER');
+            updateAuthUI();
+            if (typeof window.showMandatoryLoginScreen === 'function') {
+              window.showMandatoryLoginScreen();
+            }
+          }
         }
       });
     }
@@ -544,6 +555,22 @@
         }
         
         sessionStorage.setItem('flora_personnel_access', JSON.stringify({
+          uid: currentUserProfile?.uid || user.uid,
+          email: currentUserProfile?.email || user.email || '',
+          displayName: currentUserProfile?.displayName || user.displayName || 'ผู้ใช้งาน',
+          photoURL: currentUserProfile?.photoURL || user.photoURL || '',
+          role: currentUserProfile?.role || 'WORKER',
+          accessPersonnel: currentUserProfile?.accessPersonnel === true,
+          accessInventory: currentUserProfile?.accessInventory !== false,
+          accessPayroll: currentUserProfile?.accessPayroll === true,
+          accessProcurement: currentUserProfile?.accessProcurement === true,
+          linkedEmployeeId: currentUserProfile?.linkedEmployeeId || '',
+          linkedEmployeeName: currentUserProfile?.linkedEmployeeName || '',
+          linkedEmployeeCode: currentUserProfile?.linkedEmployeeCode || '',
+          isAdmin: currentUserProfile?.role === 'ADMIN'
+        }));
+
+        localStorage.setItem('flora_saved_user_profile', JSON.stringify({
           uid: currentUserProfile?.uid || user.uid,
           email: currentUserProfile?.email || user.email || '',
           displayName: currentUserProfile?.displayName || user.displayName || 'ผู้ใช้งาน',
@@ -945,28 +972,28 @@
         currentUserProfile = {
           uid: 'admin_jaru072',
           email: 'jaru072@gmail.com',
-          displayName: 'Thamma Srithong',
+          displayName: 'ผู้ดูแลระบบ (Admin)',
           role: 'ADMIN'
         };
         currentAuthUser = {
           uid: 'admin_jaru072',
           email: 'jaru072@gmail.com',
-          displayName: 'Thamma Srithong',
+          displayName: 'ผู้ดูแลระบบ (Admin)',
           photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'
         };
       } else {
         currentRole = role;
         currentUserProfile = {
           uid: 'user_guest',
-          email: targetEmail || 'staff@floragarden.com',
-          displayName: roleTitle || 'เจ้าหน้าที่',
+          email: targetEmail || '',
+          displayName: roleTitle || 'ผู้ใช้งานทั่วไป',
           role: role
         };
         if (!currentAuthUser) {
           currentAuthUser = {
             uid: 'user_guest',
-            email: targetEmail || 'staff@floragarden.com',
-            displayName: roleTitle || 'เจ้าหน้าที่',
+            email: targetEmail || '',
+            displayName: roleTitle || 'ผู้ใช้งานทั่วไป',
             photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'
           };
         }
@@ -976,9 +1003,19 @@
       sessionStorage.setItem('flora_personnel_access', JSON.stringify({
         uid: currentUserProfile?.uid || '',
         email: currentUserProfile?.email || '',
+        displayName: currentUserProfile?.displayName || '',
         role: currentRole,
         isAdmin: currentRole === 'ADMIN' && currentUserProfile?.email === 'jaru072@gmail.com'
       }));
+      if (currentUserProfile?.email) {
+        localStorage.setItem('flora_saved_user_profile', JSON.stringify({
+          uid: currentUserProfile?.uid || '',
+          email: currentUserProfile?.email || '',
+          displayName: currentUserProfile?.displayName || '',
+          role: currentRole,
+          isAdmin: currentRole === 'ADMIN' && currentUserProfile?.email === 'jaru072@gmail.com'
+        }));
+      }
       if (typeof window.ensureAdminUserInUsersCollection === 'function') {
         window.ensureAdminUserInUsersCollection();
       }
@@ -1096,10 +1133,16 @@
       if (currentAuthUser || currentUserProfile || lastKnownUserForLogout) {
         const u = currentAuthUser || currentUserProfile || lastKnownUserForLogout;
         sessionStorage.clear();
+        localStorage.removeItem('flora_saved_user_profile');
         if (typeof window.recordUserLoginStatus === 'function') {
           await window.recordUserLoginStatus('Offline', u);
         }
       }
+      currentRole = 'WORKER';
+      currentUserProfile = null;
+      currentAuthUser = null;
+      setRole('WORKER');
+      updateAuthUI();
       if (auth) {
         try {
           await signOut(auth);
@@ -2105,14 +2148,31 @@
       // Personnel directory and attendance UI live in org_chart.html.
 
       updateStats();
-      if (typeof window.handleQuickLogin === 'function') {
-        window.handleQuickLogin('ADMIN', 'ผู้ดูแลระบบ (Admin)', 'jaru072@gmail.com');
+
+      // Check if user session already exists in sessionStorage or localStorage
+      let initialSavedAccess = null;
+      try {
+        initialSavedAccess = JSON.parse(sessionStorage.getItem('flora_personnel_access') || localStorage.getItem('flora_saved_user_profile') || 'null');
+      } catch(e) {}
+
+      if (initialSavedAccess && (initialSavedAccess.email || initialSavedAccess.displayName)) {
+        currentUserProfile = initialSavedAccess;
+        currentRole = initialSavedAccess.role || 'WORKER';
+        setRole(currentRole);
+        if (typeof window.hideMandatoryLoginScreen === 'function') {
+          window.hideMandatoryLoginScreen();
+        }
       } else {
-        setRole('ADMIN');
+        // New user / not logged in yet: display Google Sign-In overlay
+        currentRole = 'WORKER';
+        currentUserProfile = null;
+        currentAuthUser = null;
+        setRole('WORKER');
+        if (typeof window.showMandatoryLoginScreen === 'function') {
+          window.showMandatoryLoginScreen();
+        }
       }
-      if (typeof window.hideMandatoryLoginScreen === 'function') {
-        window.hideMandatoryLoginScreen();
-      }
+
       if (typeof toggleTransTypeUI === 'function') toggleTransTypeUI();
       if (typeof updateNavHistoryButtons === 'function') updateNavHistoryButtons();
 
@@ -2290,6 +2350,22 @@
 
     window.closeTransactionAndReturnToEquipment = function() {
       const currentEquipId = document.getElementById('equipSelect')?.value || window.lastInteractedEquipmentId;
+      if (typeof window.clearTransCart === 'function') {
+        window.clearTransCart();
+      } else if (typeof clearTransCart === 'function') {
+        clearTransCart();
+      }
+      const form = document.getElementById('transactionForm');
+      if (form) form.reset();
+      const stockInfo = document.getElementById('equipStockInfo');
+      if (stockInfo) stockInfo.innerHTML = '';
+      const previewBox = document.getElementById('equipSelectPreviewBox');
+      if (previewBox) previewBox.classList.add('d-none');
+      const warningBox = document.getElementById('transQtyStockWarning');
+      if (warningBox) warningBox.classList.add('d-none');
+      if (typeof toggleTransTypeUI === 'function') {
+        toggleTransTypeUI();
+      }
       window.returnToCatalogEquipment(currentEquipId);
     };
 
@@ -2337,10 +2413,21 @@
         tabEl.addEventListener('shown.bs.tab', (e) => {
           updateGearMenuActiveState(e.target.id);
           recordTabNavigation(e.target.id);
+          if (e.relatedTarget && e.relatedTarget.id === 'transaction-tab') {
+            if (typeof window.clearTransCart === 'function') {
+              window.clearTransCart();
+            } else if (typeof clearTransCart === 'function') {
+              clearTransCart();
+            }
+          }
           if (e.target.id === 'auth-roles-tab') {
             loadUsersTableFromFirestore();
           } else if (e.target.id === 'history-tab') {
             renderHistoryTable();
+          } else if (e.target.id === 'transaction-tab') {
+            if (typeof renderTransCartList === 'function') {
+              renderTransCartList();
+            }
           }
         });
       });
@@ -4393,13 +4480,14 @@
     };
 
     window.renderTransCartList = function() {
+      const cartBox = document.getElementById('selectedTransCartBox');
       const container = document.getElementById('selectedTransCartItemsList');
       const badge = document.getElementById('cartCountBadge');
       if (badge) badge.textContent = `${selectedTransItems.length} รายการ`;
 
-      if (!container) return;
-
       if (selectedTransItems.length === 0) {
+        if (cartBox) cartBox.classList.add('d-none');
+        if (!container) return;
         container.innerHTML = `
           <div class="text-center py-3 px-2 text-muted bg-light rounded-3 border border-dashed fs-8">
             <i class="bi bi-info-circle-fill text-success fs-6 d-block mb-1"></i>
@@ -4409,6 +4497,12 @@
         `;
         return;
       }
+
+      if (cartBox) {
+        cartBox.classList.remove('d-none');
+      }
+
+      if (!container) return;
 
       const activeType = document.querySelector('input[name="transType"]:checked')?.value || 'เบิกจ่าย';
       let typeBadge = '';
@@ -8420,7 +8514,7 @@
 
       if (unitSpan) unitSpan.textContent = item.unit || 'ชิ้น';
       if (infoSpan) {
-        infoSpan.innerHTML = `<i class="bi bi-check-circle-fill text-success me-1"></i>อุปกรณ์: <strong>${item.name}</strong> | คงเหลือ: <span class="fw-bold text-success">${item.quantity} ${item.unit}</span> | สถานที่: ${item.location || 'คลังกลาง'}`;
+        infoSpan.innerHTML = '';
       }
 
       if (previewBox) {
@@ -8460,6 +8554,12 @@
 
     window.quickSelectTransaction = function(equipId) {
       if (!equipId) return;
+
+      if (typeof window.clearTransCart === 'function') {
+        window.clearTransCart();
+      } else if (typeof clearTransCart === 'function') {
+        clearTransCart();
+      }
 
       const item = equipmentList.find(x => x.id === equipId);
 
@@ -8504,14 +8604,19 @@
         showToast(`📷 สแกน/เลือกอุปกรณ์ "${item.name}" [${item.code}] เรียบร้อยแล้ว! (คงเหลือ: ${item.quantity} ${item.unit})`);
       }
 
-      // Scroll smoothly to equipment select field
+      // Scroll smoothly to the top of transaction type buttons box
       setTimeout(() => {
-        const fieldContainer = document.getElementById('equipSelect');
-        if (fieldContainer) {
-          fieldContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          fieldContainer.focus();
+        const typeBox = document.getElementById('transactionTypeBox') || document.getElementById('transactionForm');
+        if (typeBox) {
+          const navHeight = document.querySelector('.navbar.sticky-top')?.offsetHeight || 60;
+          const rect = typeBox.getBoundingClientRect();
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          const targetY = rect.top + scrollTop - navHeight - 12;
+          window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-      }, 200);
+      }, 120);
     };
 
     function updateStats() {
@@ -11526,20 +11631,20 @@
         if (selectedType === 'คืนอุปกรณ์') {
           empLabel.innerHTML = '2. เลือกพนักงานผู้ส่งคืนอุปกรณ์ <span class="text-danger">*</span>';
         } else if (selectedType === 'รับเข้าสต๊อก') {
-          empLabel.innerHTML = '2. เลือกเจ้าหน้าที่ผู้รับเข้าพัสดุ / ตรวจรับพัสดุ <span class="text-danger">*</span>';
+          empLabel.innerHTML = '2. เลือกเจ้าหน้าที่ผู้รับเข้าพัสดุ <span class="text-danger">*</span>';
         } else {
-          empLabel.innerHTML = '2. เลือกรายชื่อผู้ทำรายการ / สแกน QR บัตรพนักงาน <span class="text-danger">*</span>';
+          empLabel.innerHTML = '2. เลือกรายชื่อผู้ทำรายการ <span class="text-danger">*</span>';
         }
       }
 
       const equipLabel = document.getElementById('transEquipSelectLabel');
       if (equipLabel) {
         if (selectedType === 'คืนอุปกรณ์') {
-          equipLabel.innerHTML = '3. เลือกอุปกรณ์ที่ต้องการคืน (เฉพาะรายการที่ยืมไป)';
+          equipLabel.innerHTML = '3. เลือกอุปกรณ์ที่ต้องการคืน';
         } else if (selectedType === 'รับเข้าสต๊อก') {
-          equipLabel.innerHTML = '3. เลือกอุปกรณ์การเกษตรที่ต้องการรับเข้าสต๊อกคลัง';
+          equipLabel.innerHTML = '3. เลือกอุปกรณ์การเกษตรที่รับเข้า';
         } else {
-          equipLabel.innerHTML = '3. เลือกอุปกรณ์การเกษตร / ค้นชื่ออุปกรณ์ / สแกนบาร์โค้ด';
+          equipLabel.innerHTML = '3. เลือกอุปกรณ์การเกษตร';
         }
       }
 
@@ -11550,20 +11655,20 @@
         } else if (selectedType === 'รับเข้าสต๊อก') {
           qtyLabel.textContent = '4. ระบุจำนวนที่รับเข้าคลัง';
         } else {
-          qtyLabel.textContent = '4. ระบุจำนวนตัดยอด/ยืม';
+          qtyLabel.textContent = '4. ระบุจำนวน เบิก/ยืม/คืน/รับเข้า';
         }
       }
 
       const btnAddCartSpan = document.getElementById('btnAddCartSpan');
       if (btnAddCartSpan) {
         if (selectedType === 'ยืมอุปกรณ์') {
-          btnAddCartSpan.textContent = '➕ เพิ่มเข้าเอกสารยืมอุปกรณ์';
+          btnAddCartSpan.textContent = 'เพิ่มเข้าเอกสารยืม';
         } else if (selectedType === 'คืนอุปกรณ์') {
-          btnAddCartSpan.textContent = '➕ เพิ่มเข้าเอกสารคืนอุปกรณ์';
+          btnAddCartSpan.textContent = 'เพิ่มเข้าเอกสารคืน';
         } else if (selectedType === 'รับเข้าสต๊อก' || selectedType === 'รับเข้าสต๊อก (ขาเข้า)') {
-          btnAddCartSpan.textContent = '➕ เพิ่มเข้าเอกสารรับเข้าสต๊อก';
+          btnAddCartSpan.textContent = 'เพิ่มเข้าเอกสารรับเข้า';
         } else {
-          btnAddCartSpan.textContent = '➕ เพิ่มเข้าเอกสารเบิกจ่าย';
+          btnAddCartSpan.textContent = 'เพิ่มเข้าเอกสารเบิกจ่าย';
         }
       }
 
@@ -11593,7 +11698,7 @@
           submitBtn.innerHTML = '<i class="bi bi-box-arrow-in-down-left me-2"></i> บันทึกรับเข้าสต๊อก';
         } else {
           submitBtn.className = 'btn btn-danger btn-lg flex-grow-1 py-3 rounded-3 fw-bold shadow-sm';
-          submitBtn.innerHTML = '<i class="bi bi-box-arrow-up me-2"></i> บันทึกเบิกจ่าย / ตัดสต๊อก';
+          submitBtn.innerHTML = '<i class="bi bi-box-arrow-up me-2"></i> บันทึกเบิกตัดสต๊อก';
         }
       }
 
@@ -15495,6 +15600,11 @@
     };
 
     window.quickSelectTransaction = function(equipId) {
+      if (typeof window.clearTransCart === 'function') {
+        window.clearTransCart();
+      } else if (typeof clearTransCart === 'function') {
+        clearTransCart();
+      }
       window.lastInteractedEquipmentId = equipId;
       const select = document.getElementById('equipSelect');
       if (select) {
@@ -15507,6 +15617,20 @@
 
       const transTabBtn = new bootstrap.Tab(document.getElementById('transaction-tab'));
       transTabBtn.show();
+
+      // Scroll smoothly to the top of transaction type buttons box
+      setTimeout(() => {
+        const typeBox = document.getElementById('transactionTypeBox') || document.getElementById('transactionForm');
+        if (typeBox) {
+          const navHeight = document.querySelector('.navbar.sticky-top')?.offsetHeight || 60;
+          const rect = typeBox.getBoundingClientRect();
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          const targetY = rect.top + scrollTop - navHeight - 12;
+          window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 120);
     };
 
     window.openEditModal = function(id) {
