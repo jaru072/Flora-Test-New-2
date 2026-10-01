@@ -848,3 +848,11 @@ body {
   fill: #111827 !important;
 }
 
+/* Hide Section 5 (Location) and Section 6 (Note) on Mobile until items added to cart */
+@media (max-width: 767.98px) {
+  .trans-mobile-hide-when-empty {
+    display: none !important;
+  }
+}
+
+

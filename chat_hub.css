@@ -1059,15 +1059,24 @@
   40% { transform: scale(1); opacity: 1; }
 }
 
-/* Responsive Rules for Mobile */
-@media (max-width: 768px) {
+/* Always hide chat button when marked hidden or in transaction pane on mobile or modal open */
+#floraChatFloatingBtn.flora-mobile-hidden,
+body.in-transaction-pane #floraChatFloatingBtn,
+body.modal-open #floraChatFloatingBtn {
+  display: none !important;
+}
+
+/* Responsive Rules for Mobile & Tablet */
+@media (max-width: 1024px) {
   #floraChatFloatingBtn {
     bottom: calc(116px + env(safe-area-inset-bottom, 0px));
     right: calc(16px + env(safe-area-inset-right, 0px));
     width: 50px;
     height: 50px;
   }
-  
+}
+
+@media (max-width: 768px) {
   #floraChatPanel {
     bottom: 0;
     right: 0;

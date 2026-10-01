@@ -2408,6 +2408,16 @@
           btnCatLowStock.classList.remove('d-inline-flex');
         }
       }
+
+      if (activeTabId === 'transaction-tab') {
+        document.body.classList.add('in-transaction-pane');
+      } else {
+        document.body.classList.remove('in-transaction-pane');
+      }
+
+      if (window.FloraChatHub && typeof window.FloraChatHub.updateVisibility === 'function') {
+        window.FloraChatHub.updateVisibility();
+      }
     }
 
     function setupEventListeners() {
@@ -4489,9 +4499,15 @@
       const cartBox = document.getElementById('selectedTransCartBox');
       const container = document.getElementById('selectedTransCartItemsList');
       const badge = document.getElementById('cartCountBadge');
+      const locContainer = document.getElementById('transLocationContainer');
+      const noteContainer = document.getElementById('transNoteContainer');
+      const voucherDocContainer = document.getElementById('transRequireVoucherDocContainer');
       if (badge) badge.textContent = `${selectedTransItems.length} รายการ`;
 
       if (selectedTransItems.length === 0) {
+        if (locContainer) locContainer.classList.add('trans-mobile-hide-when-empty');
+        if (noteContainer) noteContainer.classList.add('trans-mobile-hide-when-empty');
+        if (voucherDocContainer) voucherDocContainer.classList.add('trans-mobile-hide-when-empty');
         if (cartBox) cartBox.classList.add('d-none');
         if (!container) return;
         container.innerHTML = `
@@ -4503,6 +4519,10 @@
         `;
         return;
       }
+
+      if (locContainer) locContainer.classList.remove('trans-mobile-hide-when-empty');
+      if (noteContainer) noteContainer.classList.remove('trans-mobile-hide-when-empty');
+      if (voucherDocContainer) voucherDocContainer.classList.remove('trans-mobile-hide-when-empty');
 
       if (cartBox) {
         cartBox.classList.remove('d-none');

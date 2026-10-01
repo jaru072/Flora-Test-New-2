@@ -599,32 +599,36 @@
                   <!-- Type of Transaction -->
                   <div class="mb-4" id="transactionTypeBox" style="scroll-margin-top: 75px;">
                     <div class="row g-2">
+                      <!-- ลำดับที่ 1: เบิกตัดสต๊อก (ปุ่มสีแดง) -->
                       <div class="col-6 col-md-3">
                         <input type="radio" class="btn-check" name="transType" id="typeIssue" value="เบิกจ่าย" checked onchange="toggleTransTypeUI()" />
-                        <label class="btn btn-outline-danger w-100 py-1.5 py-md-2.5 rounded-3 fw-semibold fs-7 d-flex flex-row flex-md-column align-items-center justify-content-center gap-1" for="typeIssue">
+                        <label class="btn btn-outline-danger w-100 py-1.5 py-md-2.5 rounded-3 fw-semibold fs-7 d-flex flex-row flex-md-column align-items-center justify-content-center gap-1 shadow-xs" for="typeIssue" title="สำหรับการเบิกใช้งานอุปกรณ์สิ้นเปลือง หรือนำอุปกรณ์ออกจากคลัง">
                           <i class="bi bi-box-arrow-up fs-5 d-none d-md-block"></i>
                           <span>เบิกตัดสต๊อก</span>
                         </label>
                       </div>
+                      <!-- ลำดับที่ 2: รับเข้าสต๊อก (ปุ่มสีเขียว) -->
+                      <div class="col-6 col-md-3">
+                        <input type="radio" class="btn-check" name="transType" id="typeStockIn" value="รับเข้าสต๊อก" onchange="toggleTransTypeUI()" />
+                        <label class="btn btn-outline-success w-100 py-1.5 py-md-2.5 rounded-3 fw-semibold fs-7 d-flex flex-row flex-md-column align-items-center justify-content-center gap-1 shadow-xs" for="typeStockIn" title="สำหรับการตรวจรับอุปกรณ์ใหม่ หรือเติมยอดสต๊อกเข้าคลัง">
+                          <i class="bi bi-box-arrow-in-down-left fs-5 d-none d-md-block"></i>
+                          <span>รับเข้าสต๊อก</span>
+                        </label>
+                      </div>
+                      <!-- ลำดับที่ 3: ยืมอุปกรณ์ (ปุ่มสีส้ม) -->
                       <div class="col-6 col-md-3">
                         <input type="radio" class="btn-check" name="transType" id="typeBorrow" value="ยืมอุปกรณ์" onchange="toggleTransTypeUI()" />
-                        <label class="btn btn-outline-warning w-100 py-1.5 py-md-2.5 rounded-3 fw-semibold fs-7 d-flex flex-row flex-md-column align-items-center justify-content-center gap-1" for="typeBorrow">
+                        <label class="btn btn-outline-warning w-100 py-1.5 py-md-2.5 rounded-3 fw-semibold fs-7 d-flex flex-row flex-md-column align-items-center justify-content-center gap-1 shadow-xs" for="typeBorrow" title="สำหรับการยืมอุปกรณ์ไปใช้งานชั่วคราวและต้องนำมาส่งคืน">
                           <i class="bi bi-arrow-repeat fs-5 d-none d-md-block"></i>
                           <span>ยืมอุปกรณ์</span>
                         </label>
                       </div>
+                      <!-- ลำดับที่ 4: คืนอุปกรณ์ (ปุ่มสีฟ้า) -->
                       <div class="col-6 col-md-3">
                         <input type="radio" class="btn-check" name="transType" id="typeReturn" value="คืนอุปกรณ์" onchange="toggleTransTypeUI()" />
-                        <label class="btn btn-outline-info w-100 py-1.5 py-md-2.5 rounded-3 fw-semibold fs-7 d-flex flex-row flex-md-column align-items-center justify-content-center gap-1" for="typeReturn">
+                        <label class="btn btn-outline-info w-100 py-1.5 py-md-2.5 rounded-3 fw-semibold fs-7 d-flex flex-row flex-md-column align-items-center justify-content-center gap-1 shadow-xs" for="typeReturn" title="สำหรับการบันทึกรับคืนอุปกรณ์ที่ถูกยืมกลับเข้าสู่คลัง">
                           <i class="bi bi-box-arrow-in-down fs-5 d-none d-md-block"></i>
                           <span>คืนอุปกรณ์</span>
-                        </label>
-                      </div>
-                      <div class="col-6 col-md-3">
-                        <input type="radio" class="btn-check" name="transType" id="typeStockIn" value="รับเข้าสต๊อก" onchange="toggleTransTypeUI()" />
-                        <label class="btn btn-outline-success w-100 py-1.5 py-md-2.5 rounded-3 fw-semibold fs-7 d-flex flex-row flex-md-column align-items-center justify-content-center gap-1" for="typeStockIn">
-                          <i class="bi bi-box-arrow-in-down-left fs-5 d-none d-md-block"></i>
-                          <span>รับเข้าสต๊อก</span>
                         </label>
                       </div>
                     </div>
@@ -769,7 +773,7 @@
                     </div>
                   </div>
 
-                  <div class="row g-3 mb-3">
+                  <div class="row g-3 mb-3 trans-mobile-hide-when-empty" id="transLocationContainer">
                     <div class="col-12">
                       <label class="form-label fw-bold" for="transLocation" id="transLocationLabel">5. คลังที่เก็บ</label>
                       <input type="text" id="transLocation" class="form-control" placeholder="เช่น แปลงกุหลาบ B2, คลังอุปกรณ์ A1, โรงเรือน 1" />
@@ -803,13 +807,13 @@
                     </div>
                   </div>
 
-                  <div class="mb-3">
+                  <div class="mb-3 trans-mobile-hide-when-empty" id="transNoteContainer">
                     <label class="form-label fw-bold" for="transNote" id="transNoteLabel">6. หมายเหตุ</label>
                     <textarea id="transNote" class="form-control" rows="2" placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)..."></textarea>
                   </div>
 
                   <!-- Checkbox: ต้องการ "เอกสารใบเบิก-จ่าย-ยืม-คืนอุปกรณ์การเกษตร" (Default ไม่ติ๊กเลือก) -->
-                  <div class="mb-4 p-3 bg-light bg-opacity-75 rounded-3 border">
+                  <div class="mb-4 p-3 bg-light bg-opacity-75 rounded-3 border trans-mobile-hide-when-empty" id="transRequireVoucherDocContainer">
                     <div class="form-check d-flex align-items-center gap-2.5 m-0">
                       <input class="form-check-input fs-5 mt-0 cursor-pointer" type="checkbox" id="transRequireVoucherDoc" style="cursor: pointer;">
                       <label class="form-check-label fw-bold text-dark cursor-pointer fs-7 user-select-none" for="transRequireVoucherDoc" style="cursor: pointer;">
@@ -1327,9 +1331,9 @@
                     <select id="historyFilterType" class="form-select form-select-sm rounded-pill fs-8 fw-semibold flex-grow-1" onchange="renderHistoryTable()">
                       <option value="ALL">📋 ทุกประเภทการทำรายการ</option>
                       <option value="เบิกจ่าย">🔴 เบิกตัดสต๊อก</option>
+                      <option value="รับเข้าสต๊อก (ขาเข้า)">🟢 รับเข้าสต๊อก (ขาเข้า)</option>
                       <option value="ยืมอุปกรณ์">🟡 ยืมอุปกรณ์</option>
                       <option value="คืนอุปกรณ์">🔵 คืนอุปกรณ์</option>
-                      <option value="รับเข้าสต๊อก (ขาเข้า)">🟢 รับเข้าสต๊อก (ขาเข้า)</option>
                     </select>
                     <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold flex-shrink-0" onclick="validateFirestoreHistorySync(true)">
                       <i class="bi bi-arrow-clockwise me-1"></i> รีเฟรช
