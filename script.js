@@ -2409,12 +2409,6 @@
         }
       }
 
-      if (activeTabId === 'transaction-tab') {
-        document.body.classList.add('in-transaction-pane');
-      } else {
-        document.body.classList.remove('in-transaction-pane');
-      }
-
       if (window.FloraChatHub && typeof window.FloraChatHub.updateVisibility === 'function') {
         window.FloraChatHub.updateVisibility();
       }
@@ -18223,7 +18217,7 @@
         return 0;
       }
 
-      const primarySourceDbId = customSourceDbId ? customSourceDbId.trim() : "ai-studio-floragardenv2-c509b5a5-f4a3-4546-bbae-c5f21564ba7d";
+      const primarySourceDbId = customSourceDbId ? customSourceDbId.trim() : "ai-studio-floragardennew-077d9b3a-d839-404a-986e-0ab7c5c9be6e";
 
       try {
         const app = getApp();
@@ -18252,7 +18246,7 @@
         if (showFeedback) {
           showToast(`⏳ กำลังตรวจสอบและเชื่อมต่อฐานข้อมูล...`);
           if (typeof window.updateBackupProgress === 'function') {
-            window.updateBackupProgress(5, "กำลังเริ่มซิงก์ข้อมูล (5%)", `กำลังเชื่อมต่อกับฐานข้อมูล V.2 (${primarySourceDbId})...`, true, 'bg-success');
+            window.updateBackupProgress(5, "กำลังเริ่มซิงก์ข้อมูล (5%)", `กำลังเชื่อมต่อกับฐานข้อมูลต้นทาง (${primarySourceDbId})...`, true, 'bg-success');
             const progressEl = document.getElementById('backupProgressContainer');
             if (progressEl) progressEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }
@@ -18535,10 +18529,10 @@
         return;
       }
 
-      const defaultDb = "ai-studio-floragardenv2-c509b5a5-f4a3-4546-bbae-c5f21564ba7d";
+      const defaultDb = "ai-studio-floragardennew-077d9b3a-d839-404a-986e-0ab7c5c9be6e";
       const customDbInput = prompt(
-        "⚡ ซิงค์ข้อมูลจากฐานข้อมูล V.2 มายัง Test\n\n" +
-        "กรุณาตรวจสอบหรือระบุ Database ID ต้นทางที่ต้องการดึงข้อมูล:\n(ค่าเริ่มต้นคือ V.2 floragardenv2)",
+        "⚡ ซิงค์ข้อมูลข้ามฐานข้อมูลมายังระบบนี้\n\n" +
+        "กรุณาตรวจสอบหรือระบุ Database ID ต้นทางที่ต้องการดึงข้อมูล:\n(ค่าเริ่มต้นคือ Flora Garden New)",
         defaultDb
       );
 
