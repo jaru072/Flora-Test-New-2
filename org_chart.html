@@ -2377,8 +2377,8 @@
 
   <!-- ==================== USER AUTH & PROFILE MODAL ==================== -->
   <div class="modal fade" id="userAuthModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen">
+      <div class="modal-content border-0 shadow-lg overflow-hidden">
         <div class="modal-header bg-flora-green text-white p-3">
           <div class="d-flex align-items-center gap-2">
             <i class="bi bi-shield-lock-fill fs-4 text-warning"></i>
@@ -2522,15 +2522,15 @@
 
                 <div class="table-responsive">
                   <table class="table table-hover align-middle mb-0 fs-7">
-                    <thead class="bg-light">
+                    <thead class="bg-light text-nowrap">
                       <tr>
-                        <th>ผู้ใช้งาน</th>
-                        <th>อีเมล</th>
-                        <th class="text-center" style="width: 100px;">Online</th>
-                        <th class="text-center" style="width: 160px;">บทบาทสิทธิ์</th>
-                        <th class="text-center" style="width: 250px;">สิทธิ์เข้าใช้งานระบบ</th>
-                        <th class="text-center" style="width: 230px;">ผูกรหัสบุคลากร</th>
-                        <th class="text-end pe-3" style="width: 90px;">บันทึก</th>
+                        <th class="ps-3 text-nowrap" style="min-width: 170px;">ผู้ใช้งาน</th>
+                        <th class="text-nowrap" style="min-width: 170px;">อีเมล</th>
+                        <th class="text-center text-nowrap" style="width: 120px;">สถานะ</th>
+                        <th class="text-center text-nowrap" style="width: 160px;">บทบาทสิทธิ์</th>
+                        <th class="text-center text-nowrap" style="min-width: 320px;">สิทธิ์เข้าใช้งานระบบ</th>
+                        <th class="text-center text-nowrap" style="min-width: 180px;">ผูกรหัสบุคลากร</th>
+                        <th class="text-end pe-3 text-nowrap" style="width: 90px;">บันทึก</th>
                       </tr>
                     </thead>
                     <tbody id="usersTableBody">
@@ -3214,56 +3214,53 @@
             ].join('');
 
             return `
-              <tr>
-                <td>
-                  <div class="d-flex align-items-center gap-2">
-                    <img src="${img}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'" />
-                    <div>
-                      <span class="fw-bold text-dark d-block">${safeName}</span>
-                      <small class="text-muted font-monospace fs-8">UID: ${String(u.id).substring(0, 10)}...</small>
-                    </div>
+              <tr class="text-nowrap align-middle">
+                <td class="ps-3 text-nowrap">
+                  <div class="d-flex align-items-center gap-2 text-nowrap">
+                    <img src="${img}" class="rounded-circle shadow-sm flex-shrink-0" style="width: 28px; height: 28px; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'" />
+                    <span class="fw-bold text-dark text-nowrap">${safeName}</span>
                   </div>
                 </td>
-                <td class="text-muted fs-8">
-                  ${safeEmail}
-                  ${matchedEmpByEmail && !currentLinkedEmpId ? `<span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 d-block mt-1 fs-9">แนะนำผูกตามอีเมล</span>` : ''}
+                <td class="text-muted fs-8 text-nowrap">
+                  <span>${safeEmail}</span>
+                  ${matchedEmpByEmail && !currentLinkedEmpId ? `<span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 ms-1 fs-9 text-nowrap" title="แนะนำผูกตามอีเมล"><i class="bi bi-link-45deg"></i> แนะนำ</span>` : ''}
                 </td>
-                <td class="text-center">${onlineBadge}</td>
-                <td class="text-center">
-                  <select id="userRoleSelect_${u.id}" class="form-select form-select-sm fw-semibold" onchange="window.onUserRoleSelectChanged('${u.id}')">
+                <td class="text-center text-nowrap">${onlineBadge}</td>
+                <td class="text-center text-nowrap">
+                  <select id="userRoleSelect_${u.id}" class="form-select form-select-sm fw-semibold" style="min-width: 140px;" onchange="window.onUserRoleSelectChanged('${u.id}')">
                     <option value="ADMIN" ${uRole === 'ADMIN' ? 'selected' : ''}>🔴 ผู้ดูแลระบบ (ADMIN)</option>
                     <option value="MANAGER" ${uRole === 'MANAGER' ? 'selected' : ''}>🔵 ผู้จัดการ/บริหาร (MANAGER)</option>
                     <option value="STAFF" ${uRole === 'STAFF' ? 'selected' : ''}>🟣 เจ้าหน้าที่ (STAFF)</option>
                     <option value="WORKER" ${uRole === 'WORKER' ? 'selected' : ''}>🟢 พนักงาน (WORKER)</option>
                   </select>
                 </td>
-                <td class="text-center">
-                  <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
-                    <div class="form-check form-switch m-0" title="สิทธิ์เข้าระบบงานบุคคล (HR)">
-                      <input class="form-check-input" type="checkbox" id="userAccPersonnel_${u.id}" ${hasPersonnel ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
-                      <label class="form-check-label fs-8 fw-semibold text-primary" for="userAccPersonnel_${u.id}">👥 บุคคล</label>
+                <td class="text-center text-nowrap">
+                  <div class="d-flex align-items-center justify-content-center gap-2 text-nowrap flex-nowrap">
+                    <div class="form-check form-switch m-0 d-inline-flex align-items-center gap-1" title="สิทธิ์เข้าระบบงานบุคคล (HR)">
+                      <input class="form-check-input mt-0" type="checkbox" id="userAccPersonnel_${u.id}" ${hasPersonnel ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
+                      <label class="form-check-label fs-8 fw-semibold text-primary text-nowrap" for="userAccPersonnel_${u.id}">👥 บุคคล</label>
                     </div>
-                    <div class="form-check form-switch m-0" title="สิทธิ์เข้าระบบพัสดุและอุปกรณ์">
-                      <input class="form-check-input" type="checkbox" id="userAccInventory_${u.id}" ${hasInventory ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
-                      <label class="form-check-label fs-8 fw-semibold text-success" for="userAccInventory_${u.id}">📦 พัสดุฯ</label>
+                    <div class="form-check form-switch m-0 d-inline-flex align-items-center gap-1" title="สิทธิ์เข้าระบบพัสดุและอุปกรณ์">
+                      <input class="form-check-input mt-0" type="checkbox" id="userAccInventory_${u.id}" ${hasInventory ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
+                      <label class="form-check-label fs-8 fw-semibold text-success text-nowrap" for="userAccInventory_${u.id}">📦 พัสดุฯ</label>
                     </div>
-                    <div class="form-check form-switch m-0" title="สิทธิ์เข้าระบบเงินเดือน (เฉพาะการเงิน/ผู้ดูแลระบบ)">
-                      <input class="form-check-input" type="checkbox" id="userAccPayroll_${u.id}" ${hasPayroll ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
-                      <label class="form-check-label fs-8 fw-semibold text-warning" for="userAccPayroll_${u.id}">💰 เงินเดือน</label>
+                    <div class="form-check form-switch m-0 d-inline-flex align-items-center gap-1" title="สิทธิ์เข้าระบบเงินเดือน (เฉพาะการเงิน/ผู้ดูแลระบบ)">
+                      <input class="form-check-input mt-0" type="checkbox" id="userAccPayroll_${u.id}" ${hasPayroll ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
+                      <label class="form-check-label fs-8 fw-semibold text-warning text-nowrap" for="userAccPayroll_${u.id}">💰 เงินเดือน</label>
                     </div>
-                    <div class="form-check form-switch m-0" title="สิทธิ์การจัดการจัดซื้อ (อนุมัติ/ออก PO/ตรวจรับ)">
-                      <input class="form-check-input" type="checkbox" id="userAccProcurement_${u.id}" ${hasProcurement ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
-                      <label class="form-check-label fs-8 fw-semibold text-teal" style="color: #0f766e;" for="userAccProcurement_${u.id}">🛒 จัดซื้อฯ</label>
+                    <div class="form-check form-switch m-0 d-inline-flex align-items-center gap-1" title="สิทธิ์การจัดการจัดซื้อ (อนุมัติ/ออก PO/ตรวจรับ)">
+                      <input class="form-check-input mt-0" type="checkbox" id="userAccProcurement_${u.id}" ${hasProcurement ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
+                      <label class="form-check-label fs-8 fw-semibold text-nowrap" style="color: #0f766e;" for="userAccProcurement_${u.id}">🛒 จัดซื้อฯ</label>
                     </div>
                   </div>
                 </td>
-                <td class="text-center">
-                  <select id="userLinkedEmp_${u.id}" class="form-select form-select-sm fs-8 border-secondary border-opacity-50" onchange="window.updateFirestoreUserRole('${u.id}')">
+                <td class="text-center text-nowrap">
+                  <select id="userLinkedEmp_${u.id}" class="form-select form-select-sm fs-8 border-secondary border-opacity-50 text-truncate" style="min-width: 170px;" onchange="window.updateFirestoreUserRole('${u.id}')">
                     ${empOptions}
                   </select>
                 </td>
-                <td class="text-end pe-3">
-                  <button class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold" onclick="window.updateFirestoreUserRole('${u.id}')">
+                <td class="text-end pe-3 text-nowrap">
+                  <button class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold text-nowrap" onclick="window.updateFirestoreUserRole('${u.id}')">
                     <i class="bi bi-check-lg me-1"></i> บันทึก
                   </button>
                 </td>

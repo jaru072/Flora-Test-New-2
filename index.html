@@ -333,7 +333,7 @@
         <button class="nav-link active" id="catalog-tab" data-bs-toggle="tab" data-bs-target="#catalog-pane" type="button" role="tab">คลังอุปกรณ์</button>
       </li>
       <li class="nav-item staff-only-element d-none" role="presentation">
-        <button class="nav-link" id="transaction-tab" data-bs-toggle="tab" data-bs-target="#transaction-pane" type="button" role="tab">บันทึก เบิก-จ่าย-ยืม-คืน-รับเข้า</button>
+        <button class="nav-link" id="transaction-tab" type="button" onclick="openTransactionModal()">เบิก-รับเข้า-ยืม-คืน</button>
       </li>
       <li class="nav-item staff-only-element d-none" role="presentation">
         <button class="nav-link" id="manage-tab" data-bs-toggle="tab" data-bs-target="#manage-pane" type="button" role="tab">จัดการคลังอุปกรณ์ <span id="manageLowStockBadge"></span></button>
@@ -440,10 +440,10 @@
               <li class="staff-only-element d-none"><hr class="dropdown-divider my-1"></li>
               <li class="staff-only-element d-none"><h6 class="dropdown-header text-uppercase fw-bold text-primary fs-8 px-2"><i class="bi bi-shield-lock-fill me-1"></i> เฉพาะเจ้าหน้าที่</h6></li>
               <li class="staff-only-element d-none">
-                <button class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center justify-content-between fw-semibold" id="gear-item-transaction" onclick="switchNavTab('transaction-tab')">
+                <button class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center justify-content-between fw-semibold" id="gear-item-transaction" onclick="openTransactionModal()">
                   <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-pencil-square text-primary fs-6"></i>
-                    <span>บันทึก เบิก-จ่าย-ยืม-คืน-รับเข้า</span>
+                    <span>เบิก-รับเข้า-ยืม-คืน</span>
                   </div>
                 </button>
               </li>
@@ -583,276 +583,8 @@
         </div>
       </div>
 
-      <!-- ==================== TAB 2: TRANSACTION FORM ==================== -->
-      <div class="tab-pane fade" id="transaction-pane" role="tabpanel">
-        <div class="row justify-content-center">
-          <div class="col-12 col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
-              <div class="card-body p-4 pt-3.5">
-                <div class="d-flex justify-content-end mb-2.5">
-                  <button type="button" class="btn btn-sm btn-light border rounded-circle p-1 d-flex align-items-center justify-content-center shadow-sm" onclick="closeTransactionAndReturnToEquipment()" title="ปิดหน้าต่าง / กลับหน้าพัสดุและอุปกรณ์" style="width: 36px; height: 36px;">
-                    <i class="bi bi-x-lg fs-6 text-secondary"></i>
-                  </button>
-                </div>
-
-                <form id="transactionForm">
-                  <!-- Type of Transaction -->
-                  <div class="mb-4" id="transactionTypeBox" style="scroll-margin-top: 75px;">
-                    <div class="row g-2">
-                      <!-- ลำดับที่ 1: เบิกตัดสต๊อก (ปุ่มสีแดง) -->
-                      <div class="col-6 col-md-3">
-                        <input type="radio" class="btn-check" name="transType" id="typeIssue" value="เบิกจ่าย" checked onchange="toggleTransTypeUI()" />
-                        <label class="btn btn-outline-danger w-100 py-1.5 py-md-2.5 rounded-3 fw-semibold fs-7 d-flex flex-row flex-md-column align-items-center justify-content-center gap-1 shadow-xs" for="typeIssue" title="สำหรับการเบิกใช้งานอุปกรณ์สิ้นเปลือง หรือนำอุปกรณ์ออกจากคลัง">
-                          <i class="bi bi-box-arrow-up fs-5 d-none d-md-block"></i>
-                          <span>เบิกตัดสต๊อก</span>
-                        </label>
-                      </div>
-                      <!-- ลำดับที่ 2: รับเข้าสต๊อก (ปุ่มสีเขียว) -->
-                      <div class="col-6 col-md-3">
-                        <input type="radio" class="btn-check" name="transType" id="typeStockIn" value="รับเข้าสต๊อก" onchange="toggleTransTypeUI()" />
-                        <label class="btn btn-outline-success w-100 py-1.5 py-md-2.5 rounded-3 fw-semibold fs-7 d-flex flex-row flex-md-column align-items-center justify-content-center gap-1 shadow-xs" for="typeStockIn" title="สำหรับการตรวจรับอุปกรณ์ใหม่ หรือเติมยอดสต๊อกเข้าคลัง">
-                          <i class="bi bi-box-arrow-in-down-left fs-5 d-none d-md-block"></i>
-                          <span>รับเข้าสต๊อก</span>
-                        </label>
-                      </div>
-                      <!-- ลำดับที่ 3: ยืมอุปกรณ์ (ปุ่มสีส้ม) -->
-                      <div class="col-6 col-md-3">
-                        <input type="radio" class="btn-check" name="transType" id="typeBorrow" value="ยืมอุปกรณ์" onchange="toggleTransTypeUI()" />
-                        <label class="btn btn-outline-warning w-100 py-1.5 py-md-2.5 rounded-3 fw-semibold fs-7 d-flex flex-row flex-md-column align-items-center justify-content-center gap-1 shadow-xs" for="typeBorrow" title="สำหรับการยืมอุปกรณ์ไปใช้งานชั่วคราวและต้องนำมาส่งคืน">
-                          <i class="bi bi-arrow-repeat fs-5 d-none d-md-block"></i>
-                          <span>ยืมอุปกรณ์</span>
-                        </label>
-                      </div>
-                      <!-- ลำดับที่ 4: คืนอุปกรณ์ (ปุ่มสีฟ้า) -->
-                      <div class="col-6 col-md-3">
-                        <input type="radio" class="btn-check" name="transType" id="typeReturn" value="คืนอุปกรณ์" onchange="toggleTransTypeUI()" />
-                        <label class="btn btn-outline-info w-100 py-1.5 py-md-2.5 rounded-3 fw-semibold fs-7 d-flex flex-row flex-md-column align-items-center justify-content-center gap-1 shadow-xs" for="typeReturn" title="สำหรับการบันทึกรับคืนอุปกรณ์ที่ถูกยืมกลับเข้าสู่คลัง">
-                          <i class="bi bi-box-arrow-in-down fs-5 d-none d-md-block"></i>
-                          <span>คืนอุปกรณ์</span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Return Mode Active Borrowings Helper Card -->
-                  <div id="returnActiveBorrowsCard" class="mb-4 p-3 bg-info bg-opacity-10 border border-2 border-info border-opacity-50 rounded-4 shadow-sm d-none">
-                    <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom border-info border-opacity-25 flex-wrap gap-2">
-                      <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-info text-dark p-2 rounded-circle fs-6"><i class="bi bi-shield-check"></i></span>
-                        <div>
-                          <h6 class="fw-bold text-dark mb-0"><i class="bi bi-list-check me-1 text-info"></i>รายการอุปกรณ์ที่กำลังถูกยืมอยู่ (Active Borrowings)</h6>
-                          <small class="text-muted fs-8">เลือกคืนจากรายการที่ยืมจริงเท่านั้น เพื่อความถูกต้องของยอดคงเหลือในคลัง</small>
-                        </div>
-                      </div>
-                      <span id="activeBorrowCountBadge" class="badge bg-info text-dark rounded-pill px-2.5 py-1 fs-8">ค้างคืน 0 รายการ</span>
-                    </div>
-
-                    <div id="noBorrowAlertForEmp" class="alert alert-warning py-2.5 px-3 rounded-3 fs-8 mb-2 d-none">
-                      <i class="bi bi-exclamation-triangle-fill text-warning me-1.5 fs-6"></i>
-                      <span><strong>ไม่พบรายการยืมค้าง:</strong> พนักงานท่านนี้ไม่มีรายการอุปกรณ์ที่ยืมค้างไว้ในระบบ จึงไม่สามารถทำรายการคืนได้</span>
-                    </div>
-
-                    <div id="returnActiveBorrowListContainer" class="my-2">
-                      <!-- Rendered Active Borrows to pick from -->
-                    </div>
-                  </div>
-
-                  <!-- Stock In Mode Helper Banner -->
-                  <div id="stockInHelperBanner" class="alert alert-success py-2.5 px-3 mb-4 rounded-4 border-0 shadow-sm bg-success bg-opacity-10 text-success-emphasis d-none">
-                    <div class="d-flex align-items-center gap-2">
-                      <i class="bi bi-plus-circle-fill fs-4 text-success flex-shrink-0"></i>
-                      <div>
-                        <div class="fw-bold fs-7">📦 โหมดรับเข้าสต๊อก (Stock In / Inbound Restock)</div>
-                        <div class="fs-8 text-secondary">บันทึกรับเข้าอุปกรณ์ใหม่ หรือเติมสต๊อกคลัง ยอดคงเหลือของอุปกรณ์จะเพิ่มขึ้นทันทีหลังบันทึก</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Select Employee -->
-                  <div class="mb-3">
-                    <label class="form-label fw-bold" for="empSelect" id="transEmpSelectLabel">2. เลือกรายชื่อผู้ทำรายการ <span class="text-danger">*</span></label>
-                    <div class="input-group mb-2">
-                      <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                      <input type="text" id="transEmpSearchInput" class="form-control border-start-0 bg-light fs-7" placeholder="🔍 พิมพ์ชื่อ หรือ รหัสพนักงานเพื่อค้นหา (เรียงตามชื่อ)..." oninput="filterTransEmployeeSelect(this.value)" />
-                      <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearTransEmpSearch()" title="ล้างคำค้นหา"><i class="bi bi-x-circle-fill"></i></button>
-                      <button class="btn btn-success fw-bold px-2.5 px-md-3 d-flex align-items-center gap-1" type="button" onclick="openScanEmpBadgeModal()" title="สแกน QR Code บัตรพนักงาน เพื่อค้นรายชื่อพนักงาน">
-                        <i class="bi bi-qr-code-scan"></i>
-                        <span class="d-none d-md-inline ms-1">สแกน QR บัตรพนักงาน</span>
-                      </button>
-                    </div>
-                    <div class="input-group">
-                      <span class="input-group-text bg-light"><i class="bi bi-person-fill text-success"></i></span>
-                      <select id="empSelect" class="form-select fw-semibold" required oninvalid="this.setCustomValidity('กรุณาเลือก หรือ พิมพ์รายชื่อผู้ทำรายการก่อน')" oninput="this.setCustomValidity('')" onchange="this.setCustomValidity(''); handleTransEmpSelectionChange()">
-                        <option value="">-- กรุณาเลือกรายชื่อพนักงาน --</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <!-- Select Equipment -->
-                  <div class="mb-3">
-                    <label class="form-label fw-bold" for="equipSelect" id="transEquipSelectLabel">3. เลือกอุปกรณ์การเกษตร</label>
-                    
-                    <!-- Search Input & Barcode Scan Button -->
-                    <div class="input-group mb-2">
-                      <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                      <input type="text" id="equipSearchInput" class="form-control border-start-0 bg-light fs-7" placeholder="🔍 พิมพ์ชื่ออุปกรณ์, รหัสบาร์โค้ด หรือสถานที่เพื่อค้นหา..." oninput="filterEquipSelectDropdown(this.value)" />
-                      <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearEquipSearch()" title="ล้างคำค้นหา"><i class="bi bi-x-circle-fill"></i></button>
-                      <button class="btn btn-warning fw-bold px-2.5 px-md-3 d-flex align-items-center gap-1 text-dark shadow-sm" type="button" onclick="openBarcodeQrScannerModal()" title="สแกนบาร์โค้ดอุปกรณ์เพื่อค้นชื่ออุปกรณ์">
-                        <i class="bi bi-upc-scan text-dark fs-5"></i>
-                        <span class="d-none d-md-inline ms-1 text-dark">สแกนบาร์โค้ดอุปกรณ์</span>
-                      </button>
-                    </div>
-
-                    <div class="input-group">
-                      <span class="input-group-text bg-light"><i class="bi bi-tools text-success"></i></span>
-                      <select id="equipSelect" class="form-select fw-semibold" onchange="updateEquipSelectPreview()">
-                        <option value="">-- กรุณาเลือกอุปกรณ์การเกษตร --</option>
-                      </select>
-                    </div>
-                    <div id="equipStockInfo" class="form-text mt-1 text-primary fw-semibold d-none"></div>
-
-                    <!-- Instant Equipment Selected Preview Card -->
-                    <div id="equipSelectPreviewBox" class="mt-2.5 p-3 bg-white border border-2 border-success border-opacity-50 rounded-4 shadow-sm d-none">
-                      <div class="d-flex align-items-center gap-3">
-                        <img id="equipPreviewImg" src="" class="rounded-3 border shadow-sm" style="width: 70px; height: 70px; object-fit: cover;" />
-                        <div class="flex-grow-1 overflow-hidden">
-                          <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                            <span id="equipPreviewCodeBadge" class="badge bg-dark font-monospace fs-8"></span>
-                            <span id="equipPreviewCatBadge" class="badge bg-success fs-8"></span>
-                          </div>
-                          <h6 id="equipPreviewNameText" class="fw-bold text-dark mb-0 mt-1 text-truncate"></h6>
-                          <div class="fs-8 text-secondary mt-1">
-                            <i class="bi bi-geo-alt-fill text-danger me-1"></i>สถานที่เก็บ: <span id="equipPreviewLocText"></span>
-                          </div>
-                        </div>
-                        <div class="text-end bg-success bg-opacity-10 p-2.5 rounded-3 border border-success border-opacity-25 flex-shrink-0">
-                          <small class="text-success fw-bold fs-8 text-uppercase d-block">สต๊อกปัจจุบัน</small>
-                          <div id="equipPreviewStockText" class="fs-4 fw-bold text-success mb-0">0</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Quantity & Add to Cart Combined in 1 Row -->
-                  <div class="mb-3">
-                    <label class="form-label fw-bold" for="transQty" id="transQtyLabel">4. ระบุจำนวน เบิก/ยืม/คืน/รับเข้า</label>
-                    <div class="input-group">
-                      <input type="number" id="transQty" class="form-control fw-bold" min="1" value="1" oninput="validateTransQtyInputLive()" style="max-width: 120px;" />
-                      <span id="transUnitSpan" class="input-group-text bg-light text-secondary fw-semibold">ชิ้น</span>
-                      <button type="button" class="btn btn-outline-success fw-bold flex-grow-1 d-flex align-items-center justify-content-center gap-1 px-2.5 px-md-3 shadow-sm" onclick="addCurrentEquipToCart()" title="เพิ่มเข้าเอกสาร">
-                        <i class="bi bi-plus-lg fs-6"></i>
-                        <i class="bi bi-cart-plus-fill fs-5"></i>
-                        <span id="btnAddCartSpan" class="d-none d-md-inline ms-1">เพิ่มเข้าเอกสาร</span>
-                      </button>
-                    </div>
-                    <div id="transQtyStockWarning" class="form-text text-danger fw-bold mt-1.5 d-none">
-                      <i class="bi bi-exclamation-triangle-fill me-1"></i><span id="transQtyStockWarningText">ระบุจำนวนเกินสต๊อกที่มีอยู่</span>
-                    </div>
-                  </div>
-
-                  <!-- Multi-Item Cart List for this Transaction -->
-                  <div class="mb-4 p-3 rounded-4 border border-2 border-success border-opacity-50 bg-white shadow-sm d-none" id="selectedTransCartBox">
-                    <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom">
-                      <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-success p-2 rounded-circle fs-6"><i class="bi bi-basket3-fill"></i></span>
-                        <div>
-                          <h6 class="fw-bold text-dark mb-0" id="transCartTitleHeader">รายการอุปกรณ์ในเอกสารใบนี้</h6>
-                          <small class="text-muted fs-8">สามารถเพิ่มอุปกรณ์ได้หลายชนิดในเอกสารฉบับเดียวกัน</small>
-                        </div>
-                      </div>
-                      <div class="d-flex align-items-center gap-2">
-                        <span id="cartCountBadge" class="badge bg-success fs-7 rounded-pill">0 รายการ</span>
-                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0.5 fs-8" onclick="clearTransCart()" title="ล้างรายการทั้งหมด">
-                          <i class="bi bi-trash-fill me-1"></i>ล้าง
-                        </button>
-                      </div>
-                    </div>
-
-                    <div id="selectedTransCartItemsList" class="my-2">
-                      <!-- Rendered Cart Items -->
-                    </div>
-                  </div>
-
-                  <div class="row g-3 mb-3 trans-mobile-hide-when-empty" id="transLocationContainer">
-                    <div class="col-12">
-                      <label class="form-label fw-bold" for="transLocation" id="transLocationLabel">5. คลังที่เก็บ</label>
-                      <input type="text" id="transLocation" class="form-control" placeholder="เช่น แปลงกุหลาบ B2, คลังอุปกรณ์ A1, โรงเรือน 1" />
-                    </div>
-                  </div>
-
-                  <!-- Return Due Date & Time Box (Shown dynamically when "ยืมอุปกรณ์" is selected) -->
-                  <div id="borrowDueDateBox" class="mb-4 p-3 bg-warning bg-opacity-10 border border-2 border-warning rounded-4 shadow-sm d-none">
-                    <label class="form-label fw-bold text-dark d-flex align-items-center justify-content-between mb-2" for="transDueDate">
-                      <span class="fs-7"><i class="bi bi-calendar-event-fill text-warning me-1.5 fs-6"></i>กำหนดวัน-เวลาที่ต้องส่งคืนอุปกรณ์ <span class="text-danger">*</span></span>
-                      <span class="badge bg-warning text-dark"><i class="bi bi-bell-fill me-1"></i>แจ้งเตือนอัตโนมัติ</span>
-                    </label>
-                    <div class="row g-2 align-items-center">
-                      <div class="col-12 col-md-6">
-                        <div class="input-group">
-                          <span class="input-group-text bg-warning text-dark border-warning fw-bold fs-7">
-                            <i class="bi bi-calendar3-event-fill me-1"></i> วัน/เวลา คืน:
-                          </span>
-                          <input type="text" id="transDueDate" class="form-control fw-bold border-warning bg-white" placeholder="เลือกวัน/เดือน/ปีพุทธศักราช เวลา 17:00" readonly />
-                        </div>
-                      </div>
-                      <div class="col-12 col-md-6">
-                        <div class="d-flex align-items-center gap-1 flex-wrap">
-                          <small class="text-secondary fw-semibold w-100 fs-8 mb-0">ปุ่มเลือกด่วน:</small>
-                          <button type="button" class="btn btn-xs btn-outline-warning text-dark fw-bold rounded-pill px-2.5 py-1 fs-8" onclick="setQuickDueDate(1)">1 วัน (พรุ่งนี้)</button>
-                          <button type="button" class="btn btn-xs btn-warning text-dark fw-bold rounded-pill px-2.5 py-1 fs-8" onclick="setQuickDueDate(3)">3 วัน (มาตรฐาน)</button>
-                          <button type="button" class="btn btn-xs btn-outline-warning text-dark fw-bold rounded-pill px-2.5 py-1 fs-8" onclick="setQuickDueDate(7)">7 วัน (1 สัปดาห์)</button>
-                          <button type="button" class="btn btn-xs btn-outline-warning text-dark fw-bold rounded-pill px-2.5 py-1 fs-8" onclick="setQuickDueDate(14)">14 วัน</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="mb-3 trans-mobile-hide-when-empty" id="transNoteContainer">
-                    <label class="form-label fw-bold" for="transNote" id="transNoteLabel">6. หมายเหตุ</label>
-                    <textarea id="transNote" class="form-control" rows="2" placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)..."></textarea>
-                  </div>
-
-                  <!-- Checkbox: ต้องการ "เอกสารใบเบิก-จ่าย-ยืม-คืนอุปกรณ์การเกษตร" (Default ไม่ติ๊กเลือก) -->
-                  <div class="mb-4 p-3 bg-light bg-opacity-75 rounded-3 border trans-mobile-hide-when-empty" id="transRequireVoucherDocContainer">
-                    <div class="form-check d-flex align-items-center gap-2.5 m-0">
-                      <input class="form-check-input fs-5 mt-0 cursor-pointer" type="checkbox" id="transRequireVoucherDoc" style="cursor: pointer;">
-                      <label class="form-check-label fw-bold text-dark cursor-pointer fs-7 user-select-none" for="transRequireVoucherDoc" style="cursor: pointer;">
-                        <i class="bi bi-file-earmark-text-fill text-success me-1"></i>ต้องการ "เอกสารใบเบิก-จ่าย-ยืม-คืนอุปกรณ์การเกษตร"
-                      </label>
-                    </div>
-                  </div>
-
-                  <!-- Popup Alert directly above submit button -->
-                  <div id="transStockOverAlertPopup" class="alert alert-danger border-2 border-danger shadow-sm rounded-4 p-3 mb-3 d-none" role="alert" style="scroll-margin-top: 100px;">
-                    <div class="d-flex align-items-center justify-content-between gap-2">
-                      <div class="d-flex align-items-center gap-2.5">
-                        <span class="badge bg-danger rounded-circle p-2 fs-6 shadow-sm"><i class="bi bi-exclamation-triangle-fill text-white"></i></span>
-                        <div>
-                          <div class="fw-bold text-danger fs-6" id="transStockOverAlertTitle">บันทึกไม่ได้ จำนวนที่ระบุเกินสต๊อกที่มีอยู่!</div>
-                          <div class="text-danger-emphasis fs-8 mt-0.5" id="transStockOverAlertDetail">กรุณาตรวจสอบยอดคงเหลือและปรับลดจำนวนก่อนบันทึก</div>
-                        </div>
-                      </div>
-                      <button type="button" class="btn-close" onclick="hideTransStockOverPopup()" aria-label="Close"></button>
-                    </div>
-                  </div>
-
-                  <!-- Action Buttons: Submit & Close -->
-                  <div class="d-flex gap-2.5 flex-column flex-sm-row">
-                    <button type="submit" id="btnSubmitTransaction" class="btn btn-danger btn-lg flex-grow-1 py-3 rounded-3 fw-bold shadow-sm">
-                      <i class="bi bi-box-arrow-up me-2"></i> บันทึกเบิกตัดสต๊อก
-                    </button>
-                    <button type="button" class="btn btn-light border btn-lg px-4 py-3 rounded-3 fw-bold text-secondary shadow-sm d-flex align-items-center justify-content-center gap-2" onclick="closeTransactionAndReturnToEquipment()" title="ปิดหน้าต่าง / กลับหน้าพัสดุและอุปกรณ์">
-                      <i class="bi bi-x-circle fs-5"></i>
-                      <span>ปิดหน้าต่าง</span>
-                    </button>
-                  </div>
-                </form>
-
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- ==================== TAB 2: TRANSACTION FORM PLACEHOLDER ==================== -->
+      <div class="tab-pane fade d-none" id="transaction-pane" role="tabpanel"></div>
 
       <!-- ==================== TAB 3: ATTENDANCE TRACKER ==================== -->
       <div class="tab-pane fade d-none" id="attendance-pane" role="tabpanel" aria-hidden="true">
@@ -1331,9 +1063,9 @@
                     <select id="historyFilterType" class="form-select form-select-sm rounded-pill fs-8 fw-semibold flex-grow-1" onchange="renderHistoryTable()">
                       <option value="ALL">📋 ทุกประเภทการทำรายการ</option>
                       <option value="เบิกจ่าย">🔴 เบิกตัดสต๊อก</option>
-                      <option value="รับเข้าสต๊อก (ขาเข้า)">🟢 รับเข้าสต๊อก (ขาเข้า)</option>
                       <option value="ยืมอุปกรณ์">🟡 ยืมอุปกรณ์</option>
                       <option value="คืนอุปกรณ์">🔵 คืนอุปกรณ์</option>
+                      <option value="รับเข้าสต๊อก (ขาเข้า)">🟢 รับเข้าสต๊อก (ขาเข้า)</option>
                     </select>
                     <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold flex-shrink-0" onclick="validateFirestoreHistorySync(true)">
                       <i class="bi bi-arrow-clockwise me-1"></i> รีเฟรช
@@ -1691,8 +1423,8 @@
 
   <!-- ==================== MODAL: FIREBASE AUTH & USER ROLES MANAGEMENT ==================== -->
   <div class="modal fade" id="userAuthModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen">
+      <div class="modal-content border-0 shadow-lg overflow-hidden">
         <div class="modal-header bg-flora-green text-white p-3">
           <div class="d-flex align-items-center gap-2">
             <i class="bi bi-shield-lock-fill fs-4 text-warning"></i>
@@ -1836,15 +1568,15 @@
 
                 <div class="table-responsive">
                   <table class="table table-hover align-middle mb-0 fs-7">
-                    <thead class="bg-light">
+                    <thead class="bg-light text-nowrap">
                       <tr>
-                        <th>ผู้ใช้งาน</th>
-                        <th>อีเมล</th>
-                        <th class="text-center" style="width: 100px;">Online</th>
-                        <th class="text-center" style="width: 160px;">บทบาทสิทธิ์</th>
-                        <th class="text-center" style="width: 250px;">สิทธิ์เข้าใช้งานระบบ</th>
-                        <th class="text-center" style="width: 230px;">ผูกรหัสบุคลากร</th>
-                        <th class="text-end pe-3" style="width: 90px;">บันทึก</th>
+                        <th class="ps-3 text-nowrap" style="min-width: 170px;">ผู้ใช้งาน</th>
+                        <th class="text-nowrap" style="min-width: 170px;">อีเมล</th>
+                        <th class="text-center text-nowrap" style="width: 120px;">สถานะ</th>
+                        <th class="text-center text-nowrap" style="width: 160px;">บทบาทสิทธิ์</th>
+                        <th class="text-center text-nowrap" style="min-width: 320px;">สิทธิ์เข้าใช้งานระบบ</th>
+                        <th class="text-center text-nowrap" style="min-width: 180px;">ผูกรหัสบุคลากร</th>
+                        <th class="text-end pe-3 text-nowrap" style="width: 90px;">บันทึก</th>
                       </tr>
                     </thead>
                     <tbody id="usersTableBody">
@@ -2478,6 +2210,278 @@
     </div>
   </div>
 
+  <!-- ==================== MODAL: TRANSACTION FORM (บันทึก เบิก-จ่าย-ยืม-คืน-รับเข้า) ==================== -->
+  <div class="modal fade" id="transactionModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+        <!-- Header -->
+        <div class="modal-header bg-success bg-gradient text-white py-3">
+          <div class="d-flex align-items-center gap-2">
+            <div class="bg-white bg-opacity-20 rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; flex-shrink: 0;">
+              <i class="bi bi-pencil-square fs-4 text-white"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold mb-0">เบิก-รับเข้า-ยืม-คืน</h5>
+              <small class="text-white-50 fs-8 d-none d-md-block">จัดการรายการเบิกตัดสต๊อก ยืมอุปกรณ์ คืนอุปกรณ์ และรับเข้าสต๊อก</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" onclick="closeTransactionAndReturnToEquipment()" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body p-3 p-md-4 bg-light">
+          <form id="transactionForm">
+            <!-- Type of Transaction -->
+            <div class="mb-4" id="transactionTypeBox" style="scroll-margin-top: 75px;">
+              <div class="row g-2">
+                <div class="col-6 col-md-3">
+                  <input type="radio" class="btn-check" name="transType" id="typeIssue" value="เบิกจ่าย" checked onchange="toggleTransTypeUI()" />
+                  <label class="btn btn-outline-danger w-100 py-1.5 py-md-2.5 rounded-3 fw-semibold fs-7 d-flex flex-row flex-md-column align-items-center justify-content-center gap-1" for="typeIssue">
+                    <i class="bi bi-box-arrow-up fs-5 d-none d-md-block"></i>
+                    <span>เบิกตัดสต๊อก</span>
+                  </label>
+                </div>
+                <div class="col-6 col-md-3">
+                  <input type="radio" class="btn-check" name="transType" id="typeBorrow" value="ยืมอุปกรณ์" onchange="toggleTransTypeUI()" />
+                  <label class="btn btn-outline-warning w-100 py-1.5 py-md-2.5 rounded-3 fw-semibold fs-7 d-flex flex-row flex-md-column align-items-center justify-content-center gap-1" for="typeBorrow">
+                    <i class="bi bi-arrow-repeat fs-5 d-none d-md-block"></i>
+                    <span>ยืมอุปกรณ์</span>
+                  </label>
+                </div>
+                <div class="col-6 col-md-3">
+                  <input type="radio" class="btn-check" name="transType" id="typeReturn" value="คืนอุปกรณ์" onchange="toggleTransTypeUI()" />
+                  <label class="btn btn-outline-info w-100 py-1.5 py-md-2.5 rounded-3 fw-semibold fs-7 d-flex flex-row flex-md-column align-items-center justify-content-center gap-1" for="typeReturn">
+                    <i class="bi bi-box-arrow-in-down fs-5 d-none d-md-block"></i>
+                    <span>คืนอุปกรณ์</span>
+                  </label>
+                </div>
+                <div class="col-6 col-md-3">
+                  <input type="radio" class="btn-check" name="transType" id="typeStockIn" value="รับเข้าสต๊อก" onchange="toggleTransTypeUI()" />
+                  <label class="btn btn-outline-success w-100 py-1.5 py-md-2.5 rounded-3 fw-semibold fs-7 d-flex flex-row flex-md-column align-items-center justify-content-center gap-1" for="typeStockIn">
+                    <i class="bi bi-box-arrow-in-down-left fs-5 d-none d-md-block"></i>
+                    <span>รับเข้าสต๊อก</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Return Mode Active Borrowings Helper Card -->
+            <div id="returnActiveBorrowsCard" class="mb-4 p-3 bg-info bg-opacity-10 border border-2 border-info border-opacity-50 rounded-4 shadow-sm d-none">
+              <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom border-info border-opacity-25 flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge bg-info text-dark p-2 rounded-circle fs-6"><i class="bi bi-shield-check"></i></span>
+                  <div>
+                    <h6 class="fw-bold text-dark mb-0"><i class="bi bi-list-check me-1 text-info"></i>รายการอุปกรณ์ที่กำลังถูกยืมอยู่ (Active Borrowings)</h6>
+                    <small class="text-muted fs-8">เลือกคืนจากรายการที่ยืมจริงเท่านั้น เพื่อความถูกต้องของยอดคงเหลือในคลัง</small>
+                  </div>
+                </div>
+                <span id="activeBorrowCountBadge" class="badge bg-info text-dark rounded-pill px-2.5 py-1 fs-8">ค้างคืน 0 รายการ</span>
+              </div>
+
+              <div id="noBorrowAlertForEmp" class="alert alert-warning py-2.5 px-3 rounded-3 fs-8 mb-2 d-none">
+                <i class="bi bi-exclamation-triangle-fill text-warning me-1.5 fs-6"></i>
+                <span><strong>ไม่พบรายการยืมค้าง:</strong> พนักงานท่านนี้ไม่มีรายการอุปกรณ์ที่ยืมค้างไว้ในระบบ จึงไม่สามารถทำรายการคืนได้</span>
+              </div>
+
+              <div id="returnActiveBorrowListContainer" class="my-2">
+                <!-- Rendered Active Borrows to pick from -->
+              </div>
+            </div>
+
+            <!-- Stock In Mode Helper Banner -->
+            <div id="stockInHelperBanner" class="alert alert-success py-2.5 px-3 mb-4 rounded-4 border-0 shadow-sm bg-success bg-opacity-10 text-success-emphasis d-none">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-plus-circle-fill fs-4 text-success flex-shrink-0"></i>
+                <div>
+                  <div class="fw-bold fs-7">📦 โหมดรับเข้าสต๊อก (Stock In / Inbound Restock)</div>
+                  <div class="fs-8 text-secondary">บันทึกรับเข้าอุปกรณ์ใหม่ หรือเติมสต๊อกคลัง ยอดคงเหลือของอุปกรณ์จะเพิ่มขึ้นทันทีหลังบันทึก</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Select Employee -->
+            <div class="mb-3">
+              <label class="form-label fw-bold" for="empSelect" id="transEmpSelectLabel">2. เลือกรายชื่อผู้ทำรายการ <span class="text-danger">*</span></label>
+              <div class="input-group mb-2">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" id="transEmpSearchInput" class="form-control border-start-0 bg-light fs-7" placeholder="🔍 พิมพ์ชื่อ หรือ รหัสพนักงานเพื่อค้นหา (เรียงตามชื่อ)..." oninput="filterTransEmployeeSelect(this.value)" />
+                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearTransEmpSearch()" title="ล้างคำค้นหา"><i class="bi bi-x-circle-fill"></i></button>
+                <button class="btn btn-success fw-bold px-2.5 px-md-3 d-flex align-items-center gap-1" type="button" onclick="openScanEmpBadgeModal()" title="สแกน QR Code บัตรพนักงาน เพื่อค้นรายชื่อพนักงาน">
+                  <i class="bi bi-qr-code-scan"></i>
+                  <span class="d-none d-md-inline ms-1">สแกน QR บัตรพนักงาน</span>
+                </button>
+              </div>
+              <div class="input-group">
+                <span class="input-group-text bg-light"><i class="bi bi-person-fill text-success"></i></span>
+                <select id="empSelect" class="form-select fw-semibold" required oninvalid="this.setCustomValidity('กรุณาเลือก หรือ พิมพ์รายชื่อผู้ทำรายการก่อน')" oninput="this.setCustomValidity('')" onchange="this.setCustomValidity(''); handleTransEmpSelectionChange()">
+                  <option value="">-- กรุณาเลือกรายชื่อพนักงาน --</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Select Equipment -->
+            <div class="mb-3">
+              <label class="form-label fw-bold" for="equipSelect" id="transEquipSelectLabel">3. เลือกอุปกรณ์การเกษตร</label>
+              
+              <!-- Search Input & Barcode Scan Button -->
+              <div class="input-group mb-2">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" id="equipSearchInput" class="form-control border-start-0 bg-light fs-7" placeholder="🔍 พิมพ์ชื่ออุปกรณ์, รหัสบาร์โค้ด หรือสถานที่เพื่อค้นหา..." oninput="filterEquipSelectDropdown(this.value)" />
+                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearEquipSearch()" title="ล้างคำค้นหา"><i class="bi bi-x-circle-fill"></i></button>
+                <button class="btn btn-warning fw-bold px-2.5 px-md-3 d-flex align-items-center gap-1 text-dark shadow-sm" type="button" onclick="openBarcodeQrScannerModal()" title="สแกนบาร์โค้ดอุปกรณ์เพื่อค้นชื่ออุปกรณ์">
+                  <i class="bi bi-upc-scan text-dark fs-5"></i>
+                  <span class="d-none d-md-inline ms-1 text-dark">สแกนบาร์โค้ดอุปกรณ์</span>
+                </button>
+              </div>
+
+              <div class="input-group">
+                <span class="input-group-text bg-light"><i class="bi bi-tools text-success"></i></span>
+                <select id="equipSelect" class="form-select fw-semibold" onchange="updateEquipSelectPreview()">
+                  <option value="">-- กรุณาเลือกอุปกรณ์การเกษตร --</option>
+                </select>
+              </div>
+              <div id="equipStockInfo" class="form-text mt-1 text-primary fw-semibold d-none"></div>
+
+              <!-- Instant Equipment Selected Preview Card -->
+              <div id="equipSelectPreviewBox" class="mt-2.5 p-3 bg-white border border-2 border-success border-opacity-50 rounded-4 shadow-sm d-none">
+                <div class="d-flex align-items-center gap-3">
+                  <img id="equipPreviewImg" src="" class="rounded-3 border shadow-sm" style="width: 70px; height: 70px; object-fit: cover;" />
+                  <div class="flex-grow-1 overflow-hidden">
+                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                      <span id="equipPreviewCodeBadge" class="badge bg-dark font-monospace fs-8"></span>
+                      <span id="equipPreviewCatBadge" class="badge bg-success fs-8"></span>
+                    </div>
+                    <h6 id="equipPreviewNameText" class="fw-bold text-dark mb-0 mt-1 text-truncate"></h6>
+                    <div class="fs-8 text-secondary mt-1">
+                      <i class="bi bi-geo-alt-fill text-danger me-1"></i>สถานที่เก็บ: <span id="equipPreviewLocText"></span>
+                    </div>
+                  </div>
+                  <div class="text-end bg-success bg-opacity-10 p-2.5 rounded-3 border border-success border-opacity-25 flex-shrink-0">
+                    <small class="text-success fw-bold fs-8 text-uppercase d-block">สต๊อกปัจจุบัน</small>
+                    <div id="equipPreviewStockText" class="fs-4 fw-bold text-success mb-0">0</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quantity & Add to Cart Combined in 1 Row -->
+            <div class="mb-3">
+              <label class="form-label fw-bold" for="transQty" id="transQtyLabel">4. ระบุจำนวน เบิก/ยืม/คืน/รับเข้า</label>
+              <div class="input-group">
+                <input type="number" id="transQty" class="form-control fw-bold" min="1" value="1" oninput="validateTransQtyInputLive()" style="max-width: 120px;" />
+                <span id="transUnitSpan" class="input-group-text bg-light text-secondary fw-semibold">ชิ้น</span>
+                <button type="button" class="btn btn-outline-success fw-bold flex-grow-1 d-flex align-items-center justify-content-center gap-1 px-2.5 px-md-3 shadow-sm" onclick="addCurrentEquipToCart()" title="เพิ่มเข้าเอกสาร">
+                  <i class="bi bi-plus-lg fs-6"></i>
+                  <i class="bi bi-cart-plus-fill fs-5"></i>
+                  <span id="btnAddCartSpan" class="d-none d-md-inline ms-1">เพิ่มเข้าเอกสาร</span>
+                </button>
+              </div>
+              <div id="transQtyStockWarning" class="form-text text-danger fw-bold mt-1.5 d-none">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i><span id="transQtyStockWarningText">ระบุจำนวนเกินสต๊อกที่มีอยู่</span>
+              </div>
+            </div>
+
+            <!-- Multi-Item Cart List for this Transaction -->
+            <div class="mb-4 p-3 rounded-4 border border-2 border-success border-opacity-50 bg-white shadow-sm d-none" id="selectedTransCartBox">
+              <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge bg-success p-2 rounded-circle fs-6"><i class="bi bi-basket3-fill"></i></span>
+                  <div>
+                    <h6 class="fw-bold text-dark mb-0" id="transCartTitleHeader">รายการอุปกรณ์ในเอกสารใบนี้</h6>
+                    <small class="text-muted fs-8">สามารถเพิ่มอุปกรณ์ได้หลายชนิดในเอกสารฉบับเดียวกัน</small>
+                  </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span id="cartCountBadge" class="badge bg-success fs-7 rounded-pill">0 รายการ</span>
+                  <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0.5 fs-8" onclick="clearTransCart()" title="ล้างรายการทั้งหมด">
+                    <i class="bi bi-trash-fill me-1"></i>ล้าง
+                  </button>
+                </div>
+              </div>
+
+              <div id="selectedTransCartItemsList" class="my-2">
+                <!-- Rendered Cart Items -->
+              </div>
+
+              <!-- Checkbox: ต้องการ "เอกสารใบเบิก-จ่าย-ยืม-คืนอุปกรณ์การเกษตร" (Default ไม่ติ๊กเลือก ซ่อนไว้ที่กล่องรถเข็น) -->
+              <div class="pt-2.5 mt-2 border-top">
+                <div class="form-check d-flex align-items-center gap-2.5 m-0">
+                  <input class="form-check-input fs-5 mt-0 cursor-pointer" type="checkbox" id="transRequireVoucherDoc" style="cursor: pointer;">
+                  <label class="form-check-label fw-bold text-dark cursor-pointer fs-7 user-select-none" for="transRequireVoucherDoc" style="cursor: pointer;">
+                    <i class="bi bi-file-earmark-text-fill text-success me-1"></i>ต้องการ "เอกสารใบเบิก-จ่าย-ยืม-คืนอุปกรณ์การเกษตร"
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3 trans-mobile-hide-when-empty" id="transLocationContainer">
+              <div class="col-12">
+                <label class="form-label fw-bold" for="transLocation" id="transLocationLabel">5. คลังที่เก็บ</label>
+                <input type="text" id="transLocation" class="form-control" placeholder="เช่น แปลงกุหลาบ B2, คลังอุปกรณ์ A1, โรงเรือน 1" />
+              </div>
+            </div>
+
+            <!-- Return Due Date & Time Box (Shown dynamically when "ยืมอุปกรณ์" is selected) -->
+            <div id="borrowDueDateBox" class="mb-4 p-3 bg-warning bg-opacity-10 border border-2 border-warning rounded-4 shadow-sm d-none">
+              <label class="form-label fw-bold text-dark d-flex align-items-center justify-content-between mb-2" for="transDueDate">
+                <span class="fs-7"><i class="bi bi-calendar-event-fill text-warning me-1.5 fs-6"></i>กำหนดวัน-เวลาที่ต้องส่งคืนอุปกรณ์ <span class="text-danger">*</span></span>
+                <span class="badge bg-warning text-dark"><i class="bi bi-bell-fill me-1"></i>แจ้งเตือนอัตโนมัติ</span>
+              </label>
+              <div class="row g-2 align-items-center">
+                <div class="col-12 col-md-6">
+                  <div class="input-group">
+                    <span class="input-group-text bg-warning text-dark border-warning fw-bold fs-7">
+                      <i class="bi bi-calendar3-event-fill me-1"></i> วัน/เวลา คืน:
+                    </span>
+                    <input type="text" id="transDueDate" class="form-control fw-bold border-warning bg-white" placeholder="เลือกวัน/เดือน/ปีพุทธศักราช เวลา 17:00" readonly />
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="d-flex align-items-center gap-1 flex-wrap">
+                    <small class="text-secondary fw-semibold w-100 fs-8 mb-0">ปุ่มเลือกด่วน:</small>
+                    <button type="button" class="btn btn-xs btn-outline-warning text-dark fw-bold rounded-pill px-2.5 py-1 fs-8" onclick="setQuickDueDate(1)">1 วัน (พรุ่งนี้)</button>
+                    <button type="button" class="btn btn-xs btn-warning text-dark fw-bold rounded-pill px-2.5 py-1 fs-8" onclick="setQuickDueDate(3)">3 วัน (มาตรฐาน)</button>
+                    <button type="button" class="btn btn-xs btn-outline-warning text-dark fw-bold rounded-pill px-2.5 py-1 fs-8" onclick="setQuickDueDate(7)">7 วัน (1 สัปดาห์)</button>
+                    <button type="button" class="btn btn-xs btn-outline-warning text-dark fw-bold rounded-pill px-2.5 py-1 fs-8" onclick="setQuickDueDate(14)">14 วัน</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3 trans-mobile-hide-when-empty" id="transNoteContainer">
+              <label class="form-label fw-bold" for="transNote" id="transNoteLabel">6. หมายเหตุ</label>
+              <textarea id="transNote" class="form-control" rows="2" placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)..."></textarea>
+            </div>
+
+            <!-- Popup Alert directly above submit button -->
+            <div id="transStockOverAlertPopup" class="alert alert-danger border-2 border-danger shadow-sm rounded-4 p-3 mb-3 d-none" role="alert" style="scroll-margin-top: 100px;">
+              <div class="d-flex align-items-center justify-content-between gap-2">
+                <div class="d-flex align-items-center gap-2.5">
+                  <span class="badge bg-danger rounded-circle p-2 fs-6 shadow-sm"><i class="bi bi-exclamation-triangle-fill text-white"></i></span>
+                  <div>
+                    <div class="fw-bold text-danger fs-6" id="transStockOverAlertTitle">บันทึกไม่ได้ จำนวนที่ระบุเกินสต๊อกที่มีอยู่!</div>
+                    <div class="text-danger-emphasis fs-8 mt-0.5" id="transStockOverAlertDetail">กรุณาตรวจสอบยอดคงเหลือและปรับลดจำนวนก่อนบันทึก</div>
+                  </div>
+                </div>
+                <button type="button" class="btn-close" onclick="hideTransStockOverPopup()" aria-label="Close"></button>
+              </div>
+            </div>
+
+            <!-- Action Buttons: Submit & Close -->
+            <div class="d-flex gap-2.5 flex-column flex-sm-row">
+              <button type="submit" id="btnSubmitTransaction" class="btn btn-danger btn-lg flex-grow-1 py-3 rounded-3 fw-bold shadow-sm">
+                <i class="bi bi-box-arrow-up me-2"></i> บันทึกเบิกตัดสต๊อก
+              </button>
+              <button type="button" class="btn btn-light border btn-lg px-4 py-3 rounded-3 fw-bold text-secondary shadow-sm d-flex align-items-center justify-content-center gap-2" onclick="closeTransactionAndReturnToEquipment()" title="ปิดหน้าต่าง / กลับหน้าพัสดุและอุปกรณ์">
+                <i class="bi bi-x-circle fs-5"></i>
+                <span>ปิดหน้าต่าง</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== MODAL: EQUIPMENT TRANSACTION HISTORY ==================== -->
   <div class="modal fade" id="equipmentTransactionHistoryModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl">
@@ -2499,47 +2503,49 @@
         <div class="modal-body p-3 p-md-4 bg-light">
           <!-- Equipment Info Card & Summary Metrics -->
           <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3">
-            <div class="row g-3 align-items-center">
-              <div class="col-12 col-md-6 col-lg-5">
-                <div class="d-flex align-items-center gap-3">
-                  <img id="eqHistModalImg" src="" class="rounded-3 border shadow-sm" style="width: 72px; height: 72px; object-fit: cover; flex-shrink: 0;" onerror="this.src='https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&auto=format&fit=crop&q=80'" />
-                  <div class="overflow-hidden">
-                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                      <h5 id="eqHistModalName" class="fw-bold text-dark mb-0 fs-6 text-truncate"></h5>
-                      <span id="eqHistModalCode" class="badge bg-dark font-monospace fs-8"></span>
-                      <span id="eqHistModalCat" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8"></span>
-                    </div>
-                    <div class="d-flex align-items-center gap-3 fs-8 text-secondary flex-wrap mt-1">
-                      <div><i class="bi bi-geo-alt-fill me-1 text-danger"></i><span id="eqHistModalLoc">คลังกลาง</span></div>
-                      <div id="eqHistModalStatusBadge"></div>
-                    </div>
+            <div class="d-flex align-items-center justify-content-between gap-3">
+              <div class="d-flex align-items-center gap-3">
+                <img id="eqHistModalImg" src="" class="rounded-3 border shadow-sm" style="width: 64px; height: 64px; object-fit: cover; flex-shrink: 0;" onerror="this.src='https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&auto=format&fit=crop&q=80'" />
+                <div class="overflow-hidden">
+                  <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                    <h5 id="eqHistModalName" class="fw-bold text-dark mb-0 fs-6 text-truncate"></h5>
+                    <span id="eqHistModalCode" class="badge bg-dark font-monospace fs-8"></span>
+                    <span id="eqHistModalCat" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8"></span>
+                  </div>
+                  <div class="d-flex align-items-center gap-3 fs-8 text-secondary flex-wrap mt-1">
+                    <div><i class="bi bi-geo-alt-fill me-1 text-danger"></i><span id="eqHistModalLoc">คลังกลาง</span></div>
                   </div>
                 </div>
               </div>
 
-              <!-- Summary Metrics Counters -->
-              <div class="col-12 col-md-6 col-lg-7">
-                <div class="d-flex flex-wrap gap-2 justify-content-md-end">
-                  <div class="bg-light border rounded-3 p-2 text-center" style="min-width: 90px;">
-                    <div class="text-muted fs-9 fw-bold text-uppercase">คงเหลือ</div>
-                    <div class="fw-bold fs-6 text-dark" id="eqHistModalStock">0</div>
-                  </div>
-                  <div class="bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-3 p-2 text-center" style="min-width: 90px;">
-                    <div class="text-warning text-dark-emphasis fs-9 fw-bold text-uppercase">ถูกยืมขณะนี้</div>
-                    <div class="fw-bold fs-6 text-warning" id="eqHistModalBorrowed">0</div>
-                  </div>
-                  <div class="bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded-3 p-2 text-center" style="min-width: 90px;">
-                    <div class="text-primary fs-9 fw-bold text-uppercase">เบิกจ่ายรวม</div>
-                    <div class="fw-bold fs-6 text-primary" id="eqHistModalDisbursed">0</div>
-                  </div>
-                  <div class="bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3 p-2 text-center" style="min-width: 90px;">
-                    <div class="text-success fs-9 fw-bold text-uppercase">รับเข้ารวม</div>
-                    <div class="fw-bold fs-6 text-success" id="eqHistModalRestocked">0</div>
-                  </div>
-                  <div class="bg-dark bg-opacity-10 border border-dark border-opacity-25 rounded-3 p-2 text-center" style="min-width: 90px;">
-                    <div class="text-secondary fs-9 fw-bold text-uppercase">ประวัติทั้งหมด</div>
-                    <div class="fw-bold fs-6 text-dark" id="eqHistModalTotalTx">0</div>
-                  </div>
+              <!-- Toggle Metrics Eye Button -->
+              <button type="button" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-0 shadow-sm flex-shrink-0" style="width: 36px; height: 36px;" id="eqHistToggleMetricsBtn" onclick="toggleEqHistMetrics()" title="แสดง/ซ่อนข้อมูลสรุป">
+                <i class="bi bi-eye" id="eqHistEyeIcon" style="font-size: 1.15rem;"></i>
+              </button>
+            </div>
+
+            <!-- Summary Metrics Counters (Default Hidden) -->
+            <div id="eqHistMetricsContainer" class="d-none mt-3 pt-3 border-top">
+              <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                <div class="bg-light border rounded-3 p-2 text-center" style="min-width: 90px;">
+                  <div class="text-muted fs-9 fw-bold text-uppercase">คงเหลือ</div>
+                  <div class="fw-bold fs-6 text-dark" id="eqHistModalStock">0</div>
+                </div>
+                <div class="bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-3 p-2 text-center" style="min-width: 90px;">
+                  <div class="text-warning text-dark-emphasis fs-9 fw-bold text-uppercase">ถูกยืมขณะนี้</div>
+                  <div class="fw-bold fs-6 text-warning" id="eqHistModalBorrowed">0</div>
+                </div>
+                <div class="bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded-3 p-2 text-center" style="min-width: 90px;">
+                  <div class="text-primary fs-9 fw-bold text-uppercase">เบิกจ่ายรวม</div>
+                  <div class="fw-bold fs-6 text-primary" id="eqHistModalDisbursed">0</div>
+                </div>
+                <div class="bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3 p-2 text-center" style="min-width: 90px;">
+                  <div class="text-success fs-9 fw-bold text-uppercase">รับเข้ารวม</div>
+                  <div class="fw-bold fs-6 text-success" id="eqHistModalRestocked">0</div>
+                </div>
+                <div class="bg-dark bg-opacity-10 border border-dark border-opacity-25 rounded-3 p-2 text-center" style="min-width: 90px;">
+                  <div class="text-secondary fs-9 fw-bold text-uppercase">ประวัติทั้งหมด</div>
+                  <div class="fw-bold fs-6 text-dark" id="eqHistModalTotalTx">0</div>
                 </div>
               </div>
             </div>

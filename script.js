@@ -1363,14 +1363,14 @@
         const { isOnline, timeVal } = getUserOnlineStatusInfo(u);
 
         const onlineBadge = isOnline
-          ? `<span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2.5 py-1.5 fw-bold fs-8 d-inline-flex align-items-center gap-1.5"><i class="bi bi-circle-fill text-success" style="font-size: 7px;"></i> Online</span>`
-          : `<span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2.5 py-1.5 fw-bold fs-8 d-inline-flex align-items-center gap-1.5"><i class="bi bi-circle-fill text-danger" style="font-size: 7px;"></i> Offline</span>`;
+          ? `<span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1 fw-bold fs-8 d-inline-flex align-items-center gap-1"><i class="bi bi-circle-fill text-success" style="font-size: 7px;"></i> Online</span>`
+          : `<span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2 py-1 fw-bold fs-8 d-inline-flex align-items-center gap-1"><i class="bi bi-circle-fill text-danger" style="font-size: 7px;"></i> Offline</span>`;
 
         let timeSubtitle = '';
         if (timeVal > 0 && typeof formatThaiBuddhistDateAndTime === 'function') {
           const formatted = formatThaiBuddhistDateAndTime(new Date(timeVal).toISOString());
           if (formatted && formatted.time24 && formatted.time24 !== '-') {
-            timeSubtitle = `<small class="text-muted d-block font-monospace mt-0.5" style="font-size: 0.7rem !important;"><i class="bi bi-clock me-0.5"></i>${formatted.time24}</small>`;
+            timeSubtitle = `<small class="text-muted font-monospace ms-1 fs-9 text-nowrap" title="เวลาใช้งานล่าสุด"><i class="bi bi-clock me-0.5"></i>${formatted.time24}</small>`;
           }
         }
 
@@ -1398,59 +1398,55 @@
         ].join('');
 
         return `
-          <tr>
-            <td>
-              <div class="d-flex align-items-center gap-2">
-                <img src="${img}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'" />
-                <div>
-                  <span class="fw-bold text-dark d-block">${safeName}</span>
-                  <small class="text-muted font-monospace fs-8">UID: ${u.id.substring(0, 10)}...</small>
-                </div>
+          <tr class="text-nowrap align-middle">
+            <td class="ps-3 text-nowrap">
+              <div class="d-flex align-items-center gap-2 text-nowrap">
+                <img src="${img}" class="rounded-circle shadow-sm flex-shrink-0" style="width: 28px; height: 28px; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'" />
+                <span class="fw-bold text-dark text-nowrap">${safeName}</span>
               </div>
             </td>
-            <td class="text-muted fs-8">
-              ${safeEmail}
-              ${matchedEmpByEmail && !currentLinkedEmpId ? `<span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 d-block mt-1 fs-9">แนะนำผูกตามอีเมล</span>` : ''}
+            <td class="text-muted fs-8 text-nowrap">
+              <span>${safeEmail}</span>
+              ${matchedEmpByEmail && !currentLinkedEmpId ? `<span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 ms-1 fs-9 text-nowrap" title="แนะนำผูกตามอีเมล"><i class="bi bi-link-45deg"></i> แนะนำ</span>` : ''}
             </td>
-            <td class="text-center">
-              ${onlineBadge}
-              ${timeSubtitle}
+            <td class="text-center text-nowrap">
+              ${onlineBadge} ${timeSubtitle}
             </td>
-            <td class="text-center">
-              <select id="userRoleSelect_${u.id}" class="form-select form-select-sm fw-semibold" onchange="window.onUserRoleSelectChanged('${u.id}')">
+            <td class="text-center text-nowrap">
+              <select id="userRoleSelect_${u.id}" class="form-select form-select-sm fw-semibold" style="min-width: 140px;" onchange="window.onUserRoleSelectChanged('${u.id}')">
                 <option value="ADMIN" ${uRole === 'ADMIN' ? 'selected' : ''}>🔴 ผู้ดูแลระบบ (ADMIN)</option>
                 <option value="MANAGER" ${uRole === 'MANAGER' ? 'selected' : ''}>🔵 ผู้จัดการ/บริหาร (MANAGER)</option>
                 <option value="STAFF" ${uRole === 'STAFF' ? 'selected' : ''}>🟣 เจ้าหน้าที่ (STAFF)</option>
                 <option value="WORKER" ${uRole === 'WORKER' ? 'selected' : ''}>🟢 พนักงาน (WORKER)</option>
               </select>
             </td>
-            <td class="text-center">
-              <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
-                <div class="form-check form-switch m-0" title="สิทธิ์เข้าระบบงานบุคคล (HR)">
-                  <input class="form-check-input" type="checkbox" id="userAccPersonnel_${u.id}" ${hasPersonnel ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
-                  <label class="form-check-label fs-8 fw-semibold text-primary" for="userAccPersonnel_${u.id}">👥 บุคคล</label>
+            <td class="text-center text-nowrap">
+              <div class="d-flex align-items-center justify-content-center gap-2 text-nowrap flex-nowrap">
+                <div class="form-check form-switch m-0 d-inline-flex align-items-center gap-1" title="สิทธิ์เข้าระบบงานบุคคล (HR)">
+                  <input class="form-check-input mt-0" type="checkbox" id="userAccPersonnel_${u.id}" ${hasPersonnel ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
+                  <label class="form-check-label fs-8 fw-semibold text-primary text-nowrap" for="userAccPersonnel_${u.id}">👥 บุคคล</label>
                 </div>
-                <div class="form-check form-switch m-0" title="สิทธิ์เข้าระบบพัสดุและอุปกรณ์">
-                  <input class="form-check-input" type="checkbox" id="userAccInventory_${u.id}" ${hasInventory ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
-                  <label class="form-check-label fs-8 fw-semibold text-success" for="userAccInventory_${u.id}">📦 พัสดุฯ</label>
+                <div class="form-check form-switch m-0 d-inline-flex align-items-center gap-1" title="สิทธิ์เข้าระบบพัสดุและอุปกรณ์">
+                  <input class="form-check-input mt-0" type="checkbox" id="userAccInventory_${u.id}" ${hasInventory ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
+                  <label class="form-check-label fs-8 fw-semibold text-success text-nowrap" for="userAccInventory_${u.id}">📦 พัสดุฯ</label>
                 </div>
-                <div class="form-check form-switch m-0" title="สิทธิ์เข้าระบบเงินเดือน (เฉพาะการเงิน/ผู้ดูแลระบบ)">
-                  <input class="form-check-input" type="checkbox" id="userAccPayroll_${u.id}" ${hasPayroll ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
-                  <label class="form-check-label fs-8 fw-semibold text-warning" for="userAccPayroll_${u.id}">💰 เงินเดือน</label>
+                <div class="form-check form-switch m-0 d-inline-flex align-items-center gap-1" title="สิทธิ์เข้าระบบเงินเดือน (เฉพาะการเงิน/ผู้ดูแลระบบ)">
+                  <input class="form-check-input mt-0" type="checkbox" id="userAccPayroll_${u.id}" ${hasPayroll ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
+                  <label class="form-check-label fs-8 fw-semibold text-warning text-nowrap" for="userAccPayroll_${u.id}">💰 เงินเดือน</label>
                 </div>
-                <div class="form-check form-switch m-0" title="สิทธิ์การจัดการจัดซื้อ (อนุมัติ/ออก PO/ตรวจรับ)">
-                  <input class="form-check-input" type="checkbox" id="userAccProcurement_${u.id}" ${hasProcurement ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
-                  <label class="form-check-label fs-8 fw-semibold text-teal" style="color: #0f766e;" for="userAccProcurement_${u.id}">🛒 จัดซื้อฯ</label>
+                <div class="form-check form-switch m-0 d-inline-flex align-items-center gap-1" title="สิทธิ์การจัดการจัดซื้อ (อนุมัติ/ออก PO/ตรวจรับ)">
+                  <input class="form-check-input mt-0" type="checkbox" id="userAccProcurement_${u.id}" ${hasProcurement ? 'checked' : ''} onchange="window.updateFirestoreUserRole('${u.id}')">
+                  <label class="form-check-label fs-8 fw-semibold text-nowrap" style="color: #0f766e;" for="userAccProcurement_${u.id}">🛒 จัดซื้อฯ</label>
                 </div>
               </div>
             </td>
-            <td class="text-center">
-              <select id="userLinkedEmp_${u.id}" class="form-select form-select-sm fs-8 border-secondary border-opacity-50" onchange="window.updateFirestoreUserRole('${u.id}')">
+            <td class="text-center text-nowrap">
+              <select id="userLinkedEmp_${u.id}" class="form-select form-select-sm fs-8 border-secondary border-opacity-50 text-truncate" style="min-width: 170px;" onchange="window.updateFirestoreUserRole('${u.id}')">
                 ${empOptions}
               </select>
             </td>
-            <td class="text-end pe-3">
-              <button class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold" onclick="window.updateFirestoreUserRole('${u.id}')">
+            <td class="text-end pe-3 text-nowrap">
+              <button class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold text-nowrap" onclick="window.updateFirestoreUserRole('${u.id}')">
                 <i class="bi bi-check-lg me-1"></i> บันทึก
               </button>
             </td>
@@ -2276,7 +2272,38 @@
       }
     };
 
+    window.openTransactionModal = function(equipId) {
+      if (equipId) {
+        window.lastInteractedEquipmentId = equipId;
+        const select = document.getElementById('equipSelect');
+        if (select) {
+          select.value = equipId;
+          select.dispatchEvent(new Event('change'));
+        }
+        const equipSearch = document.getElementById('equipSearchInput');
+        const item = (equipmentList || []).find(x => x.id === equipId);
+        if (equipSearch && item) {
+          equipSearch.value = item.name;
+        }
+        if (typeof updateEquipSelectPreview === 'function') {
+          updateEquipSelectPreview();
+        }
+      }
+      if (typeof renderTransCartList === 'function') {
+        renderTransCartList();
+      }
+      const modalElem = document.getElementById('transactionModal');
+      if (modalElem) {
+        const bsModal = bootstrap.Modal.getOrCreateInstance(modalElem);
+        bsModal.show();
+      }
+    };
+
     window.switchNavTab = function(tabId) {
+      if (tabId === 'transaction-tab') {
+        window.openTransactionModal();
+        return;
+      }
       if (MAIN_STOCK_ONLY_MODE && (tabId === 'employees-tab' || tabId === 'attendance-tab')) {
         showToast("เมนูนี้ย้ายไปอยู่ที่ศูนย์ผังโครงสร้างและจัดการบุคลากรแล้ว");
         return;
@@ -2349,6 +2376,11 @@
     };
 
     window.closeTransactionAndReturnToEquipment = function() {
+      const modalElem = document.getElementById('transactionModal');
+      if (modalElem) {
+        const bsModal = bootstrap.Modal.getInstance(modalElem);
+        if (bsModal) bsModal.hide();
+      }
       const currentEquipId = document.getElementById('equipSelect')?.value || window.lastInteractedEquipmentId;
       if (typeof window.clearTransCart === 'function') {
         window.clearTransCart();
@@ -2375,7 +2407,7 @@
     function updateGearMenuActiveState(activeTabId) {
       const mapping = {
         'catalog-tab': { itemId: 'gear-item-catalog', label: 'คลังอุปกรณ์', icon: 'bi-grid-fill' },
-        'transaction-tab': { itemId: 'gear-item-transaction', label: 'บันทึก เบิก-จ่าย-ยืม-คืน', icon: 'bi-pencil-square' },
+        'transaction-tab': { itemId: 'gear-item-transaction', label: 'เบิก-รับเข้า-ยืม-คืน', icon: 'bi-pencil-square' },
         'manage-tab': { itemId: 'gear-item-manage', label: 'จัดการคลังอุปกรณ์', icon: 'bi-tools' },
         'history-tab': { itemId: 'gear-item-history', label: 'ประวัติทำรายการ', icon: 'bi-card-checklist' }
       };
@@ -2407,10 +2439,6 @@
           btnCatLowStock.classList.add('d-none');
           btnCatLowStock.classList.remove('d-inline-flex');
         }
-      }
-
-      if (window.FloraChatHub && typeof window.FloraChatHub.updateVisibility === 'function') {
-        window.FloraChatHub.updateVisibility();
       }
     }
 
@@ -4483,6 +4511,8 @@
 
     window.clearTransCart = function() {
       selectedTransItems = [];
+      const reqDoc = document.getElementById('transRequireVoucherDoc');
+      if (reqDoc) reqDoc.checked = false;
       if (typeof window.hideTransStockOverPopup === 'function') {
         window.hideTransStockOverPopup();
       }
@@ -4495,13 +4525,11 @@
       const badge = document.getElementById('cartCountBadge');
       const locContainer = document.getElementById('transLocationContainer');
       const noteContainer = document.getElementById('transNoteContainer');
-      const voucherDocContainer = document.getElementById('transRequireVoucherDocContainer');
       if (badge) badge.textContent = `${selectedTransItems.length} รายการ`;
 
       if (selectedTransItems.length === 0) {
         if (locContainer) locContainer.classList.add('trans-mobile-hide-when-empty');
         if (noteContainer) noteContainer.classList.add('trans-mobile-hide-when-empty');
-        if (voucherDocContainer) voucherDocContainer.classList.add('trans-mobile-hide-when-empty');
         if (cartBox) cartBox.classList.add('d-none');
         if (!container) return;
         container.innerHTML = `
@@ -4516,7 +4544,6 @@
 
       if (locContainer) locContainer.classList.remove('trans-mobile-hide-when-empty');
       if (noteContainer) noteContainer.classList.remove('trans-mobile-hide-when-empty');
-      if (voucherDocContainer) voucherDocContainer.classList.remove('trans-mobile-hide-when-empty');
 
       if (cartBox) {
         cartBox.classList.remove('d-none');
@@ -4529,9 +4556,9 @@
       if (activeType === 'ยืมอุปกรณ์') {
         typeBadge = '<span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-arrow-repeat me-1"></i>ยืมอุปกรณ์</span>';
       } else if (activeType === 'คืนอุปกรณ์') {
-        typeBadge = '<span class="badge bg-info text-dark px-2 py-1"><i class="bi bi-box-arrow-in-down me-1"></i>คืนอุปกรณ์</span>';
+        typeBadge = '<span class="badge fw-bold shadow-sm px-2.5 py-1.5" style="background-color: #0dcaf0 !important; color: #000000 !important;"><i class="bi bi-box-arrow-in-down me-1"></i>คืนอุปกรณ์</span>';
       } else if (activeType === 'รับเข้าสต๊อก' || activeType === 'รับเข้าสต๊อก (ขาเข้า)') {
-        typeBadge = '<span class="badge bg-success px-2 py-1"><i class="bi bi-box-arrow-in-down-left me-1"></i>รับเข้าสต๊อก</span>';
+        typeBadge = '<span class="badge text-white fw-bold shadow-sm px-2.5 py-1.5" style="background-color: #00c853 !important; color: #ffffff !important;"><i class="bi bi-box-arrow-in-down-left me-1"></i>รับเข้าสต๊อก</span>';
       } else {
         typeBadge = '<span class="badge bg-danger px-2 py-1"><i class="bi bi-box-arrow-up me-1"></i>เบิกจ่าย</span>';
       }
@@ -4879,7 +4906,14 @@
         validateFirestoreHistorySync(false);
       }
 
-      // Exit from "บันทึก เบิก-จ่าย-ยืม-คืน" screen immediately and return to that equipment
+      // Hide transaction modal if open
+      const transModalElem = document.getElementById('transactionModal');
+      if (transModalElem) {
+        const bsModal = bootstrap.Modal.getInstance(transModalElem);
+        if (bsModal) bsModal.hide();
+      }
+
+      // Exit from transaction screen and return to that equipment
       if (typeof returnToCatalogEquipment === 'function') {
         returnToCatalogEquipment(primaryEquipId);
       } else if (typeof switchNavTab === 'function') {
@@ -5362,7 +5396,7 @@
                   ${isStaff ? `
                     <div class="d-grid gap-1.5">
                       <button class="btn btn-outline-success btn-sm rounded-pill fw-semibold" onclick="quickSelectTransaction('${item.id}')">
-                        <i class="bi bi-pencil-square me-1"></i> เบิก / ยืม ชิ้นนี้
+                        <i class="bi bi-pencil-square me-1"></i> เบิก-รับเข้า-ยืม-คืน
                       </button>
                     </div>
                   ` : ''}
@@ -7158,9 +7192,9 @@
         } else if (tx.type === 'ยืมอุปกรณ์') {
           typeBadge = '<span class="badge bg-warning text-dark"><i class="bi bi-arrow-repeat me-1"></i> ยืมอุปกรณ์</span>';
         } else if (tx.type === 'คืนอุปกรณ์') {
-          typeBadge = '<span class="badge bg-info text-dark"><i class="bi bi-box-arrow-in-down me-1"></i> คืนอุปกรณ์</span>';
+          typeBadge = '<span class="badge fw-bold shadow-sm px-2.5 py-1.5" style="background-color: #0dcaf0 !important; color: #000000 !important;"><i class="bi bi-box-arrow-in-down me-1"></i> คืนอุปกรณ์</span>';
         } else if (tx.type === 'รับเข้าสต๊อก (ขาเข้า)' || tx.type === 'รับเข้าสต๊อก' || tx.type === 'เติมสต๊อกด่วน') {
-          typeBadge = '<span class="badge bg-success"><i class="bi bi-box-arrow-in-down-left me-1"></i> รับเข้าสต๊อก</span>';
+          typeBadge = '<span class="badge text-white fw-bold shadow-sm px-2.5 py-1.5" style="background-color: #00c853 !important; color: #ffffff !important;"><i class="bi bi-box-arrow-in-down-left me-1"></i> รับเข้าสต๊อก</span>';
         } else {
           typeBadge = `<span class="badge bg-secondary">${tx.type}</span>`;
         }
@@ -8661,12 +8695,8 @@
         if (typeof renderPrintableLabelsPreview === 'function') renderPrintableLabelsPreview();
       }
 
-      // Switch to transaction tab
-      const tabBtn = document.getElementById('transaction-tab');
-      if (tabBtn) {
-        const bsTab = new bootstrap.Tab(tabBtn);
-        bsTab.show();
-      }
+      // Open transaction modal
+      window.openTransactionModal(equipId);
 
       if (item) {
         showToast(`📷 สแกน/เลือกอุปกรณ์ "${item.name}" [${item.code}] เรียบร้อยแล้ว! (คงเหลือ: ${item.quantity} ${item.unit})`);
@@ -10319,11 +10349,11 @@
           qtyColor = 'text-warning-emphasis';
           qtyPrefix = '-';
         } else if (r.type === 'คืนอุปกรณ์') {
-          typeBadge = '<span class="badge bg-info text-dark"><i class="bi bi-box-arrow-in-down me-1"></i> คืนอุปกรณ์</span>';
+          typeBadge = '<span class="badge fw-bold shadow-sm px-2.5 py-1.5" style="background-color: #0dcaf0 !important; color: #000000 !important;"><i class="bi bi-box-arrow-in-down me-1"></i> คืนอุปกรณ์</span>';
           qtyColor = 'text-info-emphasis';
           qtyPrefix = '+';
         } else if (r.type.includes('รับเข้า') || r.type.includes('เติมสต๊อก')) {
-          typeBadge = '<span class="badge bg-success"><i class="bi bi-box-arrow-in-down-left me-1"></i> รับเข้าสต๊อก</span>';
+          typeBadge = '<span class="badge text-white fw-bold shadow-sm px-2.5 py-1.5" style="background-color: #00c853 !important; color: #ffffff !important;"><i class="bi bi-box-arrow-in-down-left me-1"></i> รับเข้าสต๊อก</span>';
           qtyColor = 'text-success';
           qtyPrefix = '+';
         } else {
@@ -10899,6 +10929,20 @@
     // ==========================================
     let currentEquipHistoryId = null;
 
+    window.toggleEqHistMetrics = function() {
+      const container = document.getElementById('eqHistMetricsContainer');
+      const icon = document.getElementById('eqHistEyeIcon');
+      if (!container) return;
+      const isHidden = container.classList.contains('d-none');
+      if (isHidden) {
+        container.classList.remove('d-none');
+        if (icon) icon.className = 'bi bi-eye-slash';
+      } else {
+        container.classList.add('d-none');
+        if (icon) icon.className = 'bi bi-eye';
+      }
+    };
+
     window.openEquipmentTransactionHistoryModal = function(equipId) {
       if (!equipId) return;
       const item = (equipmentList || []).find(x => x.id === equipId || x.code === equipId);
@@ -10930,18 +10974,11 @@
       const locElem = document.getElementById('eqHistModalLoc');
       if (locElem) locElem.textContent = item.location || 'คลังกลาง';
 
-      const statusBadgeElem = document.getElementById('eqHistModalStatusBadge');
-      if (statusBadgeElem) {
-        const curQty = Number(item.quantity) || 0;
-        const minQty = item.minQuantity !== undefined ? Number(item.minQuantity) : 3;
-        if (curQty < minQty) {
-          statusBadgeElem.innerHTML = `<span class="badge bg-danger text-white"><i class="bi bi-bell-fill me-1"></i>เตือน! สต๊อกต่ำกว่าขั้นต่ำ (${curQty}/${minQty})</span>`;
-        } else if (curQty <= minQty + 2) {
-          statusBadgeElem.innerHTML = `<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle-fill me-1"></i>สต๊อกใกล้ขั้นต่ำ</span>`;
-        } else {
-          statusBadgeElem.innerHTML = `<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="bi bi-check-circle-fill me-1"></i>พร้อมใช้งาน</span>`;
-        }
-      }
+      // Reset Metrics Container to default hidden
+      const metricsContainer = document.getElementById('eqHistMetricsContainer');
+      if (metricsContainer) metricsContainer.classList.add('d-none');
+      const eyeIcon = document.getElementById('eqHistEyeIcon');
+      if (eyeIcon) eyeIcon.className = 'bi bi-eye';
 
       const stockElem = document.getElementById('eqHistModalStock');
       if (stockElem) stockElem.textContent = `${item.quantity || 0} ${item.unit || 'ชิ้น'}`;
@@ -11124,9 +11161,9 @@
         } else if (t === 'ยืมอุปกรณ์') {
           typeBadge = `<span class="badge bg-warning bg-opacity-25 text-dark border border-warning border-opacity-50 px-2 py-1"><i class="bi bi-arrow-repeat me-1 text-warning"></i>ยืมอุปกรณ์</span>`;
         } else if (t === 'คืนอุปกรณ์') {
-          typeBadge = `<span class="badge bg-info bg-opacity-15 text-info-emphasis border border-info border-opacity-25 px-2 py-1"><i class="bi bi-box-arrow-in-down-left me-1"></i>คืนอุปกรณ์</span>`;
+          typeBadge = `<span class="badge px-2.5 py-1.5 fw-bold shadow-sm" style="background-color: #0dcaf0 !important; color: #000000 !important;"><i class="bi bi-box-arrow-in-down-left me-1"></i>คืนอุปกรณ์</span>`;
         } else if (t === 'รับเข้าสต๊อก' || t === 'เติมสต๊อก') {
-          typeBadge = `<span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-2 py-1"><i class="bi bi-plus-circle-fill me-1"></i>รับเข้าสต๊อก</span>`;
+          typeBadge = `<span class="badge text-white px-2.5 py-1.5 fw-bold shadow-sm" style="background-color: #00c853 !important; color: #ffffff !important;"><i class="bi bi-plus-circle-fill me-1"></i>รับเข้าสต๊อก</span>`;
         } else {
           typeBadge = `<span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1">${escapeHtml(t || '-')}</span>`;
         }
@@ -15677,32 +15714,7 @@
       } else if (typeof clearTransCart === 'function') {
         clearTransCart();
       }
-      window.lastInteractedEquipmentId = equipId;
-      const select = document.getElementById('equipSelect');
-      if (select) {
-        select.value = equipId;
-        select.dispatchEvent(new Event('change'));
-      }
-      if (typeof updateEquipSelectPreview === 'function') {
-        updateEquipSelectPreview();
-      }
-
-      const transTabBtn = new bootstrap.Tab(document.getElementById('transaction-tab'));
-      transTabBtn.show();
-
-      // Scroll smoothly to the top of transaction type buttons box
-      setTimeout(() => {
-        const typeBox = document.getElementById('transactionTypeBox') || document.getElementById('transactionForm');
-        if (typeBox) {
-          const navHeight = document.querySelector('.navbar.sticky-top')?.offsetHeight || 60;
-          const rect = typeBox.getBoundingClientRect();
-          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-          const targetY = rect.top + scrollTop - navHeight - 12;
-          window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
-        } else {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      }, 120);
+      window.openTransactionModal(equipId);
     };
 
     window.openEditModal = function(id) {
@@ -18246,7 +18258,7 @@
         if (showFeedback) {
           showToast(`⏳ กำลังตรวจสอบและเชื่อมต่อฐานข้อมูล...`);
           if (typeof window.updateBackupProgress === 'function') {
-            window.updateBackupProgress(5, "กำลังเริ่มซิงก์ข้อมูล (5%)", `กำลังเชื่อมต่อกับฐานข้อมูลต้นทาง (${primarySourceDbId})...`, true, 'bg-success');
+            window.updateBackupProgress(5, "กำลังเริ่มซิงก์ข้อมูล (5%)", `กำลังเชื่อมต่อกับฐานข้อมูล Flora Garden New (${primarySourceDbId})...`, true, 'bg-success');
             const progressEl = document.getElementById('backupProgressContainer');
             if (progressEl) progressEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }
@@ -18380,7 +18392,7 @@
             if (showFeedback && typeof window.updateBackupProgress === 'function') {
               window.updateBackupProgress(
                 currentPct,
-                `กำลังซิงก์ข้อมูลจาก V.2 (${currentPct}%)`,
+                `กำลังซิงก์ข้อมูลจาก Flora Garden New (${currentPct}%)`,
                 `กำลังอ่านตาราง "${colName}" (${colIdx + 1}/${collectionsToMigrate.length})...`,
                 true,
                 'bg-success'
@@ -18443,7 +18455,7 @@
                   if (showFeedback && typeof window.updateBackupProgress === 'function') {
                     window.updateBackupProgress(
                       currentPct,
-                      `กำลังซิงก์ข้อมูลจาก V.2 (${currentPct}%)`,
+                      `กำลังซิงก์ข้อมูลจาก Flora Garden New (${currentPct}%)`,
                       `ตาราง "${colName}" คัดลอกสำเร็จ ${snap.docs.length} รายการ (${colIdx + 1}/${collectionsToMigrate.length})`,
                       true,
                       'bg-success'
@@ -18462,7 +18474,7 @@
         };
 
         console.log(`[Migration] Scanning primary source: ${primarySourceDbId}`);
-        const primaryResult = await testAndCopyFromDb(primarySourceDbId, `Flora Garden V.2 (${primarySourceDbId})`);
+        const primaryResult = await testAndCopyFromDb(primarySourceDbId, `Flora Garden New (${primarySourceDbId})`);
         totalDocsCopied += primaryResult.count;
         if (primaryResult.errors.length > 0) {
           recordedErrors.push(...primaryResult.errors);
@@ -18479,7 +18491,7 @@
           if (showFeedback && typeof window.updateBackupProgress === 'function') {
             window.updateBackupProgress(
               100,
-              "🎉 ซิงก์ข้อมูลจาก V.2 เสร็จสมบูรณ์ 100%!",
+              "🎉 ซิงก์ข้อมูลจาก Flora Garden New เสร็จสมบูรณ์ 100%!",
               `คัดลอกข้อมูลทั้งหมด ${totalDocsCopied} รายการ ลงฐานข้อมูล Test เรียบร้อยแล้ว`,
               true,
               'bg-success'
@@ -18531,7 +18543,7 @@
 
       const defaultDb = "ai-studio-floragardennew-077d9b3a-d839-404a-986e-0ab7c5c9be6e";
       const customDbInput = prompt(
-        "⚡ ซิงค์ข้อมูลข้ามฐานข้อมูลมายังระบบนี้\n\n" +
+        "⚡ ซิงค์ข้อมูลจากฐานข้อมูล Flora Garden New มายัง Test\n\n" +
         "กรุณาตรวจสอบหรือระบุ Database ID ต้นทางที่ต้องการดึงข้อมูล:\n(ค่าเริ่มต้นคือ Flora Garden New)",
         defaultDb
       );

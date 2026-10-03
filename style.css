@@ -150,15 +150,27 @@ body {
   background-color: #f1f8e9;
   overflow: hidden;
   cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: rgba(46, 125, 50, 0.2);
+  touch-action: manipulation;
 }
 .equipment-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
+  pointer-events: none;
 }
-.equipment-img-container:hover .equipment-img {
-  transform: scale(1.06);
+@media (hover: hover) and (pointer: fine) {
+  .equipment-img-container:hover .equipment-img {
+    transform: scale(1.06);
+  }
+  .equipment-img-container:hover .equipment-img-overlay-hint {
+    opacity: 1;
+  }
+}
+.equipment-img-container:active {
+  opacity: 0.92;
 }
 .equipment-img-overlay-hint {
   position: absolute;
@@ -171,8 +183,26 @@ body {
   transition: opacity 0.2s ease;
   pointer-events: none;
 }
-.equipment-img-container:hover .equipment-img-overlay-hint {
-  opacity: 1;
+
+@media (max-width: 768px), (hover: none) {
+  .equipment-img-overlay-hint {
+    display: none !important;
+  }
+}
+
+.btn-equipment-menu {
+  z-index: 30 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .btn-equipment-menu {
+    padding: 6px 14px !important;
+    font-size: 0.82rem !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35) !important;
+  }
 }
 
 .badge-code {
@@ -185,6 +215,7 @@ body {
   padding: 4px 10px;
   border-radius: 20px;
   backdrop-filter: blur(4px);
+  pointer-events: none;
 }
 
 .badge-status {
@@ -194,6 +225,8 @@ body {
   font-size: 0.75rem;
   padding: 4px 10px;
   border-radius: 20px;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
 }
 
 /* Employee Card & ID Badge */

@@ -631,54 +631,17 @@
     return isMobileUA || (isTouch && isCoarse) || (window.innerWidth <= 1024);
   }
 
-  // On mobile: Show chat button ONLY on the main page/view of each system
-  // Specifically: In "หน้าบันทึก เบิก-จ่าย-ยืม-คืน" ALWAYS hide chat on mobile (regardless of screen width > 768px)
+  // Consistent chat button visibility across both desktop and mobile
   function updateMobileChatVisibility() {
     const btn = document.getElementById("floraChatFloatingBtn");
     if (!btn) return;
 
-    // Check transaction pane state in index.html
-    const transPane = document.getElementById("transaction-pane");
-    const isTransActive = Boolean(
-      (transPane && (transPane.classList.contains("active") || transPane.classList.contains("show"))) ||
-      document.body.classList.contains("in-transaction-pane")
-    );
-
-    const catalogPane = document.getElementById("catalog-pane");
-    const isCatalogActive = catalogPane ? (catalogPane.classList.contains("active") || catalogPane.classList.contains("show")) : true;
-
-    const isMobile = isMobileUser();
     const isModalOpen = document.body.classList.contains("modal-open") || Boolean(document.querySelector(".modal.show"));
-
-    // 1. Transaction form: ALWAYS hide on mobile, without caring if screen is wider than 768px!
-    if (isTransActive && isMobile) {
+    if (isModalOpen) {
       btn.classList.add("flora-mobile-hidden");
       return;
     }
 
-    // 2. If user is on mobile (or touch / responsive testing):
-    if (isMobile) {
-      // Hide if modal is open
-      if (isModalOpen) {
-        btn.classList.add("flora-mobile-hidden");
-        return;
-      }
-
-      // In index.html: if not on catalog-pane (e.g. transaction, manage, history), hide chat
-      if (catalogPane && !isCatalogActive) {
-        btn.classList.add("flora-mobile-hidden");
-        return;
-      }
-
-      // In job_application.html: if not on tab-apply, hide chat
-      const applyPane = document.getElementById("tab-apply");
-      if (applyPane && !(applyPane.classList.contains("active") || applyPane.classList.contains("show"))) {
-        btn.classList.add("flora-mobile-hidden");
-        return;
-      }
-    }
-
-    // On main view with no modal open -> show button
     btn.classList.remove("flora-mobile-hidden");
   }
 
@@ -841,12 +804,12 @@
     window.addEventListener("resize", updateMobileChatVisibility);
     window.addEventListener("orientationchange", updateMobileChatVisibility);
 
-    // Mutation observer with subtree to instantly catch class changes on tabs or modals
+    // Mutation observer to instantly catch modal-open class changes on body
     if (window.MutationObserver) {
       const observer = new MutationObserver(() => {
         updateMobileChatVisibility();
       });
-      observer.observe(document.body, { attributes: true, attributeFilter: ["class"], subtree: true });
+      observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
     }
 
     // Initial check for mobile visibility

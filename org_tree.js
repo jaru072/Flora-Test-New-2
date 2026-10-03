@@ -662,7 +662,7 @@
     if (assigned.length) { alert(`ยังลบ “${cName}” ไม่ได้ เนื่องจากมีบุคลากร ${assigned.length} คนอยู่ในโหนดนี้หรือโหนดย่อย\nกรุณาย้ายบุคลากรไปยังหน่วยงานอื่นก่อนลบ`); return; }
     const hasChildren = (node.children && node.children.length > 0);
     const msg = hasChildren 
-      ? `ยืนยันการลบ “${cName}” พร้อมโหนดย่อยทั้งหมด (${node.children.length} รายการ) ออกจากผังโครงสร้างหรือไม่?`
+      ? `ยืนยันการลบ “${cName}” พร้อมโหนดย่อยทั้งหมด (${node.children?.length || 0} รายการ) ออกจากผังโครงสร้างหรือไม่?`
       : `ยืนยันการลบ “${cName}” ออกจากโครงสร้างหรือไม่?`;
     if (!confirm(msg)) return;
     tree=removeNode(tree,id); selectedId=tree.id; dispatchChange();
