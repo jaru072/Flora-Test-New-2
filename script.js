@@ -11322,13 +11322,15 @@
             borrowedQty: 0,
             lastBorrowTime: tx.timestamp || '-',
             dueDateStr: tx.dueDateStr || (tx.dueDate ? (typeof formatDueDateForReceipt === 'function' ? formatDueDateForReceipt(tx) : null) : null),
-            dueDate: tx.dueDate || null
+            dueDate: tx.dueDate || null,
+            lastTxId: tx.id || null
           };
         }
 
         if (type === 'ยืมอุปกรณ์') {
           borrowerMap[key].borrowedQty += qtyInTx;
           borrowerMap[key].lastBorrowTime = tx.timestamp || borrowerMap[key].lastBorrowTime;
+          borrowerMap[key].lastTxId = tx.id || borrowerMap[key].lastTxId;
           if (tx.dueDateStr) borrowerMap[key].dueDateStr = tx.dueDateStr;
           else if (tx.dueDate && typeof formatDueDateForReceipt === 'function') borrowerMap[key].dueDateStr = formatDueDateForReceipt(tx);
           if (tx.dueDate) borrowerMap[key].dueDate = tx.dueDate;
@@ -11398,8 +11400,15 @@
                 <td class="text-center fw-bold text-warning fs-6">${b.borrowedQty} ${item.unit || 'ชิ้น'}</td>
                 <td class="text-center fs-8 text-secondary">${b.lastBorrowTime}</td>
                 <td class="text-center fs-8">
-                  <div class="fw-bold ${isOverdue ? 'text-danger' : 'text-dark'}">${dueDateText}</div>
-                  ${isOverdue ? '<span class="badge bg-danger text-white fs-8 mt-0.5 overdue-pulse-badge"><i class="bi bi-exclamation-triangle-fill me-1"></i>เกินกำหนดคืน</span>' : '<span class="badge bg-warning bg-opacity-25 text-dark border border-warning fs-8 mt-0.5"><i class="bi bi-calendar-check me-1"></i>กำหนดส่งคืน</span>'}
+                  <div class="d-inline-flex flex-column align-items-center cursor-pointer p-1.5 rounded-3 hover-bg-light transition-all" onclick="openEditBorrowerDueDateModal('${item.id}', '${b.employeeId || ''}', '${b.employeeName.replace(/'/g, "\\'")}', ${b.dueDate || 0}, '${b.lastTxId || ''}', ${b.borrowedQty}, '${dueDateText.replace(/'/g, "\\'")}')" title="คลิกเพื่อแก้ไขกำหนดวัน/เวลาส่งคืน" style="cursor: pointer;">
+                    <div class="fw-bold ${isOverdue ? 'text-danger' : 'text-dark'} d-inline-flex align-items-center gap-1">
+                      <span>${dueDateText}</span>
+                      <i class="bi bi-pencil-fill text-muted" style="font-size: 11px;"></i>
+                    </div>
+                    ${isOverdue 
+                      ? '<span class="badge bg-danger text-white fs-8 mt-0.5 overdue-pulse-badge"><i class="bi bi-exclamation-triangle-fill me-1"></i>เกินกำหนดคืน</span>' 
+                      : '<span class="badge bg-warning bg-opacity-25 text-dark border border-warning fs-8 mt-0.5"><i class="bi bi-calendar-check me-1"></i>กำหนดส่งคืน <i class="bi bi-pencil-square ms-0.5"></i></span>'}
+                  </div>
                 </td>
                 <td class="text-center">
                   <div class="d-flex align-items-center justify-content-center gap-1">
@@ -11592,6 +11601,262 @@
       } catch (err) {
         console.error("Return from borrowers modal error:", err);
         showToast("เกิดข้อผิดพลาดในการบันทึกคืนอุปกรณ์");
+      }
+    };
+
+    // ==========================================
+    // EDIT BORROWER DUE DATE MODAL FUNCTIONS
+    // ==========================================
+    window.editBorrowerDueDatePicker = null;
+
+    window.initEditBorrowerDueDatePicker = function() {
+      const elem = document.getElementById('editDueDateInput');
+      if (!elem || typeof flatpickr === 'undefined') return;
+      if (window.editBorrowerDueDatePicker) return;
+
+      const thLocale = (flatpickr.l10ns && flatpickr.l10ns.th) ? flatpickr.l10ns.th : {
+        weekdays: {
+          shorthand: ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"],
+          longhand: ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"]
+        },
+        months: {
+          shorthand: ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."],
+          longhand: ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
+        },
+        firstDayOfWeek: 1,
+        time_24hr: true
+      };
+
+      window.editBorrowerDueDatePicker = flatpickr(elem, {
+        dateFormat: 'Y-m-d',
+        altInput: true,
+        altInputClass: 'form-control rounded-end-3 border-start-0 fw-bold fs-7 bg-white cursor-pointer',
+        altFormat: 'd/m/Y',
+        locale: thLocale,
+        onReady: function(selectedDates, dateStr, instance) {
+          applyThaiBuddhistYearOnlyDate(instance);
+        },
+        onValueUpdate: function(selectedDates, dateStr, instance) {
+          applyThaiBuddhistYearOnlyDate(instance);
+        },
+        onMonthChange: function(selectedDates, dateStr, instance) {
+          applyThaiBuddhistYearOnlyDate(instance);
+        },
+        onYearChange: function(selectedDates, dateStr, instance) {
+          applyThaiBuddhistYearOnlyDate(instance);
+        },
+        onOpen: function(selectedDates, dateStr, instance) {
+          applyThaiBuddhistYearOnlyDate(instance);
+        }
+      });
+    };
+
+    function applyThaiBuddhistYearOnlyDate(instance) {
+      if (!instance) return;
+
+      if (instance.altInput && instance.selectedDates.length > 0) {
+        const d = instance.selectedDates[0];
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const yearBE = d.getFullYear() + 543;
+
+        instance.altInput.value = `${day}/${month}/${yearBE}`;
+      }
+
+      if (instance.calendarContainer) {
+        const yearInputs = instance.calendarContainer.querySelectorAll('.cur-year');
+        yearInputs.forEach(yInput => {
+          const val = parseInt(yInput.value || yInput.getAttribute('value') || '0', 10);
+          if (val && val < 2400) {
+            yInput.value = val + 543;
+          }
+        });
+      }
+    }
+
+    window.openEditBorrowerDueDateModal = function(equipId, empId, empName, currentDueDateMs, txId, borrowQty, currentDueDateText) {
+      const equipObj = (equipmentList || []).find(x => String(x.id) === String(equipId) || String(x.code) === String(equipId));
+      const equipName = equipObj ? `${equipObj.name} [${equipObj.code}]` : 'อุปกรณ์การเกษตร';
+
+      const equipIdInput = document.getElementById('editDueDateEquipId');
+      const empIdInput = document.getElementById('editDueDateEmpId');
+      const txIdInput = document.getElementById('editDueDateTxId');
+      if (equipIdInput) equipIdInput.value = equipId || '';
+      if (empIdInput) empIdInput.value = empId || '';
+      if (txIdInput) txIdInput.value = txId || '';
+
+      const nameElem = document.getElementById('editDueDateEquipName');
+      const empElem = document.getElementById('editDueDateEmpName');
+      const qtyElem = document.getElementById('editDueDateBorrowQty');
+      const curTextElem = document.getElementById('editDueDateCurrentText');
+
+      if (nameElem) nameElem.textContent = equipName;
+      if (empElem) empElem.textContent = empName || '-';
+      if (qtyElem) qtyElem.textContent = `${borrowQty || 1} ${equipObj ? equipObj.unit : 'ชิ้น'}`;
+      if (curTextElem) curTextElem.textContent = currentDueDateText || 'ยังไม่กำหนด';
+
+      // Initialize flatpickr if needed
+      if (!window.editBorrowerDueDatePicker) {
+        initEditBorrowerDueDatePicker();
+      }
+
+      // Calculate initial target date & time
+      let targetDate = new Date();
+      if (currentDueDateMs && Number(currentDueDateMs) > 0) {
+        targetDate = new Date(Number(currentDueDateMs));
+      } else {
+        targetDate.setDate(targetDate.getDate() + 3);
+        targetDate.setHours(17, 0, 0, 0);
+      }
+
+      if (window.editBorrowerDueDatePicker) {
+        window.editBorrowerDueDatePicker.setDate(targetDate, true);
+        applyThaiBuddhistYearOnlyDate(window.editBorrowerDueDatePicker);
+      } else {
+        const yyyy = targetDate.getFullYear();
+        const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(targetDate.getDate()).padStart(2, '0');
+        const dateInp = document.getElementById('editDueDateInput');
+        if (dateInp) dateInp.value = `${yyyy}-${mm}-${dd}`;
+      }
+
+      // Format time in 24hr format
+      const hh = String(targetDate.getHours()).padStart(2, '0');
+      const timeSelect = document.getElementById('editDueTimeSelect');
+      if (timeSelect) {
+        let optionFound = false;
+        for (let opt of timeSelect.options) {
+          if (opt.value === `${hh}:00` || opt.value.startsWith(`${hh}:`)) {
+            timeSelect.value = opt.value;
+            optionFound = true;
+            break;
+          }
+        }
+        if (!optionFound) timeSelect.value = '17:00';
+      }
+
+      const noteInp = document.getElementById('editDueDateNoteInput');
+      if (noteInp) noteInp.value = '';
+
+      const modalElem = document.getElementById('editBorrowerDueDateModal');
+      if (modalElem) {
+        const bsModal = bootstrap.Modal.getOrCreateInstance(modalElem);
+        bsModal.show();
+      }
+    };
+
+    window.applyQuickDueDateOffset = function(days) {
+      const d = new Date();
+      d.setDate(d.getDate() + Number(days));
+      d.setHours(17, 0, 0, 0);
+
+      if (window.editBorrowerDueDatePicker) {
+        window.editBorrowerDueDatePicker.setDate(d, true);
+        applyThaiBuddhistYearOnlyDate(window.editBorrowerDueDatePicker);
+      } else {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dateInp = document.getElementById('editDueDateInput');
+        if (dateInp) dateInp.value = `${yyyy}-${mm}-${dd}`;
+      }
+
+      const timeSelect = document.getElementById('editDueTimeSelect');
+      if (timeSelect) timeSelect.value = '17:00';
+    };
+
+    window.saveEditedBorrowerDueDate = async function() {
+      const equipId = document.getElementById('editDueDateEquipId')?.value || '';
+      const empId = document.getElementById('editDueDateEmpId')?.value || '';
+      const txId = document.getElementById('editDueDateTxId')?.value || '';
+      const noteVal = (document.getElementById('editDueDateNoteInput')?.value || '').trim();
+      const timeVal = document.getElementById('editDueTimeSelect')?.value || '17:00';
+
+      let selectedDate = null;
+      if (window.editBorrowerDueDatePicker && window.editBorrowerDueDatePicker.selectedDates.length > 0) {
+        selectedDate = window.editBorrowerDueDatePicker.selectedDates[0];
+      } else {
+        const rawDate = document.getElementById('editDueDateInput')?.value || '';
+        if (rawDate) {
+          selectedDate = new Date(rawDate);
+        }
+      }
+
+      if (!selectedDate || isNaN(selectedDate.getTime())) {
+        showToast("⚠️ กรุณาระบุวันที่กำหนดส่งคืน");
+        return;
+      }
+
+      const timeParts = timeVal.split(':');
+      const hours = parseInt(timeParts[0], 10) || 17;
+      const minutes = parseInt(timeParts[1], 10) || 0;
+
+      const finalDateObj = new Date(selectedDate);
+      finalDateObj.setHours(hours, minutes, 0, 0);
+
+      const newDueDateMs = finalDateObj.getTime();
+      const day = String(finalDateObj.getDate()).padStart(2, '0');
+      const month = String(finalDateObj.getMonth() + 1).padStart(2, '0');
+      const yearBE = finalDateObj.getFullYear() + 543;
+      const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      const newDueDateStr = `${day}/${month}/${yearBE} เวลา ${timeStr} น.`;
+
+      // Find matching transactions in transactionHistory:
+      const updatedTxIds = [];
+
+      (transactionHistory || []).forEach(tx => {
+        if (!tx) return;
+        const isTargetTx = (txId && tx.id === txId);
+        const isMatchEmpAndEquip = (tx.type === 'ยืมอุปกรณ์' && 
+                                    (tx.employeeId === empId || (empId && String(tx.employeeId) === String(empId))) &&
+                                    (String(tx.equipmentId) === String(equipId) || (Array.isArray(tx.items) && tx.items.some(it => String(it.equipmentId) === String(equipId)))));
+
+        if (isTargetTx || isMatchEmpAndEquip) {
+          tx.dueDate = newDueDateMs;
+          tx.dueDateStr = newDueDateStr;
+          if (noteVal) {
+            tx.dueDateChangeNote = noteVal;
+            tx.note = tx.note ? `${tx.note} (แก้ไขกำหนดส่งคืน: ${noteVal})` : `แก้ไขกำหนดส่งคืน: ${noteVal}`;
+          }
+          if (tx.id) updatedTxIds.push(tx.id);
+        }
+      });
+
+      // Save to localStorage
+      if (typeof saveToLocalStorage === 'function') {
+        saveToLocalStorage();
+      }
+
+      // Sync to Firestore if ready
+      if (isFirebaseReady && db && updatedTxIds.length > 0) {
+        try {
+          for (const id of updatedTxIds) {
+            const txObj = (transactionHistory || []).find(t => t.id === id);
+            if (txObj) {
+              await setDoc(doc(db, "transactions", id), {
+                dueDate: newDueDateMs,
+                dueDateStr: newDueDateStr,
+                note: txObj.note || ''
+              }, { merge: true });
+            }
+          }
+        } catch (fsErr) {
+          console.warn("Firestore update due date warning:", fsErr);
+        }
+      }
+
+      // Hide edit modal
+      const editModalElem = document.getElementById('editBorrowerDueDateModal');
+      if (editModalElem) {
+        const bsModal = bootstrap.Modal.getInstance(editModalElem);
+        if (bsModal) bsModal.hide();
+      }
+
+      showToast(`✅ บันทึกกำหนดส่งคืนใหม่เป็น "${newDueDateStr}" เรียบร้อยแล้ว`);
+
+      // Refresh borrowers modal table immediately
+      if (equipId && typeof showEquipmentBorrowersModal === 'function') {
+        showEquipmentBorrowersModal(equipId);
       }
     };
 
@@ -15722,7 +15987,11 @@
       if (!item) return;
 
       document.getElementById('editEquipId').value = item.id;
-      document.getElementById('equipModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>แก้ไขรายการอุปกรณ์การเกษตร';
+      document.getElementById('equipModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>แก้ไขข้อมูลอุปกรณ์';
+      const modalHeader = document.querySelector('#addEquipmentModal .modal-header');
+      if (modalHeader) {
+        modalHeader.className = 'modal-header bg-success bg-gradient text-white p-3 d-flex align-items-center justify-content-between';
+      }
       document.getElementById('equipNameThai').value = item.name;
       document.getElementById('equipCodeInput').value = item.code;
       document.getElementById('equipCategorySelect').value = item.category;

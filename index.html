@@ -2624,7 +2624,7 @@
 
   <!-- ==================== MODAL: EQUIPMENT BORROWERS LIST ==================== -->
   <div class="modal fade" id="equipmentBorrowersModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable equipment-borrowers-dialog">
       <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
         <div class="modal-header bg-warning bg-gradient text-dark py-3">
           <div class="d-flex align-items-center gap-2">
@@ -2672,7 +2672,7 @@
                     <th>แผนก/งาน</th>
                     <th class="text-center">จำนวนที่ยืม</th>
                     <th class="text-center">วัน-เวลาที่ยืมล่าสุด</th>
-                    <th class="text-center">กำหนดวัน/เวลาส่งคืน</th>
+                    <th class="text-center" title="คลิกที่วันเวลาเพื่อแก้ไขกำหนดวัน/เวลาส่งคืน">กำหนดวัน/เวลาส่งคืน <i class="bi bi-pencil-square text-muted fs-8"></i></th>
                     <th class="text-center">การจัดการ</th>
                   </tr>
                 </thead>
@@ -2690,7 +2690,7 @@
               <small class="text-muted fs-8">ประวัติย้อนหลังล่าสุด</small>
             </div>
             
-            <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
+            <div class="table-responsive" style="max-height: 360px; overflow-y: auto;">
               <table class="table table-sm table-striped align-middle mb-0 fs-8">
                 <thead class="table-light text-secondary sticky-top">
                   <tr>
@@ -2711,6 +2711,148 @@
         </div>
         <div class="modal-footer bg-white py-2 px-3">
           <button type="button" class="btn btn-secondary rounded-pill fw-semibold px-4 fs-7" data-bs-dismiss="modal">ปิดหน้าต่าง</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: EDIT BORROWER DUE DATE ==================== -->
+  <div class="modal fade" id="editBorrowerDueDateModal" tabindex="-1" aria-hidden="true" style="z-index: 1065;">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+        <div class="modal-header bg-success bg-gradient text-white py-3">
+          <div class="d-flex align-items-center gap-2">
+            <div class="bg-white bg-opacity-20 rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+              <i class="bi bi-calendar-event fs-5 text-white"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold mb-0">แก้ไขกำหนดวัน/เวลาส่งคืน</h5>
+              <small class="text-white-50 fs-8">ปรับเปลี่ยนหรือขยายเวลาส่งคืนอุปกรณ์การเกษตร</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body p-3 p-md-4 bg-light">
+          <!-- Summary card -->
+          <div class="card border-0 shadow-sm rounded-3 p-3 bg-white mb-3">
+            <div class="row g-2 fs-7">
+              <div class="col-12 col-sm-6">
+                <span class="text-muted d-block fs-8">อุปกรณ์:</span>
+                <strong id="editDueDateEquipName" class="text-dark">-</strong>
+              </div>
+              <div class="col-12 col-sm-6">
+                <span class="text-muted d-block fs-8">ผู้ยืม:</span>
+                <strong id="editDueDateEmpName" class="text-primary">-</strong>
+              </div>
+              <div class="col-12 col-sm-6">
+                <span class="text-muted d-block fs-8">จำนวนที่ยืม:</span>
+                <strong id="editDueDateBorrowQty" class="text-warning">-</strong>
+              </div>
+              <div class="col-12 col-sm-6">
+                <span class="text-muted d-block fs-8">กำหนดเดิม:</span>
+                <span id="editDueDateCurrentText" class="badge bg-light text-dark border">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Input fields -->
+          <form id="editDueDateForm" onsubmit="event.preventDefault(); saveEditedBorrowerDueDate();">
+            <input type="hidden" id="editDueDateEquipId" value="" />
+            <input type="hidden" id="editDueDateEmpId" value="" />
+            <input type="hidden" id="editDueDateTxId" value="" />
+
+            <div class="row g-3 mb-3">
+              <div class="col-12 col-sm-7">
+                <label class="form-label fw-bold fs-7 text-dark" for="editDueDateInput">
+                  <i class="bi bi-calendar3 text-success me-1"></i> วันที่กำหนดส่งคืน <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white border-end-0 text-success"><i class="bi bi-calendar-event"></i></span>
+                  <input type="text" id="editDueDateInput" class="form-control rounded-end-3 border-start-0 fw-bold fs-7 bg-white cursor-pointer" placeholder="เลือกวัน/เดือน/ปีพุทธศักราช" readonly required />
+                </div>
+                <small class="text-muted fs-8">ปฏิทินภาษาไทย ปีพุทธศักราช</small>
+              </div>
+              <div class="col-12 col-sm-5">
+                <label class="form-label fw-bold fs-7 text-dark" for="editDueTimeSelect">
+                  <i class="bi bi-clock text-success me-1"></i> เวลาส่งคืน <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white border-end-0 text-success"><i class="bi bi-clock-history"></i></span>
+                  <select id="editDueTimeSelect" class="form-select rounded-end-3 border-start-0 font-monospace fw-bold text-dark fs-7" required>
+                    <option value="07:00">07:00 น.</option>
+                    <option value="07:30">07:30 น.</option>
+                    <option value="08:00">08:00 น.</option>
+                    <option value="08:30">08:30 น.</option>
+                    <option value="09:00">09:00 น.</option>
+                    <option value="09:30">09:30 น.</option>
+                    <option value="10:00">10:00 น.</option>
+                    <option value="10:30">10:30 น.</option>
+                    <option value="11:00">11:00 น.</option>
+                    <option value="11:30">11:30 น.</option>
+                    <option value="12:00">12:00 น. (เที่ยงวัน)</option>
+                    <option value="12:30">12:30 น.</option>
+                    <option value="13:00">13:00 น.</option>
+                    <option value="13:30">13:30 น.</option>
+                    <option value="14:00">14:00 น.</option>
+                    <option value="14:30">14:30 น.</option>
+                    <option value="15:00">15:00 น.</option>
+                    <option value="15:30">15:30 น.</option>
+                    <option value="16:00">16:00 น.</option>
+                    <option value="16:30">16:30 น.</option>
+                    <option value="17:00" selected>17:00 น. (เลิกงาน)</option>
+                    <option value="17:30">17:30 น.</option>
+                    <option value="18:00">18:00 น.</option>
+                    <option value="18:30">18:30 น.</option>
+                    <option value="19:00">19:00 น.</option>
+                    <option value="20:00">20:00 น.</option>
+                    <option value="21:00">21:00 น.</option>
+                    <option value="22:00">22:00 น.</option>
+                  </select>
+                </div>
+                <small class="text-muted fs-8">รูปแบบเวลา 24 ชั่วโมง</small>
+              </div>
+            </div>
+
+            <!-- Quick extension buttons -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold fs-8 text-secondary mb-1.5 d-block">
+                <i class="bi bi-lightning-charge-fill text-warning me-1"></i> ปุ่มลัดเลือกด่วน (ขยายเวลาจากปัจจุบัน):
+              </label>
+              <div class="d-flex flex-wrap gap-1.5">
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill fs-8 fw-semibold" onclick="applyQuickDueDateOffset(1)">
+                  +1 วัน
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill fs-8 fw-semibold" onclick="applyQuickDueDateOffset(3)">
+                  +3 วัน
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill fs-8 fw-semibold" onclick="applyQuickDueDateOffset(7)">
+                  +7 วัน (1 สัปดาห์)
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill fs-8 fw-semibold" onclick="applyQuickDueDateOffset(14)">
+                  +14 วัน (2 สัปดาห์)
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill fs-8 fw-semibold" onclick="applyQuickDueDateOffset(30)">
+                  +30 วัน (1 เดือน)
+                </button>
+              </div>
+            </div>
+
+            <!-- Optional note -->
+            <div class="mb-2">
+              <label class="form-label fw-bold fs-7 text-dark" for="editDueDateNoteInput">
+                <i class="bi bi-chat-left-text text-secondary me-1"></i> เหตุผลการขอขยายเวลาหรือบันทึกเพิ่มเติม (ไม่บังคับ)
+              </label>
+              <input type="text" id="editDueDateNoteInput" class="form-control rounded-3 fs-7" placeholder="เช่น ขอขยายเวลาใช้งานในแปลงทดลองเพิ่มอีก 3 วัน" />
+            </div>
+
+            <div class="modal-footer border-0 px-0 pb-0 mt-4 d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-light rounded-pill px-3 fs-7" data-bs-dismiss="modal">ยกเลิก</button>
+              <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold fs-7 shadow-sm">
+                <i class="bi bi-check-circle-fill me-1"></i> บันทึกกำหนดส่งคืนใหม่
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -3634,7 +3776,7 @@
           <p id="loadingStepDetail" class="text-secondary text-center px-4 fs-7 mb-0">ระบบกำลังประมวลผลและจัดเก็บข้อมูลไปยังคลังอุปกรณ์</p>
         </div>
 
-        <div class="modal-header bg-flora-green text-white p-3 d-flex align-items-center justify-content-between">
+        <div class="modal-header bg-success bg-gradient text-white p-3 d-flex align-items-center justify-content-between">
           <h5 class="modal-title fw-bold mb-0" id="equipModalTitle"><i class="bi bi-plus-circle me-2"></i>เพิ่มรายการอุปกรณ์การเกษตรใหม่</h5>
           <button type="button" class="btn btn-danger btn-sm rounded-circle d-inline-flex align-items-center justify-content-center p-0 shadow-sm" style="width: 32px; height: 32px;" data-bs-dismiss="modal" aria-label="ปิดหน้าต่าง" title="ปิดหน้าต่าง">
             <i class="bi bi-x-lg text-white fs-6"></i>
@@ -3770,7 +3912,7 @@
 
             <div class="modal-footer border-0 px-0 pb-0 mt-4">
               <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">ยกเลิก</button>
-              <button type="submit" id="btnSaveAutoImage" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-sm">
+              <button type="submit" id="btnSaveAutoImage" class="btn btn-success rounded-pill px-4 fw-semibold shadow-sm">
                 <i class="bi bi-check-circle-fill me-1"></i> บันทึกข้อมูลอุปกรณ์
               </button>
             </div>

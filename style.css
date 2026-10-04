@@ -6,6 +6,11 @@
   --flora-warm-bg: #f8faf8;
 }
 
+.bg-flora-green {
+  background-color: #2e7d32 !important;
+  color: #ffffff !important;
+}
+
 body {
   font-family: 'Prompt', sans-serif;
   background-color: var(--flora-warm-bg);
@@ -885,6 +890,35 @@ body {
 @media (max-width: 767.98px) {
   .trans-mobile-hide-when-empty {
     display: none !important;
+  }
+}
+
+/* Equipment Borrowers Modal - Expanded size on Desktop */
+@media (min-width: 992px) {
+  .equipment-borrowers-dialog {
+    max-width: 92vw !important;
+    width: 92vw !important;
+  }
+  .equipment-borrowers-dialog .modal-content {
+    min-height: 82vh !important;
+  }
+  .equipment-borrowers-dialog .modal-body {
+    max-height: calc(82vh - 120px) !important;
+    overflow-y: auto !important;
+  }
+}
+
+@media (min-width: 1400px) {
+  .equipment-borrowers-dialog {
+    max-width: 88vw !important;
+    width: 88vw !important;
+  }
+  .equipment-borrowers-dialog .modal-content {
+    min-height: 85vh !important;
+  }
+  .equipment-borrowers-dialog .modal-body {
+    max-height: calc(85vh - 120px) !important;
+    overflow-y: auto !important;
   }
 }
 
