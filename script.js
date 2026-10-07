@@ -176,15 +176,15 @@
 
     const defaultCategoriesList = [
       { id: "CAT-001", code: "CAT-001", name: "น้ำมัน", prefix: "FG", label: "น้ำมันส่วนกลางทั้งหมด", icon: "🛢️" },
-      { id: "CAT-002", code: "CAT-002", name: "งานธุรการ", prefix: "EQ", label: "อุปกรณ์ธุรการ", icon: "📝" },
-      { id: "CAT-003", code: "CAT-003", name: "อุปกรณ์ทำความสะอาด", prefix: "SK", label: "อุปกรณ์ทำความสะอาดทั้งหมด", icon: "🧹" },
-      { id: "CAT-004", code: "CAT-004", name: "ฮาร์ดแวร์,เคมีภัณฑ์", prefix: "FT", label: "น้ำยาเคมี/สี/วัสดุอุดรอยต่อ", icon: "🧪" },
-      { id: "CAT-005", code: "CAT-005", name: "เครื่องมือช่าง", prefix: "AX", label: "อุปกรณ์สำหรับทำงานช่าง", icon: "🛠️" },
-      { id: "CAT-006", code: "CAT-006", name: "เมล็ดพันธ์", prefix: "OP", label: "เมล็ดพันธ์ต่างๆ", icon: "🌱" },
-      { id: "CAT-007", code: "CAT-007", name: "วัสดุเกษตรทั่วไป(ใช้แล้วหมดไป)", prefix: "SF", label: "วัสดุเกษตรทั่วไป(ใช้แล้วหมดไป)", icon: "🌾" },
-      { id: "CAT-008", code: "CAT-008", name: "อุปกรณ์เกษตร ประเภทยืมใช้(รถเข็น พั้ว จอบ จก ฯลฯ)", prefix: "SL", label: "อุปกรณ์เกษตร ประเภทยืมใช้(รถเข็น พั้ว จอบ จก ฯลฯ)", icon: "🚜" },
-      { id: "CAT-009", code: "CAT-009", name: "ระบบไฟ", prefix: "EQ", label: "ระบบไฟ", icon: "💡" },
-      { id: "CAT-010", code: "CAT-010", name: "ระบบน้ำ", prefix: "EQ", label: "ระบบน้ำ", icon: "💧" }
+      { id: "CAT-002", code: "CAT-002", name: "งานธุรการ", prefix: "AD", label: "อุปกรณ์ธุรการ", icon: "📝" },
+      { id: "CAT-003", code: "CAT-003", name: "อุปกรณ์ทำความสะอาด", prefix: "CL", label: "อุปกรณ์ทำความสะอาดทั้งหมด", icon: "🧹" },
+      { id: "CAT-004", code: "CAT-004", name: "ฮาร์ดแวร์,เคมีภัณฑ์", prefix: "CH", label: "น้ำยาเคมี/สี/วัสดุอุดรอยต่อ", icon: "🧪" },
+      { id: "CAT-005", code: "CAT-005", name: "เครื่องมือช่าง", prefix: "TL", label: "อุปกรณ์สำหรับทำงานช่าง", icon: "🛠️" },
+      { id: "CAT-006", code: "CAT-006", name: "เมล็ดพันธ์", prefix: "SD", label: "เมล็ดพันธ์ต่างๆ", icon: "🌱" },
+      { id: "CAT-007", code: "CAT-007", name: "วัสดุเกษตรทั่วไป(ใช้แล้วหมดไป)", prefix: "MT", label: "วัสดุเกษตรทั่วไป(ใช้แล้วหมดไป)", icon: "🌾" },
+      { id: "CAT-008", code: "CAT-008", name: "อุปกรณ์เกษตร ประเภทยืมใช้(รถเข็น พั้ว จอบ จก ฯลฯ)", prefix: "AG", label: "อุปกรณ์เกษตร ประเภทยืมใช้(รถเข็น พั้ว จอบ จก ฯลฯ)", icon: "🚜" },
+      { id: "CAT-009", code: "CAT-009", name: "ระบบไฟ", prefix: "EL", label: "ระบบไฟ", icon: "💡" },
+      { id: "CAT-010", code: "CAT-010", name: "ระบบน้ำ", prefix: "IR", label: "ระบบน้ำ", icon: "💧" }
     ];
 
     const defaultDepartmentsList = [
@@ -1581,6 +1581,7 @@
     };
 
     const DEFAULT_EQUIPMENT_IMAGE = "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600&auto=format&fit=crop&q=80";
+    const DEFAULT_AVATAR_IMAGE = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80";
 
     // Initial Data Generators
     function generateInitialEmployees() {
@@ -2631,6 +2632,10 @@
         window.updateDbEditorMenuVisibility();
       }
 
+      if (typeof window.applyEquipmentCodeInputRolePermissions === 'function') {
+        window.applyEquipmentCodeInputRolePermissions();
+      }
+
       renderCatalogGrid();
       renderEmployeeDirectory();
       renderStaffTable();
@@ -2872,9 +2877,9 @@
 
     // Image Compression Presets & Compressor Utility
     const EQUIPMENT_COMPRESSION_PRESETS = {
-      SMALL: { name: 'เล็ก (600px)', maxWidth: 600, quality: 0.78 },
-      MEDIUM: { name: 'กลาง (800px)', maxWidth: 800, quality: 0.85 },
-      LARGE: { name: 'ใหญ่ (1200px)', maxWidth: 1200, quality: 0.90 }
+      SMALL: { name: 'เล็ก (600px)', maxWidth: 600, quality: 0.72 },
+      MEDIUM: { name: 'กลาง (800px)', maxWidth: 800, quality: 0.78 },
+      LARGE: { name: 'ใหญ่ (1200px)', maxWidth: 1200, quality: 0.85 }
     };
 
     const EMPLOYEE_COMPRESSION_PRESETS = {
@@ -2941,26 +2946,61 @@
             let width = img.width;
             let height = img.height;
 
-            if (width > maxDimension || height > maxDimension) {
-              if (width > height) {
-                height = Math.round((height * maxDimension) / width);
-                width = maxDimension;
-              } else {
-                width = Math.round((width * maxDimension) / height);
-                height = maxDimension;
-              }
-            }
-
             const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, width, height);
 
-            let initialQuality = options.quality || settings.quality || config.quality || 0.82;
-            const targetMaxBytes = (settings.maxFileSizeKB || 350) * 1024;
+            const isEquipmentPortrait = (presetType === 'EQUIPMENT' && height > width && !options.skipLandscapeFit);
+
+            if (isEquipmentPortrait) {
+              // Auto-convert vertical/portrait equipment photo to landscape (16:9) to fit the equipment card frame perfectly
+              const targetW = Math.min(maxDimension, 800);
+              const targetH = Math.round(targetW * (9 / 16));
+              canvas.width = targetW;
+              canvas.height = targetH;
+
+              // 1. Ambient blurred background using image colors to fill the 16:9 canvas
+              ctx.save();
+              const bgScale = Math.max(targetW / width, targetH / height);
+              const bgW = width * bgScale;
+              const bgH = height * bgScale;
+              const bgX = (targetW - bgW) / 2;
+              const bgY = (targetH - bgH) / 2;
+              try {
+                if (typeof ctx.filter !== 'undefined') {
+                  ctx.filter = 'blur(14px) brightness(0.88)';
+                }
+              } catch (e) {}
+              ctx.drawImage(img, bgX, bgY, bgW, bgH);
+              ctx.restore();
+
+              // 2. Centered full equipment photo at full height so no part is cut off
+              const fgScale = targetH / height;
+              const fgW = Math.round(width * fgScale);
+              const fgX = Math.round((targetW - fgW) / 2);
+              ctx.drawImage(img, fgX, 0, fgW, targetH);
+
+              width = targetW;
+              height = targetH;
+            } else {
+              if (width > maxDimension || height > maxDimension) {
+                if (width > height) {
+                  height = Math.round((height * maxDimension) / width);
+                  width = maxDimension;
+                } else {
+                  width = Math.round((width * maxDimension) / height);
+                  height = maxDimension;
+                }
+              }
+
+              canvas.width = width;
+              canvas.height = height;
+              ctx.drawImage(img, 0, 0, width, height);
+            }
+
+            let initialQuality = options.quality || settings.quality || config.quality || 0.78;
+            const targetMaxBytes = (presetType === 'EQUIPMENT' ? 180 : (settings.maxFileSizeKB || 350)) * 1024;
 
             const compressWithQuality = (q) => {
               canvas.toBlob((blob) => {
@@ -3102,6 +3142,54 @@
       const input = document.getElementById(inputId);
       if (input && input.files && input.files.length > 0) {
         previewSelectedImage(input, imgElementId, boxElementId, presetRadioName);
+      }
+    };
+
+    window.rotatePreviewImage = async function(inputId, imgElementId, boxElementId, presetRadioName) {
+      const input = document.getElementById(inputId);
+      const img = document.getElementById(imgElementId);
+      if (!img || !img.src) return;
+
+      try {
+        const res = await fetch(img.src);
+        const blob = await res.blob();
+        const bmp = await createImageBitmap(blob);
+        const canvas = document.createElement('canvas');
+        canvas.width = bmp.height;
+        canvas.height = bmp.width;
+        const ctx = canvas.getContext('2d');
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(90 * Math.PI / 180);
+        ctx.drawImage(bmp, -bmp.width / 2, -bmp.height / 2);
+
+        canvas.toBlob(async (rotatedBlob) => {
+          if (!rotatedBlob) return;
+          const presetType = (presetRadioName === 'empCompressPreset' || inputId.includes('emp')) ? 'EMPLOYEE' : 'EQUIPMENT';
+          let presetKey = 'MEDIUM';
+          if (presetRadioName) {
+            const checkedRadio = document.querySelector(`input[name="${presetRadioName}"]:checked`);
+            if (checkedRadio) presetKey = checkedRadio.value;
+          }
+          const compressed = await compressImageFileOrBlob(rotatedBlob, presetKey, presetType);
+          img.src = compressed.dataUrl;
+          if (input && compressed.file) {
+            const dt = new DataTransfer();
+            dt.items.add(compressed.file);
+            input.files = dt.files;
+          }
+          const box = document.getElementById(boxElementId);
+          if (box) {
+            const infoBadge = box.querySelector('.compress-info-badge');
+            if (infoBadge) {
+              const fmtName = compressed.extension ? compressed.extension.toUpperCase() : 'WEBP';
+              infoBadge.innerHTML = `<i class="bi bi-lightning-charge-fill text-warning me-1"></i> ย่อภาพ (${compressed.presetName} ${fmtName}): ${compressed.compressedSizeFormatted} <span class="badge bg-success bg-opacity-25 text-success ms-1">-${compressed.savedPercent}%</span> [${compressed.width}x${compressed.height}]`;
+              infoBadge.classList.remove('d-none');
+            }
+          }
+          showToast("🔄 หมุนรูปภาพ 90° และจัดสัดส่วนเรียบร้อยแล้ว", { title: "ปรับแต่งรูปภาพ", type: "info" });
+        }, 'image/webp', 0.82);
+      } catch (err) {
+        console.warn("Rotate preview image error:", err);
       }
     };
 
@@ -3743,6 +3831,16 @@
         const cleanName = customFileName.replace(/[^a-zA-Z0-9._-]/g, '_');
         const baseName = cleanName.replace(/\.(jpeg|jpg|png|webp)$/i, '');
         fileName = `${baseName}.${ext}`;
+
+        // ลบไฟล์เดิมใน Storage ที่มีชื่อเดียวกันแต่ต่างนามสกุลออกทั้งหมดก่อน ป้องกันไฟล์ซ้ำซ้อน
+        if (typeof window.deleteImageFromFirebaseStorage === 'function') {
+          const candidateExts = ['webp', 'jpeg', 'jpg', 'png'].filter(e => e !== ext);
+          for (const oldExt of candidateExts) {
+            try {
+              await window.deleteImageFromFirebaseStorage(`${folderName}/${baseName}.${oldExt}`);
+            } catch (e) {}
+          }
+        }
       } else {
         const safeName = targetFile.name ? targetFile.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.(jpeg|jpg|png|webp)$/i, '') : 'image';
         fileName = `${Date.now()}_${safeName}.${ext}`;
@@ -3775,6 +3873,16 @@
           const cleanName = defaultName ? defaultName.replace(/[^a-zA-Z0-9._-]/g, '_') : 'item';
           const baseName = cleanName.replace(/\.(jpeg|jpg|png|webp)$/i, '');
           const fileName = `${baseName}.${ext}`;
+
+          // ลบไฟล์เดิมใน Storage ที่มีชื่อเดียวกันแต่ต่างนามสกุลออกทั้งหมดก่อน ป้องกันไฟล์ซ้ำซ้อน
+          if (typeof window.deleteImageFromFirebaseStorage === 'function') {
+            const candidateExts = ['webp', 'jpeg', 'jpg', 'png'].filter(e => e !== ext);
+            for (const oldExt of candidateExts) {
+              try {
+                await window.deleteImageFromFirebaseStorage(`${folderName}/${baseName}.${oldExt}`);
+              } catch (e) {}
+            }
+          }
 
           const storageRef = ref(storage, `${folderName}/${fileName}`);
           const snapshot = await uploadBytes(storageRef, targetBlob);
@@ -3837,18 +3945,140 @@
     window.getCategoryPrefix = function(categoryName) {
       if (!categoryName) return 'EQ';
       if (typeof categoriesList !== 'undefined' && Array.isArray(categoriesList)) {
-        const cat = categoriesList.find(c => c.name === categoryName);
-        if (cat && cat.prefix) return cat.prefix.toUpperCase();
+        const cat = categoriesList.find(c => c && c.name === categoryName);
+        if (cat && cat.prefix) return String(cat.prefix).trim().toUpperCase();
       }
       const name = String(categoryName).trim();
       if (name.includes('ตัดแต่ง')) return 'CT';
-      if (name.includes('รดน้ำ') || name.includes('สปรินเกอร์')) return 'IR';
+      if (name.includes('รดน้ำ') || name.includes('สปรินเกอร์') || name.includes('ระบบน้ำ')) return 'IR';
       if (name.includes('เตรียมดิน') || name.includes('จอบ') || name.includes('เสียม') || name.includes('พรวน')) return 'SL';
-      if (name.includes('ปุ๋ย') || name.includes('สารบำรุง') || name.includes('ดูแลพืช') || name.includes('เคมี')) return 'FT';
+      if (name.includes('ปุ๋ย') || name.includes('สารบำรุง') || name.includes('ดูแลพืช') || name.includes('เคมี')) return 'CH';
       if (name.includes('ภาชนะ') || name.includes('บรรจุภัณฑ์') || name.includes('กระถาง')) return 'PT';
-      if (name.includes('เซฟตี้') || name.includes('ทั่วไป')) return 'SF';
+      if (name.includes('เซฟตี้') || name.includes('ทั่วไป')) return 'MT';
       if (name.includes('เครื่องจักร')) return 'MC';
+      if (name.includes('น้ำมัน')) return 'FG';
+      if (name.includes('ธุรการ')) return 'AD';
+      if (name.includes('ทำความสะอาด')) return 'CL';
+      if (name.includes('ช่าง')) return 'TL';
+      if (name.includes('เมล็ด')) return 'SD';
+      if (name.includes('ยืมใช้')) return 'AG';
+      if (name.includes('ไฟ')) return 'EL';
       return 'EQ';
+    };
+
+    // Auto-generate a guaranteed unique 2-4 letter uppercase prefix for categories
+    window.generateUniqueCategoryPrefix = function(categoryName, currentCatId = '') {
+      const existingPrefixes = new Set();
+      (categoriesList || []).forEach(c => {
+        if (!c) return;
+        const cId = c.id || c.code || c.name;
+        if (currentCatId && (cId === currentCatId || c.id === currentCatId || c.code === currentCatId || c.name === currentCatId)) {
+          return;
+        }
+        if (c.prefix) {
+          existingPrefixes.add(String(c.prefix).trim().toUpperCase());
+        }
+      });
+
+      const name = String(categoryName || '').trim();
+      const candidates = [];
+      if (name.includes('ตัดแต่ง')) candidates.push('CT');
+      if (name.includes('รดน้ำ') || name.includes('สปรินเกอร์') || name.includes('ระบบน้ำ')) candidates.push('IR', 'WT');
+      if (name.includes('น้ำมัน') || name.includes('เชื้อเพลิง')) candidates.push('FG', 'OL');
+      if (name.includes('เตรียมดิน') || name.includes('จอบ') || name.includes('เสียม') || name.includes('พรวน')) candidates.push('SL');
+      if (name.includes('ปุ๋ย') || name.includes('สารบำรุง') || name.includes('เคมี')) candidates.push('CH', 'FT');
+      if (name.includes('ภาชนะ') || name.includes('บรรจุภัณฑ์') || name.includes('กระถาง')) candidates.push('PT', 'PK');
+      if (name.includes('เซฟตี้') || name.includes('ความปลอดภัย')) candidates.push('SF', 'ST');
+      if (name.includes('เครื่องจักร') || name.includes('ยนต์')) candidates.push('MC', 'EN');
+      if (name.includes('ช่าง') || name.includes('เครื่องมือ')) candidates.push('TL', 'AX');
+      if (name.includes('เมล็ด')) candidates.push('SD', 'SP');
+      if (name.includes('ธุรการ') || name.includes('สำนักงาน')) candidates.push('AD', 'OF');
+      if (name.includes('ทำความสะอาด')) candidates.push('CL', 'SK');
+      if (name.includes('ไฟ')) candidates.push('EL', 'LT');
+      if (name.includes('ยืม')) candidates.push('AG');
+
+      for (const cand of candidates) {
+        if (!existingPrefixes.has(cand)) {
+          return cand;
+        }
+      }
+
+      // Check English characters in name
+      const enMatches = name.toUpperCase().replace(/[^A-Z]/g, '');
+      if (enMatches.length >= 2) {
+        const p = enMatches.slice(0, 2);
+        if (!existingPrefixes.has(p)) return p;
+      }
+
+      // Generate unique 2-letter uppercase alphabet pair
+      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      for (let i = 0; i < alphabet.length; i++) {
+        for (let j = 0; j < alphabet.length; j++) {
+          const combo = alphabet[i] + alphabet[j];
+          if (!existingPrefixes.has(combo)) {
+            return combo;
+          }
+        }
+      }
+      return 'EQ';
+    };
+
+    window.handleCategoryNameInput = function(name) {
+      const prefixInput = document.getElementById('catPrefixInput');
+      if (!prefixInput) return;
+      if (!prefixInput.value || prefixInput.dataset.autoGenerated === 'true') {
+        const editId = document.getElementById('editCatId')?.value || '';
+        const suggested = generateUniqueCategoryPrefix(name, editId);
+        prefixInput.value = suggested;
+        prefixInput.dataset.autoGenerated = 'true';
+      }
+    };
+
+    window.generateAutoCategoryPrefix = function(force = false) {
+      const prefixInput = document.getElementById('catPrefixInput');
+      const nameInput = document.getElementById('catNameInput');
+      if (!prefixInput) return;
+      const name = nameInput ? nameInput.value : '';
+      const editId = document.getElementById('editCatId')?.value || '';
+      const suggested = generateUniqueCategoryPrefix(name, editId);
+      prefixInput.value = suggested;
+      prefixInput.dataset.autoGenerated = 'true';
+      if (force && typeof showToast === 'function') {
+        showToast(`✨ ระบบออกตัวย่ออัตโนมัติ "${suggested}" (ไม่ซ้ำกับหมวดหมู่อื่น) เรียบร้อยแล้ว`);
+      }
+    };
+
+    // Role-based permissions for Equipment Code Input: ONLY Admin can edit equipment code
+    window.applyEquipmentCodeInputRolePermissions = function() {
+      const isAdmin = (typeof currentRole !== 'undefined' && currentRole === 'ADMIN') ||
+                      (typeof currentAuthUser !== 'undefined' && currentAuthUser?.email === 'jaru072@gmail.com') ||
+                      (typeof currentUserProfile !== 'undefined' && currentUserProfile?.email === 'jaru072@gmail.com');
+      const codeInput = document.getElementById('equipCodeInput');
+      const badge = document.getElementById('equipCodeBadge');
+      if (codeInput) {
+        if (isAdmin) {
+          codeInput.readOnly = false;
+          codeInput.classList.remove('bg-light');
+          codeInput.classList.add('bg-white');
+          codeInput.placeholder = 'ระบุรหัสอุปกรณ์ เช่น CT-001';
+          codeInput.title = 'ผู้ดูแลระบบ (Admin) สามารถกำหนดหรือแก้ไขรหัสอุปกรณ์ได้โดยตรง';
+        } else {
+          codeInput.readOnly = true;
+          codeInput.classList.remove('bg-white');
+          codeInput.classList.add('bg-light');
+          codeInput.placeholder = 'เลือกหมวดหมู่เพื่อออกรหัสอัตโนมัติ';
+          codeInput.title = 'ระบบออกรหัสให้อัตโนมัติตามหมวดหมู่ (เฉพาะผู้ดูแลระบบเท่านั้นที่แก้ไขได้)';
+        }
+      }
+      if (badge) {
+        if (isAdmin) {
+          badge.className = 'badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 fs-8 ms-1';
+          badge.textContent = 'ผู้ดูแลระบบแก้ไขได้';
+        } else {
+          badge.className = 'badge bg-secondary bg-opacity-10 text-secondary fs-8 ms-1';
+          badge.textContent = 'ระบบออกให้อัตโนมัติ';
+        }
+      }
     };
 
     window.fixEquipmentCodesToMatchCategories = async function(silent = false) {
@@ -3989,14 +4219,19 @@
 
     window.updateEquipmentCodeForCategory = function() {
       const editId = document.getElementById('editEquipId')?.value;
-      if (!editId) {
+      const isAdmin = (typeof currentRole !== 'undefined' && currentRole === 'ADMIN') ||
+                      (typeof currentAuthUser !== 'undefined' && currentAuthUser?.email === 'jaru072@gmail.com') ||
+                      (typeof currentUserProfile !== 'undefined' && currentUserProfile?.email === 'jaru072@gmail.com');
+
+      // If in edit mode and admin has customized code, don't overwrite unless empty
+      const codeInput = document.getElementById('equipCodeInput');
+      if (editId && isAdmin && codeInput && codeInput.value.trim()) {
+        return;
+      }
+
+      if (!editId || !codeInput?.value.trim()) {
         const catSelect = document.getElementById('equipCategorySelect');
-        let selectedCat = catSelect ? catSelect.value : '';
-        if (!selectedCat && catSelect && catSelect.options.length > 1) {
-          catSelect.selectedIndex = 1;
-          selectedCat = catSelect.value;
-        }
-        const codeInput = document.getElementById('equipCodeInput');
+        const selectedCat = catSelect ? catSelect.value : '';
         if (codeInput) {
           if (selectedCat) {
             codeInput.value = generateNextEquipmentCode(selectedCat);
@@ -4015,10 +4250,32 @@
       const category = document.getElementById('equipCategorySelect').value;
       const editId = document.getElementById('editEquipId').value;
       let code = document.getElementById('equipCodeInput').value.trim();
-      
-      const expectedPrefix = getCategoryPrefix(category);
-      if (!editId || !code || !code.toUpperCase().startsWith(expectedPrefix + '-')) {
-        code = generateNextEquipmentCode(category);
+
+      const isAdmin = (typeof currentRole !== 'undefined' && currentRole === 'ADMIN') ||
+                      (typeof currentAuthUser !== 'undefined' && currentAuthUser?.email === 'jaru072@gmail.com') ||
+                      (typeof currentUserProfile !== 'undefined' && currentUserProfile?.email === 'jaru072@gmail.com');
+
+      if (isAdmin && code) {
+        code = code.toUpperCase();
+        // Check duplicate equipment code
+        const codeConflict = (equipmentList || []).find(item => 
+          item && item.code && item.code.toUpperCase() === code && 
+          item.id !== editId && item.code !== editId
+        );
+        if (codeConflict) {
+          showToast(`⚠️ รหัสอุปกรณ์ "${code}" มีอยู่แล้วในระบบ (ซ้ำกับ "${codeConflict.name}") กรุณาระบุรหัสอื่น`);
+          const codeInputElem = document.getElementById('equipCodeInput');
+          if (codeInputElem) {
+            codeInputElem.focus();
+            codeInputElem.select();
+          }
+          return;
+        }
+      } else {
+        const expectedPrefix = getCategoryPrefix(category);
+        if (!editId || !code || !code.toUpperCase().startsWith(expectedPrefix + '-')) {
+          code = generateNextEquipmentCode(category);
+        }
       }
       const qty = parseInt(document.getElementById('equipQtyInput').value) || 0;
       const minQtyVal = parseInt(document.getElementById('equipMinQtyInput')?.value);
@@ -4042,13 +4299,35 @@
 
       try {
         let finalImageUrl = '';
-        const safeEquipCode = (code || 'equipment').replace(/[^a-zA-Z0-9_-]/g, '_');
-        const equipFileName = `${safeEquipCode}.jpeg`;
+        const existing = editId ? equipmentList.find(x => x.id === editId || x.code === editId) : null;
+        const oldCode = (existing && existing.code) ? existing.code : '';
+        const oldSafeEquipCode = oldCode.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const safeEquipCode = (code || oldCode || 'equipment').replace(/[^a-zA-Z0-9_-]/g, '_');
+        const equipFileName = `${safeEquipCode}.webp`;
 
         if (selectedEquipFile) {
+          // เมื่อถ่ายรูปใหม่หรือเลือกไฟล์ใหม่ ให้ลบไฟล์รูปเดิมและทุกนามสกุลที่ชื่อซ้ำกันของอุปกรณ์นี้ออกจาก Storage ก่อน
+          if (isFirebaseReady && storage) {
+            if (existing && existing.imageUrl && (existing.imageUrl.includes('firebasestorage') || existing.imageUrl.includes('storage.googleapis.com') || existing.imageUrl.startsWith('gs://'))) {
+              try {
+                await window.deleteImageFromFirebaseStorage(existing.imageUrl);
+              } catch (delErr) {}
+            }
+
+            const codesToPurge = new Set([safeEquipCode]);
+            if (oldSafeEquipCode) codesToPurge.add(oldSafeEquipCode);
+            for (const c of codesToPurge) {
+              for (const ext of ['webp', 'jpeg', 'jpg', 'png']) {
+                try {
+                  await window.deleteImageFromFirebaseStorage(`equipment_images/${c}.${ext}`);
+                } catch (e) {}
+              }
+            }
+          }
+
           const presetKey = document.querySelector('input[name="equipCompressPreset"]:checked')?.value || 'MEDIUM';
           if (stepTitle) stepTitle.textContent = "กำลังอัปโหลดและบีบอัดรูปภาพไปยัง Firebase Storage...";
-          if (stepDetail) stepDetail.textContent = `ระบบกำลังบีบอัดไฟล์รูปภาพเป็นขนาด ${presetKey === 'SMALL' ? 'เล็ก' : (presetKey === 'LARGE' ? 'ใหญ่' : 'กลาง')} และจัดเก็บเข้า Storage ในชื่อ ${equipFileName}...`;
+          if (stepDetail) stepDetail.textContent = `ระบบกำลังบีบอัดไฟล์รูปภาพและจัดเก็บเข้า Storage ในชื่อ ${equipFileName}...`;
           try {
             finalImageUrl = await uploadFileToFirebaseStorage(selectedEquipFile, "equipment_images", presetKey, equipFileName);
           } catch (stErr) {
@@ -4058,14 +4337,24 @@
         } else if (manualUrl) {
           if (stepTitle) stepTitle.textContent = "กำลังบันทึกข้อมูลอุปกรณ์...";
           if (stepDetail) stepDetail.textContent = "ระบบกำลังประมวลผลข้อมูลและรูปภาพ...";
+          if (isFirebaseReady && storage && existing && existing.imageUrl && existing.imageUrl !== manualUrl && (existing.imageUrl.includes('firebasestorage') || existing.imageUrl.includes('storage.googleapis.com') || existing.imageUrl.startsWith('gs://'))) {
+            try {
+              await window.deleteImageFromFirebaseStorage(existing.imageUrl);
+            } catch (delErr) {}
+          }
           finalImageUrl = await uploadImageBlobToFirebaseStorage(manualUrl, "equipment_images", equipFileName);
         } else {
           if (editId) {
-            const existing = equipmentList.find(x => x.id === editId);
             finalImageUrl = existing && existing.imageUrl ? existing.imageUrl : DEFAULT_EQUIPMENT_IMAGE;
           } else {
             finalImageUrl = DEFAULT_EQUIPMENT_IMAGE;
           }
+        }
+
+        // Cache busting for Firebase Storage URLs to ensure browser refreshes instantly
+        if (finalImageUrl && finalImageUrl.includes('firebasestorage.googleapis.com')) {
+          const cleanUrl = finalImageUrl.replace(/&t=\d+/, '');
+          finalImageUrl = `${cleanUrl}&t=${Date.now()}`;
         }
 
         // Ensure finalImageUrl is portable and not a device-local blob URL
@@ -4111,8 +4400,25 @@
         if (isFirebaseReady && db && editId && editId !== docId) {
           try {
             await deleteDoc(doc(db, "equipment", editId));
+            if (existing && existing.code && existing.code !== docId && existing.code !== editId) {
+              await deleteDoc(doc(db, "equipment", existing.code));
+            }
           } catch(delErr) {
             console.warn("Delete old equipment doc notice:", delErr);
+          }
+        }
+
+        // Sync old code to new code in transactions if equipment code was renamed
+        if (editId && existing && (existing.code !== code || existing.id !== code)) {
+          const oldCode = existing.code;
+          const oldId = existing.id;
+          if (Array.isArray(transactionHistory) && oldCode) {
+            transactionHistory.forEach(tx => {
+              if (tx && (tx.equipmentCode === oldCode || tx.equipmentId === oldId)) {
+                tx.equipmentCode = code;
+                tx.equipmentId = code;
+              }
+            });
           }
         }
 
@@ -4792,7 +5098,7 @@
       let dueDateVal = null;
       let dueDateStr = null;
       if (type === 'ยืมอุปกรณ์') {
-        if (window.transDueDatePicker && window.transDueDatePicker.selectedDates.length > 0) {
+        if (window.transDueDatePicker && Array.isArray(window.transDueDatePicker.selectedDates) && window.transDueDatePicker.selectedDates.length > 0) {
           const dObj = window.transDueDatePicker.selectedDates[0];
           dueDateVal = dObj.getTime();
           const day = String(dObj.getDate()).padStart(2, '0');
@@ -5168,6 +5474,7 @@
       const input = document.getElementById('catalogSearchInput');
       if (input) {
         input.value = '';
+        input.focus();
         renderCatalogGrid();
       }
     };
@@ -5237,7 +5544,8 @@
       const selectedStatus = document.getElementById('catalogStatusSelect')?.value || 'ALL';
 
       // Update Low Stock Count Badge & Active Button State for Catalog (only show when quantity < minQuantity)
-      const lowStockTotal = equipmentList.filter(item => {
+      const currentEqList = Array.isArray(equipmentList) ? equipmentList : [];
+      const lowStockTotal = currentEqList.filter(item => {
         const minQty = item.minQuantity !== undefined ? Number(item.minQuantity) : 3;
         return (Number(item.quantity) || 0) < minQty;
       }).length;
@@ -5267,7 +5575,7 @@
         }
       }
 
-      let filtered = equipmentList.filter(item => {
+      let filtered = currentEqList.filter(item => {
         const nameStr = String(item.name || '').toLowerCase();
         const codeStr = String(item.code || '').toLowerCase();
         const catStr = String(item.category || '').toLowerCase();
@@ -5353,6 +5661,11 @@
         const highlightedName = highlightSearchText(item.name, rawSearchInput);
         const highlightedCode = highlightSearchText(item.code, rawSearchInput);
 
+        const hasDesc = !!(item.description && item.description.trim());
+        const descHtml = hasDesc
+          ? `<p class="text-secondary fs-7 mb-2 text-truncate-2" title="${escapeHtml(item.description)}">${escapeHtml(item.description)}</p>`
+          : `<p class="text-secondary fs-7 mb-2 text-truncate-2 d-none d-md-block text-muted">ไม่มีรายละเอียดสเปกเพิ่มเติม</p>`;
+
         html += `
           <div class="col-12 col-sm-6 col-lg-4 col-xl-3" id="equip-card-${item.id}" data-equip-id="${item.id}">
             <div class="equipment-card">
@@ -5372,24 +5685,21 @@
                 ${statusBadge}
               </div>
 
-              <div class="card-body p-3 d-flex flex-column justify-content-between">
+              <div class="card-body p-3 d-flex flex-column">
                 <div>
-                  <div class="text-success fs-7 fw-semibold mb-1">${escapeHtml(item.category || '')}</div>
-                  <h6 class="fw-bold text-dark mb-2 text-truncate" title="${escapeHtml(item.name || '')}">${highlightedName}</h6>
-                  <p class="text-secondary fs-7 mb-3 text-truncate-2" style="min-height: 2.4rem;">
-                    ${item.description ? escapeHtml(item.description) : 'ไม่มีรายละเอียดสเปกเพิ่มเติม'}
-                  </p>
+                  <h6 class="fw-bold text-dark mb-1 text-truncate" title="${escapeHtml(item.name || '')}">${highlightedName}</h6>
+                  ${descHtml}
                 </div>
 
-                <div>
+                <div class="mt-1 mt-md-auto">
                   <div class="d-flex justify-content-between align-items-center mb-2 bg-light p-2 rounded-3 fs-7">
-                    <div><i class="bi bi-geo-alt-fill text-danger me-1"></i> ${escapeHtml(item.location || 'คลังกลาง')}</div>
+                    <div class="text-truncate me-1"><i class="bi bi-geo-alt-fill text-danger me-1"></i> ${escapeHtml(item.location || 'คลังกลาง')}</div>
                     ${(item.borrowedCount || 0) > 0 ? `
-                      <button type="button" class="btn btn-xs btn-outline-warning text-dark fw-bold rounded-pill px-2 py-0.5 shadow-sm d-inline-flex align-items-center gap-1" onclick="showEquipmentBorrowersModal('${item.id}')" title="กดดูรายชื่อผู้ยืมอุปกรณ์นี้">
-                        <i class="bi bi-people-fill text-warning"></i> ถูกยืม: ${item.borrowedCount} ${item.unit} <span class="badge bg-dark text-white rounded-pill ms-0.5" style="font-size: 8px; padding: 2px 4px;">ดูผู้ยืม</span>
+                      <button type="button" class="btn btn-xs btn-outline-warning text-dark fw-bold rounded-pill px-2 py-0.5 shadow-sm flex-shrink-0" onclick="showEquipmentBorrowersModal('${item.id}')" title="กดดูรายชื่อผู้ยืมอุปกรณ์นี้ (${item.borrowedCount} ${escapeHtml(item.unit || '')})">
+                        ยืม ${item.borrowedCount}
                       </button>
                     ` : `
-                      <div class="text-secondary fs-8 fw-semibold">ถูกยืม: 0 ${escapeHtml(item.unit || '')}</div>
+                      <div class="text-secondary fs-8 fw-semibold flex-shrink-0">ยืม 0</div>
                     `}
                   </div>
 
@@ -5808,7 +6118,7 @@
         deptSelect.innerHTML = '<option value="">-- เลือกแผนกที่ต้องการเปลี่ยน --</option>';
         const groups = getDepartmentDropdownGroups(departmentsList);
         for (const [key, grp] of Object.entries(groups)) {
-          if (grp.items.length > 0) {
+          if (grp && Array.isArray(grp.items) && grp.items.length > 0) {
             const optGroup = document.createElement('optgroup');
             optGroup.label = grp.label;
             grp.items.forEach(dept => {
@@ -6151,7 +6461,8 @@
       const navBadge = document.getElementById('manageLowStockBadge');
       if (!tbody) return;
 
-      const lowStockItems = equipmentList.filter(item => {
+      const currentEqList = Array.isArray(equipmentList) ? equipmentList : [];
+      const lowStockItems = currentEqList.filter(item => {
         const minQty = item.minQuantity !== undefined ? Number(item.minQuantity) : 3;
         return (Number(item.quantity) || 0) < minQty;
       });
@@ -6209,7 +6520,7 @@
       const selectedCat = document.getElementById('staffCategorySelect')?.value || 'ALL';
       const selectedStockStatus = staffStockFilterMode;
 
-      let filtered = equipmentList.filter(item => {
+      let filtered = currentEqList.filter(item => {
         const nameStr = String(item.name || '').toLowerCase();
         const codeStr = String(item.code || '').toLowerCase();
         const catStr = String(item.category || '').toLowerCase();
@@ -6372,11 +6683,11 @@
             </td>
             <td class="text-center">
               ${(item.borrowedCount || 0) > 0 ? `
-                <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-bold rounded-pill px-2.5 py-1 shadow-sm d-inline-flex align-items-center gap-1" onclick="showEquipmentBorrowersModal('${item.id}')" title="กดดูรายชื่อผู้ยืมอุปกรณ์นี้">
-                  <i class="bi bi-people-fill text-warning"></i> ${item.borrowedCount} ${item.unit} <span class="badge bg-dark text-white rounded-pill ms-0.5" style="font-size: 8px;">ดูผู้ยืม</span>
+                <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-bold rounded-pill px-2.5 py-1 shadow-sm" onclick="showEquipmentBorrowersModal('${item.id}')" title="กดดูรายชื่อผู้ยืมอุปกรณ์นี้ (${item.borrowedCount} ${escapeHtml(item.unit || '')})">
+                  ยืม ${item.borrowedCount}
                 </button>
               ` : `
-                <span class="text-muted fs-8">0 ${item.unit}</span>
+                <span class="text-muted fs-8">ยืม 0</span>
               `}
             </td>
             <td class="fs-7 text-secondary"><i class="bi bi-geo-alt me-1 text-danger"></i>${item.location || 'คลังกลาง'}</td>
@@ -7061,6 +7372,7 @@
       const tbody = document.getElementById('historyTableBody');
       const filterType = document.getElementById('historyFilterType')?.value || 'ALL';
       const searchQuery = (document.getElementById('historySearchInput')?.value || '').toLowerCase().trim();
+      const isAdmin = (typeof currentRole !== 'undefined' && currentRole === 'ADMIN');
 
       // Update Daily Summary Overview Card
       if (typeof window.updateDailyTransactionSummary === 'function') {
@@ -7223,18 +7535,27 @@
             <td class="fw-semibold text-dark">${tx.employeeName || '-'}</td>
             <td>${itemsDisplay}</td>
             <td class="text-center fw-bold fs-6">${tx.quantity !== undefined ? tx.quantity : '-'} ${tx.unit || 'ชิ้น'}</td>
-            <td class="fs-7 text-muted">
+            <td class="fs-7 text-muted" style="max-width: 220px; min-width: 150px;">
               <div><i class="bi bi-geo-alt me-1 text-danger"></i> ${tx.location || '-'}</div>
-              ${tx.note ? `<div><i class="bi bi-chat-left-text me-1"></i> ${tx.note}</div>` : ''}
+              ${tx.note ? `
+                <div class="note-single-line-scroll py-0.5 text-secondary" style="max-width: 220px;" title="${escapeHtml(tx.note)}">
+                  <i class="bi bi-chat-left-text me-1 text-secondary"></i>${escapeHtml(tx.note)}
+                </div>
+              ` : ''}
             </td>
             <td class="text-end pe-3">
               <div class="d-flex align-items-center justify-content-end gap-1">
-                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2 py-0.5 fs-8 fw-semibold" onclick="openPrintTransactionVoucherModal('${tx.id}')" title="พิมพ์เอกสาร">
-                  <i class="bi bi-printer-fill me-1"></i>พิมพ์
+                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-0.5 fs-8 fw-semibold" onclick="openPrintTransactionVoucherModal('${tx.id}')" title="พิมพ์เอกสาร">
+                  พิมพ์
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0.5 fs-8 fw-semibold" onclick="deleteDbRecord('transactions', '${tx.id}')" title="ลบรายการประวัตินี้">
-                  <i class="bi bi-trash3-fill me-1"></i>ลบ
+                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-0.5 fs-8 fw-semibold" onclick="openEditTransactionModal('${tx.id}')" title="แก้ไขวันที่และจำนวน">
+                  แก้ไข
                 </button>
+                ${isAdmin ? `
+                  <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-0.5 fs-8 fw-semibold" onclick="deleteTransactionRecord('${tx.id}')" title="ลบรายการประวัตินี้">
+                    ลบ
+                  </button>
+                ` : ''}
               </div>
             </td>
           </tr>
@@ -8269,48 +8590,165 @@
     // ==========================================
     // TRANSACTION EMPLOYEE SEARCH & FILTER (เรียงตามชื่อ)
     // ==========================================
+    // TRANSACTION EMPLOYEE SEARCH & INSTANT AUTOCOMPLETE
+    // ==========================================
+    window.selectEmployeeForTransaction = function(empId) {
+      const emp = (employeeList || []).find(e => e && e.id === empId);
+      if (!emp) return;
+
+      const select = document.getElementById('empSelect');
+      if (select) {
+        select.value = emp.id;
+        select.setCustomValidity('');
+      }
+
+      const searchInput = document.getElementById('transEmpSearchInput');
+      if (searchInput) {
+        searchInput.value = formatEmpName(emp);
+      }
+
+      const resultsBox = document.getElementById('transEmpSearchResultsBox');
+      if (resultsBox) {
+        resultsBox.classList.add('d-none');
+        resultsBox.innerHTML = '';
+      }
+
+      if (typeof handleTransEmpSelectionChange === 'function') {
+        handleTransEmpSelectionChange();
+      }
+
+      if (typeof showToast === 'function') {
+        showToast(`👤 เลือกคุณ ${emp.name} [${emp.id}] เรียบร้อยแล้ว`);
+      }
+    };
+
     window.filterTransEmployeeSelect = function(query) {
       const searchInput = document.getElementById('transEmpSearchInput');
       const q = (query !== undefined ? query : (searchInput ? searchInput.value : '')).toLowerCase().trim();
       const select = document.getElementById('empSelect');
-      if (!select) return;
+      const resultsBox = document.getElementById('transEmpSearchResultsBox');
 
-      const currentVal = select.value;
-      select.innerHTML = '<option value="">-- กรุณาเลือกรายชื่อพนักงาน --</option>';
-
-      const filtered = employeeList.filter(emp => {
+      const filtered = (employeeList || []).filter(emp => {
         if (!q) return true;
-        return (emp.name && emp.name.toLowerCase().includes(q)) ||
-               (emp.nickname && emp.nickname.toLowerCase().includes(q)) ||
-               (emp.id && emp.id.toLowerCase().includes(q)) ||
-               (emp.department && emp.department.toLowerCase().includes(q)) ||
-               (emp.position && emp.position.toLowerCase().includes(q));
+        const nameStr = (emp.name || '').toLowerCase();
+        const nickStr = (emp.nickname || '').toLowerCase();
+        const idStr = (emp.id || '').toLowerCase();
+        const deptStr = (emp.department || '').toLowerCase();
+        const posStr = (emp.position || '').toLowerCase();
+        return nameStr.includes(q) || nickStr.includes(q) || idStr.includes(q) || deptStr.includes(q) || posStr.includes(q);
       });
 
-      filtered.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'th'));
+      if (select) {
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">-- กรุณาเลือกรายชื่อพนักงาน --</option>';
 
-      filtered.forEach(emp => {
-        const opt = document.createElement('option');
-        opt.value = emp.id;
-        const posBadge = emp.position ? ` (${emp.position})` : '';
-        opt.textContent = `👤 ${formatEmpName(emp)} [${emp.id}] - ${emp.department}${posBadge}`;
-        if (currentVal && currentVal === emp.id) opt.selected = true;
-        select.appendChild(opt);
-      });
+        filtered.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'th'));
 
-      if (filtered.length === 1 && q.length > 0) {
-        select.value = filtered[0].id;
-        select.setCustomValidity('');
-      } else if (select.value) {
-        select.setCustomValidity('');
+        filtered.forEach(emp => {
+          const opt = document.createElement('option');
+          opt.value = emp.id;
+          const posBadge = emp.position ? ` (${emp.position})` : '';
+          opt.textContent = `👤 ${formatEmpName(emp)} [${emp.id}] - ${emp.department}${posBadge}`;
+          if (currentVal && currentVal === emp.id) opt.selected = true;
+          select.appendChild(opt);
+        });
+
+        if (filtered.length === 1 && q.length > 0) {
+          select.value = filtered[0].id;
+          select.setCustomValidity('');
+        } else if (select.value) {
+          select.setCustomValidity('');
+        }
+      }
+
+      // Render instant visual popup list directly under search input
+      if (resultsBox) {
+        if (!q) {
+          resultsBox.classList.add('d-none');
+          resultsBox.innerHTML = '';
+          return;
+        }
+
+        if (filtered.length === 0) {
+          resultsBox.innerHTML = `
+            <div class="p-3 text-center text-muted fs-8">
+              <i class="bi bi-person-x fs-4 d-block text-secondary mb-1"></i>
+              <div>ไม่พบรายชื่อพนักงานที่ตรงกับ "${typeof escapeHtml === 'function' ? escapeHtml(q) : q}"</div>
+              <small class="text-muted">กรุณาลองค้นหาด้วยชื่อ, ชื่อเล่น, รหัส หรือแผนกอื่น</small>
+            </div>
+          `;
+          resultsBox.classList.remove('d-none');
+          return;
+        }
+
+        let html = `
+          <div class="d-flex align-items-center justify-content-between px-2 py-1.5 border-bottom bg-light rounded-top">
+            <span class="fs-8 text-success fw-bold"><i class="bi bi-people-fill me-1"></i>พบ ${filtered.length} รายชื่อ (แตะเพื่อเลือกทันที)</span>
+            <button type="button" class="btn btn-sm btn-link p-0 text-muted fs-8 text-decoration-none" onclick="document.getElementById('transEmpSearchResultsBox').classList.add('d-none')">
+              <i class="bi bi-x-lg"></i> ปิด
+            </button>
+          </div>
+          <div class="list-group list-group-flush">
+        `;
+
+        filtered.slice(0, 15).forEach(emp => {
+          const avatar = emp.photoUrl || emp.imageUrl || (typeof DEFAULT_AVATAR_IMAGE !== 'undefined' ? DEFAULT_AVATAR_IMAGE : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80');
+          const empFormatted = formatEmpName(emp);
+          const posText = emp.position ? ` • ${emp.position}` : '';
+          html += `
+            <button type="button" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-2 gap-2 border-bottom-0 border-top cursor-pointer text-start" onclick="selectEmployeeForTransaction('${emp.id}')">
+              <div class="d-flex align-items-center gap-2 overflow-hidden">
+                <img src="${avatar}" class="rounded-circle border flex-shrink-0" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.src='${DEFAULT_AVATAR_IMAGE}'" />
+                <div class="overflow-hidden">
+                  <div class="fw-bold text-dark text-truncate fs-7">${empFormatted}</div>
+                  <div class="fs-8 text-muted text-truncate">
+                    <span class="badge bg-secondary font-monospace me-1">${emp.id}</span>
+                    <span>${emp.department || 'ไม่ระบุแผนก'}${posText}</span>
+                  </div>
+                </div>
+              </div>
+              <span class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-0.5 fs-8 flex-shrink-0 fw-semibold">
+                เลือก
+              </span>
+            </button>
+          `;
+        });
+
+        if (filtered.length > 15) {
+          html += `
+            <div class="p-1.5 text-center text-muted fs-8 bg-light">
+              แสดง 15 จากทั้งหมด ${filtered.length} คน (พิมพ์ตัวอักษรเพิ่มเพื่อเจาะจง)
+            </div>
+          `;
+        }
+
+        html += `</div>`;
+        resultsBox.innerHTML = html;
+        resultsBox.classList.remove('d-none');
       }
     };
 
     window.clearTransEmpSearch = function() {
       const input = document.getElementById('transEmpSearchInput');
       if (input) input.value = '';
+      const resultsBox = document.getElementById('transEmpSearchResultsBox');
+      if (resultsBox) {
+        resultsBox.classList.add('d-none');
+        resultsBox.innerHTML = '';
+      }
       filterTransEmployeeSelect('');
     };
+
+    // Close transEmpSearchResultsBox when clicking outside
+    document.addEventListener('click', function(e) {
+      const box = document.getElementById('transEmpSearchResultsBox');
+      const input = document.getElementById('transEmpSearchInput');
+      if (box && !box.classList.contains('d-none')) {
+        if (!box.contains(e.target) && e.target !== input) {
+          box.classList.add('d-none');
+        }
+      }
+    });
 
     window.populateQuickScanEmpDropdown = function() {
       const select = document.getElementById('quickScanEmpSelect');
@@ -8338,17 +8776,46 @@
     }
 
     // ==========================================
-    // EQUIPMENT SELECT SEARCH & FILTER FUNCTIONS
+    // EQUIPMENT SELECT SEARCH & INSTANT AUTOCOMPLETE
     // ==========================================
+    window.selectEquipmentForTransaction = function(equipId) {
+      const item = (equipmentList || []).find(x => x && (String(x.id) === String(equipId) || String(x.code) === String(equipId)));
+      if (!item) return;
+
+      const select = document.getElementById('equipSelect');
+      if (select) {
+        select.value = item.id;
+        select.setCustomValidity('');
+      }
+
+      const searchInput = document.getElementById('equipSearchInput');
+      if (searchInput) {
+        searchInput.value = item.name;
+      }
+
+      const resultsBox = document.getElementById('transEquipSearchResultsBox');
+      if (resultsBox) {
+        resultsBox.classList.add('d-none');
+        resultsBox.innerHTML = '';
+      }
+
+      if (typeof updateEquipSelectPreview === 'function') {
+        updateEquipSelectPreview();
+      }
+
+      if (typeof showToast === 'function') {
+        showToast(`📦 เลือกอุปกรณ์ "${item.name}" [${item.code}] เรียบร้อยแล้ว`);
+      }
+    };
+
     window.filterEquipSelectDropdown = function(query) {
       const select = document.getElementById('equipSelect');
-      if (!select) return;
-      const q = (query || '').trim().toLowerCase();
-      const currentVal = select.value;
+      const searchInput = document.getElementById('equipSearchInput');
+      const resultsBox = document.getElementById('transEquipSearchResultsBox');
+      const q = (query !== undefined ? query : (searchInput ? searchInput.value : '')).trim().toLowerCase();
+      const currentVal = select ? select.value : '';
       const activeTransType = document.querySelector('input[name="transType"]:checked')?.value || 'เบิกจ่าย';
       const selectedEmpId = document.getElementById('empSelect')?.value;
-
-      select.innerHTML = '<option value="">-- กรุณาเลือกอุปกรณ์การเกษตร --</option>';
 
       let candidateList = [...equipmentList];
 
@@ -8362,10 +8829,12 @@
 
       const filtered = candidateList.filter(item => {
         if (!q) return true;
-        return (item.name && item.name.toLowerCase().includes(q)) ||
-               (item.code && item.code.toLowerCase().includes(q)) ||
-               (item.category && item.category.toLowerCase().includes(q)) ||
-               (item.location && item.location.toLowerCase().includes(q));
+        const nameStr = (item.name || '').toLowerCase();
+        const codeStr = (item.code || '').toLowerCase();
+        const catStr = (item.category || '').toLowerCase();
+        const locStr = (item.location || '').toLowerCase();
+        const descStr = (item.description || '').toLowerCase();
+        return nameStr.includes(q) || codeStr.includes(q) || catStr.includes(q) || locStr.includes(q) || descStr.includes(q);
       });
 
       filtered.sort((a, b) => {
@@ -8374,34 +8843,124 @@
         return codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: 'base' });
       });
 
-      filtered.forEach(item => {
-        const opt = document.createElement('option');
-        opt.value = item.id;
-        if (activeTransType === 'คืนอุปกรณ์') {
-          const allActive = typeof window.getAllActiveBorrowings === 'function' ? window.getAllActiveBorrowings() : [];
-          const matchedBorrows = allActive.filter(b => b.equipmentId === item.id && (!selectedEmpId || b.employeeId === selectedEmpId));
-          const borrowedSum = matchedBorrows.reduce((sum, b) => sum + b.remainingQty, 0);
-          opt.textContent = `[${item.code}] ${item.name} (ค้างคืน: ${borrowedSum} ${item.unit} | สต๊อกคลัง: ${item.quantity} ${item.unit})`;
-        } else if (activeTransType === 'รับเข้าสต๊อก' || activeTransType === 'รับเข้าสต๊อก (ขาเข้า)') {
-          opt.textContent = `📥 [${item.code}] ${item.name} (สต๊อกปัจจุบัน: ${item.quantity} ${item.unit})`;
-        } else {
-          opt.textContent = `[${item.code}] ${item.name} (คงเหลือ: ${item.quantity} ${item.unit})`;
-        }
-        if (currentVal && currentVal === item.id) opt.selected = true;
-        select.appendChild(opt);
-      });
+      if (select) {
+        select.innerHTML = '<option value="">-- กรุณาเลือกอุปกรณ์การเกษตร --</option>';
 
-      if (filtered.length === 1 && q.length > 0) {
-        select.value = filtered[0].id;
+        filtered.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item.id;
+          if (activeTransType === 'คืนอุปกรณ์') {
+            const allActive = typeof window.getAllActiveBorrowings === 'function' ? window.getAllActiveBorrowings() : [];
+            const matchedBorrows = allActive.filter(b => b.equipmentId === item.id && (!selectedEmpId || b.employeeId === selectedEmpId));
+            const borrowedSum = matchedBorrows.reduce((sum, b) => sum + b.remainingQty, 0);
+            opt.textContent = `[${item.code}] ${item.name} (ค้างคืน: ${borrowedSum} ${item.unit} | สต๊อกคลัง: ${item.quantity} ${item.unit})`;
+          } else if (activeTransType === 'รับเข้าสต๊อก' || activeTransType === 'รับเข้าสต๊อก (ขาเข้า)') {
+            opt.textContent = `📥 [${item.code}] ${item.name} (สต๊อกปัจจุบัน: ${item.quantity} ${item.unit})`;
+          } else {
+            opt.textContent = `[${item.code}] ${item.name} (คงเหลือ: ${item.quantity} ${item.unit})`;
+          }
+          if (currentVal && currentVal === item.id) opt.selected = true;
+          select.appendChild(opt);
+        });
+
+        if (filtered.length === 1 && q.length > 0) {
+          select.value = filtered[0].id;
+        }
+        updateEquipSelectPreview();
       }
-      updateEquipSelectPreview();
+
+      // Render instant visual search popup under the search input
+      if (resultsBox) {
+        if (!q) {
+          resultsBox.classList.add('d-none');
+          resultsBox.innerHTML = '';
+          return;
+        }
+
+        if (filtered.length === 0) {
+          resultsBox.innerHTML = `
+            <div class="p-3 text-center text-muted fs-8">
+              <i class="bi bi-box-seam fs-4 d-block text-secondary mb-1"></i>
+              <div>ไม่พบอุปกรณ์ที่ตรงกับ "${typeof escapeHtml === 'function' ? escapeHtml(q) : q}"</div>
+              <small class="text-muted">กรุณาลองค้นหาด้วยชื่อ, รหัส, หรือหมวดหมู่อื่น</small>
+            </div>
+          `;
+          resultsBox.classList.remove('d-none');
+          return;
+        }
+
+        let html = `
+          <div class="d-flex align-items-center justify-content-between px-2 py-1.5 border-bottom bg-light rounded-top">
+            <span class="fs-8 text-success fw-bold"><i class="bi bi-tools me-1"></i>พบ ${filtered.length} รายการ (แตะเพื่อเลือกทันที)</span>
+            <button type="button" class="btn btn-sm btn-link p-0 text-muted fs-8 text-decoration-none" onclick="document.getElementById('transEquipSearchResultsBox').classList.add('d-none')">
+              <i class="bi bi-x-lg"></i> ปิด
+            </button>
+          </div>
+          <div class="list-group list-group-flush">
+        `;
+
+        filtered.slice(0, 15).forEach(item => {
+          const img = item.imageUrl || DEFAULT_EQUIPMENT_IMAGE;
+          const unit = item.unit || 'ชิ้น';
+          const stockText = (activeTransType === 'คืนอุปกรณ์') 
+            ? `ในคลัง: ${item.quantity} ${unit}`
+            : `คงเหลือ: ${item.quantity} ${unit}`;
+
+          html += `
+            <button type="button" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-2 gap-2 border-bottom-0 border-top cursor-pointer text-start" onclick="selectEquipmentForTransaction('${item.id}')">
+              <div class="d-flex align-items-center gap-2 overflow-hidden">
+                <img src="${img}" class="rounded-2 border flex-shrink-0" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.src='${DEFAULT_EQUIPMENT_IMAGE}'" />
+                <div class="overflow-hidden">
+                  <div class="fw-bold text-dark text-truncate fs-7" title="${item.name}">${item.name}</div>
+                  <div class="fs-8 text-muted text-truncate d-flex align-items-center gap-1 flex-wrap">
+                    <span class="badge bg-secondary font-monospace">${item.code}</span>
+                    <span class="text-success fw-semibold">${stockText}</span>
+                    ${item.location ? `<span class="text-secondary"><i class="bi bi-geo-alt me-0.5"></i>${item.location}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+              <span class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-0.5 fs-8 flex-shrink-0 fw-semibold">
+                เลือก
+              </span>
+            </button>
+          `;
+        });
+
+        if (filtered.length > 15) {
+          html += `
+            <div class="p-1.5 text-center text-muted fs-8 bg-light">
+              แสดง 15 จากทั้งหมด ${filtered.length} รายการ (พิมพ์เพิ่มเพื่อระบุเจาะจง)
+            </div>
+          `;
+        }
+
+        html += `</div>`;
+        resultsBox.innerHTML = html;
+        resultsBox.classList.remove('d-none');
+      }
     };
 
     window.clearEquipSearch = function() {
       const input = document.getElementById('equipSearchInput');
       if (input) input.value = '';
+      const resultsBox = document.getElementById('transEquipSearchResultsBox');
+      if (resultsBox) {
+        resultsBox.classList.add('d-none');
+        resultsBox.innerHTML = '';
+      }
       filterEquipSelectDropdown('');
     };
+
+    // Close transEquipSearchResultsBox when clicking outside
+    document.addEventListener('click', function(e) {
+      const box = document.getElementById('transEquipSearchResultsBox');
+      const input = document.getElementById('equipSearchInput');
+      if (box && !box.classList.contains('d-none')) {
+        if (!box.contains(e.target) && e.target !== input) {
+          box.classList.add('d-none');
+        }
+      }
+    });
 
     window.filterQuickScanDropdown = function(query) {
       const select = document.getElementById('quickScanSelect');
@@ -8445,11 +9004,16 @@
     window.filterLabelItemSelectDropdown = function(query) {
       const select = document.getElementById('labelItemSelect');
       if (!select) return;
+      const catSelect = document.getElementById('labelCategoryFilterSelect');
+      const selectedCat = catSelect ? catSelect.value : 'ALL';
       const q = (query || '').trim().toLowerCase();
       const currentVal = select.value;
-      select.innerHTML = '<option value="ALL">📦 ทุกรายการในคลังอุปกรณ์</option>';
+
+      const catLabel = selectedCat !== 'ALL' ? ` (หมวดหมู่: ${selectedCat})` : '';
+      select.innerHTML = `<option value="ALL">📦 ทุกรายการในคลัง${catLabel}</option>`;
 
       const filtered = equipmentList.filter(item => {
+        if (selectedCat !== 'ALL' && item.category !== selectedCat) return false;
         if (!q) return true;
         return (item.name && item.name.toLowerCase().includes(q)) ||
                (item.code && item.code.toLowerCase().includes(q)) ||
@@ -8476,6 +9040,12 @@
       if (typeof renderPrintableLabelsPreview === 'function') {
         renderPrintableLabelsPreview();
       }
+    };
+
+    window.onLabelCategoryFilterChange = function() {
+      const searchInput = document.getElementById('labelItemSearchInput');
+      const query = searchInput ? searchInput.value : '';
+      filterLabelItemSelectDropdown(query);
     };
 
     window.clearLabelItemSearch = function() {
@@ -8567,6 +9137,12 @@
         const matchingBorrows = relevantBorrows.filter(b => b.equipmentId === equipId);
         const totalBorrowedRemaining = matchingBorrows.reduce((sum, b) => sum + b.remainingQty, 0);
 
+        const now = Date.now();
+        const overdueMatching = matchingBorrows.find(b => {
+          const due = b.dueDate || (b.borrowTime ? (b.borrowTime + 3 * 86400000) : 0);
+          return due && now > due;
+        });
+
         if (totalBorrowedRemaining <= 0) {
           if (warningBox && warningText) {
             warningText.innerHTML = `<i class="bi bi-exclamation-octagon-fill me-1"></i>ไม่พบรายการยืมอุปกรณ์รายการนี้ของพนักงานในระบบ`;
@@ -8579,6 +9155,12 @@
             warningBox.classList.remove('d-none');
           }
           qtyInput.classList.add('is-invalid');
+        } else if (overdueMatching) {
+          if (warningBox && warningText) {
+            warningText.innerHTML = `<span class="badge bg-danger text-white me-1"><i class="bi bi-exclamation-triangle-fill me-0.5"></i>เกินกำหนด</span> อุปกรณ์นี้ครบกำหนดส่งคืนแล้ว`;
+            warningBox.classList.remove('d-none');
+          }
+          qtyInput.classList.remove('is-invalid');
         } else {
           if (warningBox) warningBox.classList.add('d-none');
           qtyInput.classList.remove('is-invalid');
@@ -8718,14 +9300,15 @@
     };
 
     function updateStats() {
-      const total = equipmentList.length;
+      const currentList = Array.isArray(equipmentList) ? equipmentList : [];
+      const total = currentList.length;
       let inStock = 0, borrowed = 0, lowStock = 0;
 
-      equipmentList.forEach(item => {
-        inStock += item.quantity;
+      currentList.forEach(item => {
+        inStock += (item.quantity || 0);
         borrowed += (item.borrowedCount || 0);
         const minQty = item.minQuantity !== undefined ? item.minQuantity : 3;
-        if (item.quantity <= minQty) lowStock++;
+        if ((item.quantity || 0) <= minQty) lowStock++;
       });
 
       const totalItemsElem = document.getElementById('statTotalItems');
@@ -8740,8 +9323,8 @@
 
       // Update Overdue Alerts
       if (typeof calculateOverdueBorrowings === 'function') {
-        const overdueList = calculateOverdueBorrowings(window.currentOverdueThresholdDays || 3);
-        const overdueCount = overdueList.length;
+        const overdueList = calculateOverdueBorrowings(window.currentOverdueThresholdDays || 3) || [];
+        const overdueCount = Array.isArray(overdueList) ? overdueList.length : 0;
 
         const overdueBadge = document.getElementById('statOverdueBadge');
         const overdueCountElem = document.getElementById('statOverdueCount');
@@ -8778,14 +9361,71 @@
 
         const overdueBanner = document.getElementById('overdueAlertBanner');
         const overdueBannerCount = document.getElementById('overdueBannerCount');
+        const overdueBannerStaffList = document.getElementById('overdueBannerStaffList');
         if (overdueBanner && overdueBannerCount) {
           if (overdueCount > 0) {
             overdueBanner.classList.remove('d-none');
             overdueBanner.classList.add('d-flex');
             overdueBannerCount.textContent = overdueCount;
+
+            // Render compact staff buttons for quick follow-up
+            if (overdueBannerStaffList && typeof window.calculateOverdueBorrowings === 'function') {
+              const thresh = window.currentOverdueThresholdDays !== undefined ? window.currentOverdueThresholdDays : 3;
+              const overdueItems = window.calculateOverdueBorrowings(thresh);
+              const staffMap = {};
+
+              overdueItems.forEach(item => {
+                const empKey = item.employeeId || item.employeeName || 'UNKNOWN';
+                const rawName = item.employeeName || 'ไม่ระบุชื่อ';
+                const cleanName = rawName.split('(')[0].trim();
+                if (!staffMap[empKey]) {
+                  staffMap[empKey] = {
+                    id: item.employeeId || '',
+                    name: cleanName,
+                    count: 0,
+                    qty: 0,
+                    unit: item.unit || 'ชิ้น'
+                  };
+                }
+                staffMap[empKey].count += 1;
+                staffMap[empKey].qty += (item.remainingQty || 1);
+              });
+
+              const staffList = Object.values(staffMap);
+              if (staffList.length > 0) {
+                let chipsHtml = `
+                  <span class="text-danger fw-bold d-inline-flex align-items-center gap-1 me-1 text-nowrap fs-8">
+                    <i class="bi bi-person-fill-exclamation text-danger"></i> ค้างส่งคืน (${staffList.length} คน):
+                  </span>
+                `;
+                staffList.forEach(s => {
+                  const empObj = (employeeList || []).find(e => e.id === s.id || e.name === s.name);
+                  const avatar = empObj && empObj.photoUrl ? empObj.photoUrl : '';
+                  chipsHtml += `
+                    <button type="button" class="btn btn-xs bg-white text-danger border border-danger border-opacity-50 rounded-pill px-2.5 py-1 fw-bold shadow-xs d-inline-flex align-items-center gap-1 hover-shadow" onclick="showOverdueBorrowingsModal('${s.name.replace(/'/g, "\\'")}')" title="คลิกเพื่อดูรายการและติดตามคืนจากคุณ ${s.name} (${s.count} รายการ, รวม ${s.qty} ${s.unit})">
+                      ${avatar ? `<img src="${avatar}" class="rounded-circle border" style="width: 16px; height: 16px; object-fit: cover;" />` : `<i class="bi bi-person-circle"></i>`}
+                      <span>${s.name}</span>
+                      <span class="badge bg-danger text-white rounded-pill ms-0.5">${s.count}</span>
+                    </button>
+                  `;
+                });
+                overdueBannerStaffList.innerHTML = chipsHtml;
+                overdueBannerStaffList.classList.remove('d-none');
+                overdueBannerStaffList.classList.add('d-flex');
+              } else {
+                overdueBannerStaffList.innerHTML = '';
+                overdueBannerStaffList.classList.add('d-none');
+                overdueBannerStaffList.classList.remove('d-flex');
+              }
+            }
           } else {
             overdueBanner.classList.add('d-none');
             overdueBanner.classList.remove('d-flex');
+            if (overdueBannerStaffList) {
+              overdueBannerStaffList.innerHTML = '';
+              overdueBannerStaffList.classList.add('d-none');
+              overdueBannerStaffList.classList.remove('d-flex');
+            }
           }
         }
       }
@@ -8807,13 +9447,13 @@
       // Update Top Toggle Button
       const topText = document.getElementById('toggleSummaryStatsText');
       const topIcon = document.getElementById('toggleSummaryStatsIcon');
-      if (topText) topText.textContent = newIsHidden ? 'แสดงสรุปข้อมูล' : 'ซ่อนสรุปข้อมูล';
+      if (topText) topText.textContent = newIsHidden ? 'สรุปข้อมูล' : 'ซ่อนสรุปข้อมูล';
       if (topIcon) topIcon.className = newIsHidden ? 'bi bi-eye-fill text-primary' : 'bi bi-eye-slash-fill text-danger';
 
       // Update Header Toggle Button
       const hdrText = document.getElementById('hdrToggleStatsText');
       const hdrIcon = document.getElementById('hdrToggleStatsIcon');
-      if (hdrText) hdrText.textContent = newIsHidden ? 'แสดงสรุปข้อมูล' : 'ซ่อนสรุปข้อมูล';
+      if (hdrText) hdrText.textContent = newIsHidden ? 'สรุปข้อมูล' : 'ซ่อนสรุปข้อมูล';
       if (hdrIcon) hdrIcon.className = newIsHidden ? 'bi bi-eye-fill text-primary' : 'bi bi-eye-slash-fill text-danger';
     };
 
@@ -9229,6 +9869,283 @@
 
       sheet.innerHTML = paper.innerHTML;
       window.print();
+    };
+
+    // ==========================================
+    // TRANSACTION EDIT & DELETE MODULE (แก้ไขวันที่/จำนวน และลบรายการ)
+    // ==========================================
+    window.editTxDatetimePicker = null;
+
+    window.openEditTransactionModal = function(txId) {
+      if (!txId) return;
+      const tx = (transactionHistory || []).find(x => x.id === txId);
+      if (!tx) {
+        showToast("❌ ไม่พบข้อมูลรายการประวัติที่ต้องการแก้ไข", { type: "danger" });
+        return;
+      }
+
+      const idElem = document.getElementById('editTxId');
+      if (idElem) idElem.value = tx.id;
+
+      const docInfo = document.getElementById('editTxDocInfo');
+      if (docInfo) docInfo.textContent = `#${tx.docNo || tx.id}`;
+
+      const equipIdElem = document.getElementById('editTxEquipId');
+      if (equipIdElem) equipIdElem.value = tx.equipmentId || '';
+
+      const typeElem = document.getElementById('editTxType');
+      if (typeElem) typeElem.value = tx.type || '';
+
+      const curQty = Number(tx.quantity !== undefined ? tx.quantity : 1);
+      const oldQtyElem = document.getElementById('editTxOldQty');
+      if (oldQtyElem) oldQtyElem.value = curQty;
+
+      const qtyInput = document.getElementById('editTxQuantityInput');
+      if (qtyInput) qtyInput.value = curQty;
+
+      const oldQtyLabel = document.getElementById('editTxOldQtyLabel');
+      if (oldQtyLabel) oldQtyLabel.textContent = `จำนวนเดิม: ${curQty} ${tx.unit || 'ชิ้น'}`;
+
+      const unitLabel = document.getElementById('editTxUnitLabel');
+      if (unitLabel) unitLabel.textContent = tx.unit || 'ชิ้น';
+
+      const equipNameElem = document.getElementById('editTxEquipName');
+      if (equipNameElem) equipNameElem.textContent = `${tx.equipmentName || '-'} [${tx.equipmentCode || '-'}]`;
+
+      const empNameElem = document.getElementById('editTxEmpName');
+      if (empNameElem) empNameElem.textContent = tx.employeeName || '-';
+
+      const typeBadge = document.getElementById('editTxTypeBadge');
+      if (typeBadge) {
+        typeBadge.textContent = tx.type || '-';
+        if (tx.type === 'เบิกจ่าย') typeBadge.className = 'badge bg-danger fs-8';
+        else if (tx.type === 'ยืมอุปกรณ์') typeBadge.className = 'badge bg-warning text-dark fs-8';
+        else if (tx.type === 'คืนอุปกรณ์') typeBadge.className = 'badge bg-info text-dark fs-8';
+        else if (tx.type && tx.type.includes('รับเข้า')) typeBadge.className = 'badge bg-success fs-8';
+        else typeBadge.className = 'badge bg-secondary fs-8';
+      }
+
+      const locInput = document.getElementById('editTxLocationInput');
+      if (locInput) locInput.value = tx.location || '';
+
+      const noteInput = document.getElementById('editTxNoteInput');
+      if (noteInput) noteInput.value = tx.note || '';
+
+      // Initialize or set Flatpickr for Date & Time
+      const dateElem = document.getElementById('editTxDatetimeInput');
+      if (dateElem) {
+        let targetDate = new Date();
+        if (typeof getRecordTimestampMs === 'function') {
+          const ms = getRecordTimestampMs(tx);
+          if (ms > 0) targetDate = new Date(ms);
+        }
+
+        if (!window.editTxDatetimePicker && typeof flatpickr !== 'undefined') {
+          const thLocale = (flatpickr.l10ns && flatpickr.l10ns.th) ? flatpickr.l10ns.th : 'default';
+          window.editTxDatetimePicker = flatpickr(dateElem, {
+            enableTime: true,
+            time_24hr: true,
+            dateFormat: 'Y-m-d H:i',
+            altInput: true,
+            altInputClass: 'form-control form-control-sm rounded-3 bg-white cursor-pointer shadow-2xs fw-bold',
+            altFormat: 'd/m/Y H:i น.',
+            locale: thLocale,
+            disableMobile: true,
+            onReady: function(selectedDates, dateStr, instance) {
+              if (typeof applyThaiBuddhistYear === 'function') applyThaiBuddhistYear(instance);
+            },
+            onValueUpdate: function(selectedDates, dateStr, instance) {
+              if (typeof applyThaiBuddhistYear === 'function') applyThaiBuddhistYear(instance);
+            },
+            onMonthChange: function(selectedDates, dateStr, instance) {
+              if (typeof applyThaiBuddhistYear === 'function') applyThaiBuddhistYear(instance);
+            },
+            onYearChange: function(selectedDates, dateStr, instance) {
+              if (typeof applyThaiBuddhistYear === 'function') applyThaiBuddhistYear(instance);
+            }
+          });
+        }
+
+        if (window.editTxDatetimePicker) {
+          window.editTxDatetimePicker.setDate(targetDate, true);
+          if (typeof applyThaiBuddhistYear === 'function') applyThaiBuddhistYear(window.editTxDatetimePicker);
+        } else {
+          dateElem.value = tx.timestamp || targetDate.toLocaleString('th-TH');
+        }
+      }
+
+      const modalElem = document.getElementById('editTransactionModal');
+      if (modalElem) {
+        const modal = new bootstrap.Modal(modalElem);
+        modal.show();
+      }
+    };
+
+    window.adjustEditTxQty = function(delta) {
+      const input = document.getElementById('editTxQuantityInput');
+      if (!input) return;
+      let val = parseInt(input.value, 10) || 1;
+      val = Math.max(1, val + delta);
+      input.value = val;
+    };
+
+    window.handleSaveEditedTransaction = async function(e) {
+      if (e) e.preventDefault();
+      const txId = document.getElementById('editTxId')?.value;
+      const tx = (transactionHistory || []).find(x => x.id === txId);
+      if (!tx) {
+        showToast("❌ ไม่พบข้อมูลรายการที่ต้องการแก้ไข", { type: "danger" });
+        return;
+      }
+
+      const oldQty = parseInt(document.getElementById('editTxOldQty')?.value, 10) || 1;
+      const newQty = parseInt(document.getElementById('editTxQuantityInput')?.value, 10) || 1;
+      if (newQty <= 0) {
+        alert("กรุณาระบุจำนวนอย่างน้อย 1 ชิ้น");
+        return;
+      }
+
+      const diff = newQty - oldQty;
+
+      let newTimestampStr = tx.timestamp;
+      let newRawTimestamp = tx.rawTimestamp || Date.now();
+      if (window.editTxDatetimePicker && window.editTxDatetimePicker.selectedDates && window.editTxDatetimePicker.selectedDates[0]) {
+        const selDate = window.editTxDatetimePicker.selectedDates[0];
+        newRawTimestamp = selDate.getTime();
+        newTimestampStr = selDate.toLocaleString('th-TH');
+      } else {
+        const manualVal = document.getElementById('editTxDatetimeInput')?.value?.trim();
+        if (manualVal) newTimestampStr = manualVal;
+      }
+
+      const newLocation = (document.getElementById('editTxLocationInput')?.value || '').trim();
+      const newNote = (document.getElementById('editTxNoteInput')?.value || '').trim();
+
+      // Recalculate stock if quantity changed
+      let stockUpdatedMsg = '';
+      const equipId = tx.equipmentId || tx.code;
+      const equipItem = (equipmentList || []).find(x => x.id === equipId || x.code === equipId || x.name === tx.equipmentName);
+
+      if (diff !== 0 && equipItem) {
+        const currentStock = Number(equipItem.quantity || 0);
+        const currentBorrowed = Number(equipItem.borrowedCount || 0);
+        let newStock = currentStock;
+        let newBorrowed = currentBorrowed;
+
+        if (tx.type === 'เบิกจ่าย') {
+          newStock = currentStock - diff;
+        } else if (tx.type === 'รับเข้าสต๊อก' || tx.type === 'รับเข้าสต๊อก (ขาเข้า)' || tx.type === 'เติมสต๊อกด่วน') {
+          newStock = currentStock + diff;
+        } else if (tx.type === 'ยืมอุปกรณ์') {
+          newStock = currentStock - diff;
+          newBorrowed = Math.max(0, currentBorrowed + diff);
+        } else if (tx.type === 'คืนอุปกรณ์') {
+          newStock = currentStock + diff;
+          newBorrowed = Math.max(0, currentBorrowed - diff);
+        }
+
+        if (newStock < 0) {
+          const confirmNeg = await window.showConfirmDialog({
+            title: "แจ้งเตือนจำนวนสต๊อก",
+            message: `การแก้ไขจำนวนนี้จะทำให้ยอดคงเหลือของ "${equipItem.name}" ติดลบ (${newStock} ${equipItem.unit || 'ชิ้น'})\n\nคุณต้องการยืนยันบันทึกหรือไม่?`,
+            type: "warning",
+            confirmText: "ยืนยันบันทึก"
+          });
+          if (!confirmNeg) return;
+        }
+
+        equipItem.quantity = Math.max(0, newStock);
+        if (tx.type === 'ยืมอุปกรณ์' || tx.type === 'คืนอุปกรณ์') {
+          equipItem.borrowedCount = newBorrowed;
+        }
+
+        if (isFirebaseReady && db && equipItem.id) {
+          try {
+            await setDoc(doc(db, "equipment", equipItem.id), equipItem, { merge: true });
+          } catch (err) {
+            console.warn("Update equipment stock error:", err);
+          }
+        }
+        stockUpdatedMsg = ` (ปรับสต๊อก ${equipItem.name} คงเหลือ ${equipItem.quantity} ${equipItem.unit || ''})`;
+      }
+
+      // Update Transaction Object
+      tx.timestamp = newTimestampStr;
+      tx.rawTimestamp = newRawTimestamp;
+      tx.quantity = newQty;
+      if (newLocation) tx.location = newLocation;
+      tx.note = newNote;
+      if (tx.items && Array.isArray(tx.items) && tx.items.length === 1) {
+        tx.items[0].quantity = newQty;
+      }
+
+      // Re-sort transactionHistory by timestamp desc
+      transactionHistory.sort((a, b) => {
+        const tA = (typeof getRecordTimestampMs === 'function') ? getRecordTimestampMs(a) : (a.rawTimestamp || 0);
+        const tB = (typeof getRecordTimestampMs === 'function') ? getRecordTimestampMs(b) : (b.rawTimestamp || 0);
+        return tB - tA;
+      });
+
+      saveToLocalStorage();
+
+      if (isFirebaseReady && db) {
+        try {
+          await setDoc(doc(db, "transactions", tx.id), tx, { merge: true });
+        } catch (err) {
+          console.warn("Firestore update transaction error:", err);
+        }
+      }
+
+      // Update UI across the app
+      renderHistoryTable();
+      if (typeof renderEquipmentHistoryModalTable === 'function') renderEquipmentHistoryModalTable();
+      renderCatalogGrid();
+      renderStaffTable();
+      if (typeof updateStats === 'function') updateStats();
+
+      if (typeof logAuditAction === 'function') {
+        logAuditAction('ประวัติรายการ', 'แก้ไข', `แก้ไขรายการ #${tx.id} วันที่: ${newTimestampStr}, จำนวน: ${oldQty} -> ${newQty} ${tx.unit || ''}${stockUpdatedMsg}`, tx.id);
+      }
+
+      const modalElem = document.getElementById('editTransactionModal');
+      if (modalElem) {
+        const modalInst = bootstrap.Modal.getInstance(modalElem);
+        if (modalInst) modalInst.hide();
+      }
+
+      showToast(`🎉 บันทึกการแก้ไขรายการประวัติเรียบร้อยแล้ว!${stockUpdatedMsg}`, { title: "แก้ไขสำเร็จ", type: "success" });
+    };
+
+    window.deleteTransactionRecord = async function(txId) {
+      if (!txId) return;
+      if (typeof currentRole !== 'undefined' && currentRole !== 'ADMIN') {
+        showToast("⚠️ เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่มีสิทธิ์ลบรายการประวัติ", { type: "warning" });
+        return;
+      }
+      const txObj = (transactionHistory || []).find(x => x.id === txId);
+      if (!txObj) return;
+
+      const desc = `${txObj.type || 'รายการ'} ${txObj.equipmentName || ''} จำนวน ${txObj.quantity || 1} ${txObj.unit || ''} (${txObj.employeeName || ''})`;
+      const ok = await window.showConfirmDialog({
+        title: "ยืนยันการลบรายการประวัติ",
+        message: `คุณต้องการลบรายการประวัตินี้ใช่หรือไม่?\n\n• ${desc}\n• วันที่: ${txObj.timestamp || '-'}\n\n⚠️ เมื่อลบแล้ว ข้อมูลประวัติการทำรายการนี้จะถูกนำออกจากระบบ`,
+        type: "danger",
+        confirmText: "ลบรายการประวัติ"
+      });
+      if (!ok) return;
+
+      transactionHistory = transactionHistory.filter(x => x.id !== txId);
+      if (isFirebaseReady && db) {
+        try { await deleteDoc(doc(db, "transactions", txId)); } catch(e){}
+      }
+      saveToLocalStorage();
+      renderHistoryTable();
+      if (typeof renderEquipmentHistoryModalTable === 'function') renderEquipmentHistoryModalTable();
+      if (typeof updateStats === 'function') updateStats();
+      if (typeof logAuditAction === 'function') {
+        logAuditAction('ประวัติรายการ', 'ลบ', `ลบรายการประวัติ #${txId} (${desc})`, txId);
+      }
+      showToast(`🗑️ ลบรายการประวัติ #${txId} เรียบร้อยแล้ว`, { type: 'success' });
     };
 
     window.printEmployeeHistoryReport = function() {
@@ -10843,6 +11760,22 @@
       }
     };
 
+    window.printEquipmentQrCode = function() {
+      if (!activeModalEquipId) return;
+      const item = equipmentList.find(x => x.id === activeModalEquipId);
+      if (!item) return;
+
+      const modalElem = document.getElementById('equipmentQrModal');
+      const modalInst = bootstrap.Modal.getInstance(modalElem);
+      if (modalInst) modalInst.hide();
+
+      setTimeout(() => {
+        if (typeof openPrintLabelModal === 'function') {
+          openPrintLabelModal(item.id);
+        }
+      }, 200);
+    };
+
     let currentPopupMenuEquipId = null;
 
     window.openEquipmentPopupMenu = function(equipId) {
@@ -11031,6 +11964,7 @@
 
     window.renderEquipmentHistoryModalTable = function() {
       if (!currentEquipHistoryId) return;
+      const isAdmin = (typeof currentRole !== 'undefined' && currentRole === 'ADMIN');
       const item = (equipmentList || []).find(x => x.id === currentEquipHistoryId);
       if (!item) return;
 
@@ -11177,8 +12111,23 @@
         // Due Date / Status
         let dueOrStatus = '-';
         if (t === 'ยืมอุปกรณ์') {
-          const dueText = tx.dueDateStr || (tx.dueDate ? (typeof formatDueDateForReceipt === 'function' ? formatDueDateForReceipt(tx) : tx.dueDate) : '3 วัน');
-          dueOrStatus = `<span class="text-danger fw-semibold"><i class="bi bi-calendar-event me-1"></i>${dueText}</span>`;
+          let rawDue = tx.dueDateStr || '';
+          if (!rawDue && tx.dueDate) {
+            const d = new Date(tx.dueDate);
+            if (!isNaN(d.getTime())) {
+              const day = String(d.getDate()).padStart(2, '0');
+              const month = String(d.getMonth() + 1).padStart(2, '0');
+              const yearBE = d.getFullYear() + 543;
+              const hours = String(d.getHours()).padStart(2, '0');
+              const mins = String(d.getMinutes()).padStart(2, '0');
+              rawDue = `${day}/${month}/${yearBE} ${hours}:${mins}`;
+            }
+          }
+          if (!rawDue) {
+            rawDue = (typeof formatDueDateForReceipt === 'function' ? formatDueDateForReceipt(tx) : (tx.dueDate || '3 วัน'));
+          }
+          const cleanDueText = String(rawDue).replace(/\s*น\.?$/g, '').trim();
+          dueOrStatus = `<span class="text-danger fw-semibold">${cleanDueText}</span>`;
         } else if (t === 'คืนอุปกรณ์') {
           dueOrStatus = `<span class="badge bg-success-subtle text-success"><i class="bi bi-check2-all me-1"></i>คืนแล้ว</span>`;
         } else if (t === 'รับเข้าสต๊อก' || t === 'เติมสต๊อก') {
@@ -11210,14 +12159,28 @@
             <td class="fs-8 text-secondary text-truncate" style="max-width: 140px;" title="${escapeHtml(tx.location || item.location || 'คลังกลาง')}">
               <i class="bi bi-geo-alt-fill me-1 text-danger"></i>${escapeHtml(tx.location || item.location || 'คลังกลาง')}
             </td>
-            <td class="fs-8 text-secondary" style="max-width: 180px;">
-              ${tx.note ? escapeHtml(tx.note) : '<span class="text-muted">-</span>'}
+            <td class="fs-8 text-secondary" style="max-width: 200px; min-width: 140px;">
+              ${tx.note ? `
+                <div class="note-single-line-scroll text-secondary py-1" style="max-width: 200px;" title="${escapeHtml(tx.note)}">
+                  ${escapeHtml(tx.note)}
+                </div>
+              ` : '<span class="text-muted">-</span>'}
             </td>
             <td class="text-center pe-3">
               ${tx.id ? `
-                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0.5 shadow-2xs" onclick="openPrintTransactionVoucherModal('${tx.id}')" title="ดู/พิมพ์เอกสารรายการ">
-                  <i class="bi bi-file-earmark-text"></i>
-                </button>
+                <div class="d-flex align-items-center justify-content-center gap-1">
+                  <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2.5 py-0.5 shadow-2xs fw-semibold" onclick="openPrintTransactionVoucherModal('${tx.id}')" title="พิมพ์ใบเอกสาร">
+                    พิมพ์
+                  </button>
+                  <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-0.5 shadow-2xs fw-semibold" onclick="openEditTransactionModal('${tx.id}')" title="แก้ไขวันที่และจำนวน">
+                    แก้ไข
+                  </button>
+                  ${isAdmin ? `
+                    <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2.5 py-0.5 shadow-2xs fw-semibold" onclick="deleteTransactionRecord('${tx.id}')" title="ลบรายการประวัตินี้">
+                      ลบ
+                    </button>
+                  ` : ''}
+                </div>
               ` : '<span class="text-muted">-</span>'}
             </td>
           </tr>
@@ -11259,6 +12222,9 @@
 
       const totalElem = document.getElementById('eqBorrowersTotal');
       if (totalElem) totalElem.textContent = `${item.borrowedCount || 0} ${item.unit || 'ชิ้น'}`;
+
+      const damagedElem = document.getElementById('eqBorrowersDamaged');
+      if (damagedElem) damagedElem.textContent = `${item.repairCount || 0} ${item.unit || 'ชิ้น'}`;
 
       const targetId = (item.id || '').toString().toLowerCase();
       const targetCode = (item.code || '').toString().toLowerCase();
@@ -11351,7 +12317,7 @@
           if ((item.borrowedCount || 0) > 0) {
             tbody.innerHTML = `
               <tr>
-                <td colspan="6" class="text-center py-4 text-muted">
+                <td colspan="8" class="text-center py-4 text-muted">
                   <i class="bi bi-info-circle text-warning fs-3 d-block mb-1"></i>
                   <div class="fw-bold text-dark">มียอดถูกยืมอยู่ในระบบ ${item.borrowedCount} ${item.unit || 'ชิ้น'}</div>
                   <small class="text-secondary">ยังไม่มีข้อมูลรายชื่อพนักงานยืมในประวัติล่าสุด หรือเป็นยอดจากการทำรายการก่อนการซิงค์ระบบ</small>
@@ -11361,7 +12327,7 @@
           } else {
             tbody.innerHTML = `
               <tr>
-                <td colspan="6" class="text-center py-4 text-muted">
+                <td colspan="8" class="text-center py-4 text-muted">
                   <i class="bi bi-check-circle text-success fs-3 d-block mb-1"></i>
                   <div class="fw-bold text-dark">ไม่มีพนักงานยืมอุปกรณ์ชิ้นนี้อยู่ขณะนี้</div>
                   <small class="text-secondary">อุปกรณ์ทั้งหมดพร้อมใช้งานอยู่ในคลังกลาง</small>
@@ -11371,9 +12337,17 @@
           }
         } else {
           let html = '';
+          const damagesMap = (window.damagedEquipmentReports || {});
+
           activeBorrowers.forEach(b => {
             const empAvatar = b.empObj && b.empObj.photoUrl ? b.empObj.photoUrl : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80';
             
+            const dmgKey = `${item.id}_${b.employeeId || b.employeeName}`;
+            const dmgRecord = damagesMap[dmgKey] || {};
+            const damagedQty = Number(dmgRecord.damagedQty || 0);
+            const damageNote = dmgRecord.note || '';
+            const safeDamageNote = (damageNote || '').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/[\r\n]+/g, ' ');
+
             let dueDateText = b.dueDateStr;
             if (!dueDateText && b.dueDate) {
               dueDateText = typeof formatDueDateForReceipt === 'function' ? formatDueDateForReceipt(b) : null;
@@ -11387,6 +12361,25 @@
 
             html += `
               <tr class="${isOverdue ? 'overdue-pulse-row' : ''}">
+                <td class="text-center">
+                  <button type="button" class="btn btn-sm btn-info text-dark rounded-pill px-3 py-1 fs-7 fw-bold shadow-sm" onclick="returnEquipmentFromBorrowersModal(event, '${item.id}', '${b.employeeId || ''}', ${b.borrowedQty})" title="บันทึกรับคืนอุปกรณ์นี้เข้าคลังทันที">
+                    คืน
+                  </button>
+                </td>
+                <td class="text-center text-nowrap">
+                  <span class="badge bg-warning bg-opacity-25 text-dark border border-warning rounded-pill px-2.5 py-1 fw-bold fs-7">ยืม ${b.borrowedQty}</span>
+                </td>
+                <td class="text-center text-nowrap">
+                  ${damagedQty > 0 ? `
+                    <button type="button" class="btn btn-sm btn-danger rounded-pill px-2.5 py-0.5 fw-bold shadow-sm fs-7" onclick="openReportDamageModal('${item.id}', '${b.employeeId || ''}', ${b.borrowedQty}, ${damagedQty}, '${safeDamageNote}')" title="${damageNote ? `ชำรุด: ${damageNote}` : 'มีอุปกรณ์ชำรุด (คลิกเพื่อแก้ไข)'}">
+                      ชำรุด ${damagedQty}
+                    </button>
+                  ` : `
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-0.5 fw-semibold fs-7" onclick="openReportDamageModal('${item.id}', '${b.employeeId || ''}', ${b.borrowedQty}, 0, '')" title="คลิกเพื่อบันทึกแจ้งอุปกรณ์ชำรุด">
+                      ชำรุด
+                    </button>
+                  `}
+                </td>
                 <td>
                   <div class="d-flex align-items-center gap-2">
                     <img src="${empAvatar}" loading="lazy" class="rounded-circle border shadow-sm" style="width: 32px; height: 32px; object-fit: cover;" />
@@ -11397,8 +12390,7 @@
                   </div>
                 </td>
                 <td><span class="badge bg-light text-dark border fs-8">${b.department}</span></td>
-                <td class="text-center fw-bold text-warning fs-6">${b.borrowedQty} ${item.unit || 'ชิ้น'}</td>
-                <td class="text-center fs-8 text-secondary">${b.lastBorrowTime}</td>
+                <td class="text-center fs-8 text-secondary text-nowrap">${b.lastBorrowTime}</td>
                 <td class="text-center fs-8">
                   <div class="d-inline-flex flex-column align-items-center cursor-pointer p-1.5 rounded-3 hover-bg-light transition-all" onclick="openEditBorrowerDueDateModal('${item.id}', '${b.employeeId || ''}', '${b.employeeName.replace(/'/g, "\\'")}', ${b.dueDate || 0}, '${b.lastTxId || ''}', ${b.borrowedQty}, '${dueDateText.replace(/'/g, "\\'")}')" title="คลิกเพื่อแก้ไขกำหนดวัน/เวลาส่งคืน" style="cursor: pointer;">
                     <div class="fw-bold ${isOverdue ? 'text-danger' : 'text-dark'} d-inline-flex align-items-center gap-1">
@@ -11412,15 +12404,12 @@
                 </td>
                 <td class="text-center">
                   <div class="d-flex align-items-center justify-content-center gap-1">
-                    <button type="button" class="btn btn-xs btn-info text-dark rounded-pill px-2.5 py-1 fs-8 fw-bold shadow-sm d-inline-flex align-items-center gap-1" onclick="returnEquipmentFromBorrowersModal(event, '${item.id}', '${b.employeeId || ''}', ${b.borrowedQty})" title="บันทึกรับคืนอุปกรณ์นี้เข้าคลังทันที">
-                      <i class="bi bi-box-arrow-in-down fs-7"></i> คืน
-                    </button>
-                    <button type="button" class="btn btn-xs btn-success rounded-pill px-2 py-1 fs-8 fw-bold shadow-sm d-inline-flex align-items-center gap-1" onclick="sendLineOverdueReminder('${b.employeeId || ''}', '${b.employeeName.replace(/'/g, "\\'")}', '${item.name.replace(/'/g, "\\'")}', '${item.code || ''}', ${b.borrowedQty}, '${item.unit || 'ชิ้น'}', ${isOverdue ? 1 : 0}, '${dueDateText}')" title="ส่งการแจ้งเตือนติดตามคืนทาง LINE">
+                    <button type="button" class="btn btn-xs btn-success rounded-pill px-2.5 py-1 fs-8 fw-bold shadow-sm d-inline-flex align-items-center gap-1" onclick="sendLineOverdueReminder('${b.employeeId || ''}', '${b.employeeName.replace(/'/g, "\\'")}', '${item.name.replace(/'/g, "\\'")}', '${item.code || ''}', ${b.borrowedQty}, '${item.unit || 'ชิ้น'}', ${isOverdue ? 1 : 0}, '${dueDateText}')" title="ส่งการแจ้งเตือนติดตามคืนทาง LINE">
                       <i class="bi bi-line"></i> LINE
                     </button>
                     ${b.employeeId ? `
-                      <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2 py-1 fs-8 fw-semibold" onclick="viewBorrowerEmpHistory('${b.employeeId}')">
-                        <i class="bi bi-clock-history me-1"></i> ประวัติ
+                      <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-1 fs-8 fw-semibold" onclick="viewBorrowerEmpHistory('${b.employeeId}')" title="ดูประวัติการยืม-คืนของพนักงานนี้">
+                        <i class="bi bi-clock-history me-0.5"></i> ประวัติ
                       </button>
                     ` : ''}
                   </div>
@@ -11490,6 +12479,104 @@
       }, 250);
     };
 
+    // ==========================================
+    // REPORT EQUIPMENT DAMAGE FUNCTIONS
+    // ==========================================
+    window.damagedEquipmentReports = JSON.parse(localStorage.getItem('flora_equipment_damages') || '{}');
+
+    window.openReportDamageModal = function(equipId, empId, borrowedQty, currentDamagedQty, currentDamageNote) {
+      const equipObj = (equipmentList || []).find(x => String(x.id) === String(equipId) || String(x.code) === String(equipId));
+      const empObj = (employeeList || []).find(x => String(x.id) === String(empId) || String(x.code) === String(empId));
+      const equipName = equipObj ? equipObj.name : 'อุปกรณ์';
+      const empName = empObj ? empObj.name : (empId || 'พนักงาน');
+      const unit = equipObj ? (equipObj.unit || 'ชิ้น') : 'ชิ้น';
+
+      document.getElementById('damageEquipId').value = equipId;
+      document.getElementById('damageEmpId').value = empId || '';
+      document.getElementById('damageMaxQty').value = borrowedQty;
+
+      document.getElementById('damageEquipName').textContent = `${equipName} [${equipObj ? (equipObj.code || equipObj.id) : ''}]`;
+      document.getElementById('damageEmpName').textContent = empName;
+      document.getElementById('damageUnitLabel').textContent = unit;
+      document.getElementById('damageMaxHint').textContent = `* ยืมอยู่ทั้งหมด ${borrowedQty} ${unit} (หากต้องการยกเลิกสถานะชำรุด ให้ใส่เป็น 0)`;
+
+      const qtyInput = document.getElementById('damageQtyInput');
+      if (qtyInput) {
+        qtyInput.max = borrowedQty;
+        qtyInput.value = currentDamagedQty || 0;
+      }
+
+      const noteInput = document.getElementById('damageNoteInput');
+      if (noteInput) {
+        noteInput.value = currentDamageNote || '';
+      }
+
+      const modalElem = document.getElementById('reportDamageModal');
+      if (modalElem) {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalElem);
+        modal.show();
+      }
+    };
+
+    window.saveEquipmentDamageReport = function() {
+      const equipId = document.getElementById('damageEquipId')?.value || '';
+      const empId = document.getElementById('damageEmpId')?.value || '';
+      const maxQty = parseInt(document.getElementById('damageMaxQty')?.value, 10) || 1;
+      const qty = parseInt(document.getElementById('damageQtyInput')?.value, 10) || 0;
+      const note = (document.getElementById('damageNoteInput')?.value || '').trim();
+
+      if (qty < 0) {
+        showToast('กรุณาระบุจำนวนชำรุดให้ถูกต้อง (ตั้งแต่ 0 ขึ้นไป)');
+        return;
+      }
+      if (qty > maxQty) {
+        showToast(`จำนวนชำรุดต้องไม่เกินจำนวนที่ยืม (${maxQty})`);
+        return;
+      }
+
+      if (!window.damagedEquipmentReports) {
+        window.damagedEquipmentReports = {};
+      }
+
+      const key = `${equipId}_${empId}`;
+      if (qty > 0) {
+        window.damagedEquipmentReports[key] = {
+          equipId: equipId,
+          empId: empId,
+          damagedQty: qty,
+          note: note,
+          updatedAt: Date.now()
+        };
+        showToast(`บันทึกแจ้งชำรุด ${qty} รายการ เรียบร้อยแล้ว`);
+      } else {
+        delete window.damagedEquipmentReports[key];
+        showToast('ยกเลิกรายการชำรุดเรียบร้อยแล้ว');
+      }
+
+      try {
+        localStorage.setItem('flora_equipment_damages', JSON.stringify(window.damagedEquipmentReports));
+      } catch (e) {
+        console.warn('Save damaged reports localStorage error:', e);
+      }
+
+      const modalElem = document.getElementById('reportDamageModal');
+      if (modalElem) {
+        const modal = bootstrap.Modal.getInstance(modalElem);
+        if (modal) modal.hide();
+      }
+
+      // Refresh borrowers modal only if open
+      const borrowersModalElem = document.getElementById('equipmentBorrowersModal');
+      if (borrowersModalElem && borrowersModalElem.classList.contains('show') && typeof showEquipmentBorrowersModal === 'function') {
+        showEquipmentBorrowersModal(equipId);
+      }
+
+      // Refresh overdue borrowings table if open
+      if (typeof renderOverdueTable === 'function') {
+        renderOverdueTable();
+      }
+    };
+
     // Return equipment directly from the borrowers modal
     window.returnEquipmentFromBorrowersModal = async function(e, equipId, empId, returnQty) {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -11503,13 +12590,26 @@
         const unit = equipObj ? equipObj.unit : 'ชิ้น';
         const qtyNum = parseInt(returnQty, 10) || 1;
 
+        // Check damage report for this employee & equipment
+        const dmgKey = `${equipId}_${empObj ? empObj.id : (empId || '')}`;
+        const damagesMap = (window.damagedEquipmentReports || {});
+        const dmgRecord = damagesMap[dmgKey] || {};
+        const damagedQty = Math.min(qtyNum, Number(dmgRecord.damagedQty || 0));
+        const goodQty = Math.max(0, qtyNum - damagedQty);
+        const damageNote = dmgRecord.note || '';
+
+        let confirmMsg = `ต้องการบันทึกรับคืน "${equipName}" จำนวน ${qtyNum} ${unit} จากคุณ ${empName} เข้าคลังทันทีหรือไม่?`;
+        if (damagedQty > 0) {
+          confirmMsg = `ต้องการบันทึกรับคืน "${equipName}" จากคุณ ${empName} หรือไม่?\n• สภาพสมบูรณ์: ${goodQty} ${unit} (นำกลับเข้าคลัง)\n• ชำรุด: ${damagedQty} ${unit} (แยกเข้าหมวดรอซ่อม)`;
+        }
+
         let confirmed = false;
         if (typeof window.showConfirmDialog === 'function') {
           confirmed = await window.showConfirmDialog({
             title: "ยืนยันรับคืนอุปกรณ์เข้าคลัง",
-            message: `ต้องการบันทึกรับคืน "${equipName}" จำนวน ${qtyNum} ${unit} จากคุณ ${empName} เข้าคลังทันทีหรือไม่?`,
-            type: "info",
-            icon: "bi-box-arrow-in-down",
+            message: confirmMsg,
+            type: damagedQty > 0 ? "warning" : "info",
+            icon: damagedQty > 0 ? "bi-tools" : "bi-box-arrow-in-down",
             confirmText: "บันทึกรับคืน",
             cancelText: "ยกเลิก",
             target: e ? (e.currentTarget || e.target) : null
@@ -11520,9 +12620,12 @@
 
         if (!confirmed) return;
 
-        // 1. Update inventory stock
+        // 1. Update inventory stock (แบบที่ 1: สภาพสมบูรณ์กลับเข้า quantity, ส่วนชำรุดแยกเข้า repairCount)
         if (equipObj) {
-          equipObj.quantity = (equipObj.quantity || 0) + qtyNum;
+          equipObj.quantity = (equipObj.quantity || 0) + goodQty;
+          if (damagedQty > 0) {
+            equipObj.repairCount = (equipObj.repairCount || 0) + damagedQty;
+          }
           equipObj.borrowedCount = Math.max(0, (equipObj.borrowedCount || 0) - qtyNum);
 
           if (isFirebaseReady && db && equipObj.id) {
@@ -11532,9 +12635,21 @@
           }
         }
 
+        // Clear damaged report record if returned
+        if (damagesMap[dmgKey]) {
+          delete damagesMap[dmgKey];
+          try {
+            localStorage.setItem('flora_equipment_damages', JSON.stringify(damagesMap));
+          } catch (e) {}
+        }
+
         // 2. Create transaction record
         const now = new Date();
         const docNo = 'DOC-' + String(Date.now()).slice(-6);
+        const txNote = damagedQty > 0 
+          ? `บันทึกรับคืนอุปกรณ์: สมบูรณ์ ${goodQty} ${unit}, ชำรุดส่งซ่อม ${damagedQty} ${unit}${damageNote ? ` (${damageNote})` : ''}` 
+          : 'บันทึกรับคืนอุปกรณ์จากหน้ารายชื่อผู้ยืม';
+
         const newTx = {
           id: 'tx-' + String(Date.now()).slice(-6),
           docNo: docNo,
@@ -11557,7 +12672,9 @@
           quantity: qtyNum,
           unit: unit,
           location: equipObj?.location || 'คลังหลัก',
-          note: 'บันทึกรับคืนอุปกรณ์จากหน้ารายชื่อผู้ยืม',
+          note: txNote,
+          damagedQty: damagedQty,
+          goodQty: goodQty,
           dueDate: null,
           dueDateStr: null,
           rawTimestamp: now.getTime(),
@@ -11576,10 +12693,14 @@
         }
 
         if (typeof logAuditAction === 'function') {
-          logAuditAction('ประวัติรายการ', 'เพิ่ม', `ทำรายการคืนอุปกรณ์ (${qtyNum} ${unit}): ${equipName} จากคุณ ${empName}`, newTx.id);
+          logAuditAction('ประวัติรายการ', 'เพิ่ม', `ทำรายการคืนอุปกรณ์ (${qtyNum} ${unit}): ${equipName} จากคุณ ${empName}${damagedQty > 0 ? ` (ชำรุด ${damagedQty} ${unit})` : ''}`, newTx.id);
         }
 
-        showToast(`✅ บันทึกรับคืน "${equipName}" (${qtyNum} ${unit}) จากคุณ ${empName} เรียบร้อยแล้ว`);
+        let summaryToast = `✅ บันทึกรับคืน "${equipName}" (${qtyNum} ${unit}) จากคุณ ${empName} เรียบร้อยแล้ว`;
+        if (damagedQty > 0) {
+          summaryToast = `✅ รับคืน "${equipName}": สภาพสมบูรณ์ ${goodQty} ${unit} เข้าคลัง, ชำรุด ${damagedQty} ${unit} แยกเข้าหมวดรอซ่อม`;
+        }
+        showToast(summaryToast);
 
         // Refresh lists & UI
         renderCatalogGrid();
@@ -11633,6 +12754,7 @@
         altInputClass: 'form-control rounded-end-3 border-start-0 fw-bold fs-7 bg-white cursor-pointer',
         altFormat: 'd/m/Y',
         locale: thLocale,
+        disableMobile: true,
         onReady: function(selectedDates, dateStr, instance) {
           applyThaiBuddhistYearOnlyDate(instance);
         },
@@ -11654,7 +12776,7 @@
     function applyThaiBuddhistYearOnlyDate(instance) {
       if (!instance) return;
 
-      if (instance.altInput && instance.selectedDates.length > 0) {
+      if (instance.altInput && Array.isArray(instance.selectedDates) && instance.selectedDates.length > 0) {
         const d = instance.selectedDates[0];
         const day = String(d.getDate()).padStart(2, '0');
         const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -11773,7 +12895,7 @@
       const timeVal = document.getElementById('editDueTimeSelect')?.value || '17:00';
 
       let selectedDate = null;
-      if (window.editBorrowerDueDatePicker && window.editBorrowerDueDatePicker.selectedDates.length > 0) {
+      if (window.editBorrowerDueDatePicker && Array.isArray(window.editBorrowerDueDatePicker.selectedDates) && window.editBorrowerDueDatePicker.selectedDates.length > 0) {
         selectedDate = window.editBorrowerDueDatePicker.selectedDates[0];
       } else {
         const rawDate = document.getElementById('editDueDateInput')?.value || '';
@@ -11892,6 +13014,7 @@
         altInputClass: 'form-control fw-bold border-warning bg-white cursor-pointer fs-7',
         altFormat: 'd/m/Y H:i',
         locale: thLocale,
+        disableMobile: true,
         onReady: function(selectedDates, dateStr, instance) {
           applyThaiBuddhistYear(instance);
         },
@@ -11913,7 +13036,7 @@
     function applyThaiBuddhistYear(instance) {
       if (!instance) return;
 
-      if (instance.altInput && instance.selectedDates.length > 0) {
+      if (instance.altInput && Array.isArray(instance.selectedDates) && instance.selectedDates.length > 0) {
         const d = instance.selectedDates[0];
         const day = String(d.getDate()).padStart(2, '0');
         const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -11964,7 +13087,7 @@
         if (selectedType === 'ยืมอุปกรณ์') {
           box.classList.remove('d-none');
           initThaiFlatpickr();
-          if (!window.transDueDatePicker || window.transDueDatePicker.selectedDates.length === 0) {
+          if (!window.transDueDatePicker || !Array.isArray(window.transDueDatePicker.selectedDates) || window.transDueDatePicker.selectedDates.length === 0) {
             setQuickDueDate(3);
           }
         } else {
@@ -12182,8 +13305,20 @@
         targetBorrows = allActive.filter(b => b.employeeId === selectedEmpId);
       }
 
+      const now = Date.now();
+      const overdueList = targetBorrows.filter(b => {
+        const due = b.dueDate || (b.borrowTime ? (b.borrowTime + 3 * 86400000) : 0);
+        return due && now > due;
+      });
+
       if (badge) {
-        badge.textContent = `ค้างคืน ${targetBorrows.length} รายการ`;
+        if (overdueList.length > 0) {
+          badge.className = 'badge bg-danger text-white fs-8';
+          badge.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>ค้างคืน ${targetBorrows.length} (เกินกำหนด ${overdueList.length})`;
+        } else {
+          badge.className = 'badge bg-warning text-dark fs-8';
+          badge.textContent = `ค้างคืน ${targetBorrows.length} รายการ`;
+        }
       }
 
       if (noBorrowAlert) {
@@ -12212,24 +13347,34 @@
         const unit = eqObj?.unit || 'ชิ้น';
         const empNameClean = b.employeeName ? b.employeeName.split('(')[0].trim() : 'พนักงาน';
 
+        let dueTimeMs = b.dueDate;
+        if (!dueTimeMs && b.borrowTime) {
+          dueTimeMs = b.borrowTime + (3 * 24 * 60 * 60 * 1000);
+        }
+        const isOverdue = dueTimeMs ? (now > dueTimeMs) : false;
+
         html += `
           <div class="col-12 col-md-6">
-            <div class="card border rounded-3 p-2.5 bg-white h-100 shadow-none d-flex flex-row align-items-center justify-content-between gap-2">
+            <div class="card rounded-3 p-2.5 bg-white h-100 shadow-none d-flex flex-row align-items-center justify-content-between gap-2 ${isOverdue ? 'border-danger border-2' : 'border'}">
               <div class="d-flex align-items-center gap-2 overflow-hidden">
                 <img src="${img}" class="rounded-2 border flex-shrink-0" style="width: 42px; height: 42px; object-fit: cover;" onerror="this.src='${DEFAULT_EQUIPMENT_IMAGE}'" />
                 <div class="overflow-hidden">
                   <div class="fw-bold text-dark text-truncate fs-7" title="${b.equipmentName}">${b.equipmentName}</div>
-                  <div class="d-flex align-items-center gap-1.5 flex-wrap fs-8">
+                  <div class="d-flex align-items-center gap-1 flex-wrap fs-8">
                     <span class="badge bg-secondary font-monospace">${b.equipmentCode || 'ITEM'}</span>
                     <span class="text-primary fw-semibold"><i class="bi bi-person me-0.5"></i>${empNameClean}</span>
                     <span class="badge bg-warning text-dark fw-bold">ค้าง: ${b.remainingQty} ${unit}</span>
+                    ${isOverdue ? '<span class="badge bg-danger text-white fw-bold"><i class="bi bi-exclamation-triangle-fill me-0.5"></i>เกินกำหนด</span>' : ''}
                   </div>
-                  <small class="text-muted fs-8 d-block text-truncate"><i class="bi bi-clock me-0.5"></i>ยืม: ${b.timestampStr}</small>
+                  <div class="d-flex align-items-center gap-1.5 flex-wrap fs-8 text-truncate mt-0.5">
+                    <small class="text-muted"><i class="bi bi-clock me-0.5"></i>ยืม: ${b.timestampStr || '-'}</small>
+                    ${isOverdue && b.dueDateStr ? `<small class="text-danger fw-semibold"><i class="bi bi-calendar-x me-0.5"></i>กำหนด: ${b.dueDateStr}</small>` : ''}
+                  </div>
                 </div>
               </div>
               <button type="button" class="btn btn-sm btn-info text-dark fw-bold rounded-pill px-2.5 py-1.5 flex-shrink-0 shadow-sm d-flex align-items-center gap-1" onclick="quickReturnAllActiveBorrow(event, '${b.equipmentId}', '${b.employeeId}', ${b.remainingQty})">
                 <i class="bi bi-box-arrow-in-down fs-7"></i>
-                <span class="fs-8">คืนทั้งหมด</span>
+                <span class="fs-8">คืน</span>
               </button>
             </div>
           </div>
@@ -12256,11 +13401,11 @@
         let confirmed = false;
         if (typeof window.showConfirmDialog === 'function') {
           confirmed = await window.showConfirmDialog({
-            title: "ยืนยันรับคืนอุปกรณ์ทั้งหมด",
+            title: "ยืนยันรับคืนอุปกรณ์",
             message: `ต้องการบันทึกรับคืน "${equipName}" จำนวน ${qtyNum} ${unit} จากคุณ ${empName} เข้าคลังทันทีหรือไม่?`,
             type: "info",
             icon: "bi-box-arrow-in-down",
-            confirmText: "คืนทั้งหมด",
+            confirmText: "คืน",
             cancelText: "ยกเลิก",
             target: e ? (e.currentTarget || e.target) : null
           });
@@ -12555,7 +13700,29 @@
       if (typeof updateStats === 'function') updateStats();
     };
 
-    window.showOverdueBorrowingsModal = function() {
+    window.toggleOverdueStatsCards = function() {
+      const row = document.getElementById('overdueStatsCardsRow');
+      const icon = document.getElementById('toggleOverdueStatsIcon');
+      const text = document.getElementById('toggleOverdueStatsText');
+      if (!row) return;
+
+      const isHidden = row.classList.contains('d-none');
+      if (isHidden) {
+        row.classList.remove('d-none');
+        if (icon) icon.className = 'bi bi-eye-slash-fill';
+        if (text) text.textContent = 'ซ่อนสรุปสถิติ';
+      } else {
+        row.classList.add('d-none');
+        if (icon) icon.className = 'bi bi-eye-fill';
+        if (text) text.textContent = 'ดูสรุปสถิติ';
+      }
+    };
+
+    window.showOverdueBorrowingsModal = function(searchQuery) {
+      const searchInput = document.getElementById('overdueSearchInput');
+      if (searchInput) {
+        searchInput.value = typeof searchQuery === 'string' ? searchQuery : '';
+      }
       renderOverdueTable();
       const modalElem = document.getElementById('overdueBorrowingsModal');
       if (modalElem) {
@@ -12566,10 +13733,11 @@
 
     window.renderOverdueTable = function() {
       const thresh = window.currentOverdueThresholdDays !== undefined ? window.currentOverdueThresholdDays : 3;
-      const list = calculateOverdueBorrowings(thresh);
+      const list = typeof calculateOverdueBorrowings === 'function' ? (calculateOverdueBorrowings(thresh) || []) : [];
 
       const searchVal = (document.getElementById('overdueSearchInput')?.value || '').toLowerCase().trim();
-      const filtered = list.filter(item => {
+      const filtered = (list || []).filter(item => {
+        if (!item) return false;
         if (!searchVal) return true;
         const emp = (item.employeeName || '').toLowerCase();
         const eq = (item.equipmentName || '').toLowerCase();
@@ -12584,7 +13752,7 @@
 
       const uniqueEmps = new Set(filtered.map(x => x.employeeId || x.employeeName));
       let sumQty = 0;
-      filtered.forEach(x => sumQty += x.remainingQty);
+      filtered.forEach(x => sumQty += (x.remainingQty || 0));
 
       if (totalItemsElem) totalItemsElem.innerHTML = `${filtered.length} <span class="fs-7 text-muted font-normal">รายการ</span>`;
       if (totalEmpsElem) totalEmpsElem.innerHTML = `${uniqueEmps.size} <span class="fs-7 text-muted font-normal">คน</span>`;
@@ -12596,7 +13764,7 @@
       if (filtered.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="7" class="text-center py-5 text-muted">
+            <td colspan="9" class="text-center py-5 text-muted">
               <i class="bi bi-check-circle-fill text-success fs-1 d-block mb-2"></i>
               <div class="fw-bold text-dark fs-6">ไม่มีรายการยืมอุปกรณ์เกินกำหนด${thresh > 0 ? ` (${thresh} วัน)` : ''}</div>
               <small class="text-secondary">พนักงานทุกคนส่งคืนอุปกรณ์ตรงเวลา หรือยังไม่ถึงเกณฑ์ระยะเวลาที่เลือก</small>
@@ -12607,9 +13775,18 @@
       }
 
       let html = '';
+      const damagesMap = (window.damagedEquipmentReports || {});
+
       filtered.forEach(it => {
         const empAvatar = it.employeeObj && it.employeeObj.photoUrl ? it.employeeObj.photoUrl : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80';
         const eqImg = it.equipmentObj && it.equipmentObj.imageUrl ? it.equipmentObj.imageUrl : 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&auto=format&fit=crop&q=80';
+        const cleanEmpName = it.employeeName ? it.employeeName.split('(')[0].trim() : 'พนักงาน';
+
+        const dmgKey = `${it.equipmentId}_${it.employeeId || it.employeeName}`;
+        const dmgRecord = damagesMap[dmgKey] || {};
+        const damagedQty = Number(dmgRecord.damagedQty || 0);
+        const damageNote = dmgRecord.note || '';
+        const safeDamageNote = (damageNote || '').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/[\r\n]+/g, ' ');
 
         let overdueBadge = '';
         if (thresh === 0) {
@@ -12622,21 +13799,39 @@
 
         html += `
           <tr class="${it.daysOverdue > 0 ? 'overdue-pulse-row' : ''}">
-            <td class="ps-3">
+            <td class="text-center ps-3">
+              <button type="button" class="btn btn-sm btn-info text-dark rounded-pill px-3 py-1 fs-7 fw-bold shadow-sm" onclick="quickReturnOverdueTransaction(event, '${it.employeeId || ''}', '${it.equipmentId || ''}', ${it.remainingQty})" title="บันทึกรับคืนอุปกรณ์นี้เข้าคลังทันที">
+                คืน
+              </button>
+            </td>
+            <td class="text-center text-nowrap">
+              <span class="badge bg-warning bg-opacity-25 text-dark border border-warning rounded-pill px-2.5 py-1 fw-bold fs-7">ยืม ${it.remainingQty}</span>
+            </td>
+            <td class="text-center text-nowrap">
+              ${damagedQty > 0 ? `
+                <button type="button" class="btn btn-sm btn-danger rounded-pill px-2.5 py-0.5 fw-bold shadow-sm fs-7" onclick="openReportDamageModal('${it.equipmentId || ''}', '${it.employeeId || ''}', ${it.remainingQty}, ${damagedQty}, '${safeDamageNote}')" title="${damageNote ? `ชำรุด: ${damageNote}` : 'มีอุปกรณ์ชำรุด (คลิกเพื่อแก้ไข)'}">
+                  ชำรุด ${damagedQty}
+                </button>
+              ` : `
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-0.5 fw-semibold fs-7" onclick="openReportDamageModal('${it.equipmentId || ''}', '${it.employeeId || ''}', ${it.remainingQty}, 0, '')" title="คลิกเพื่อบันทึกแจ้งอุปกรณ์ชำรุด">
+                  ชำรุด
+                </button>
+              `}
+            </td>
+            <td>
               <div class="d-flex align-items-center gap-2">
                 <img src="${empAvatar}" class="rounded-circle border shadow-sm" style="width: 36px; height: 36px; object-fit: cover;" />
                 <div>
-                  <div class="fw-bold text-dark">${it.employeeName}</div>
+                  <div class="fw-bold text-dark text-nowrap" title="${it.employeeName}">${cleanEmpName}</div>
                   ${it.employeeObj && it.employeeObj.employeeCode ? `<span class="badge bg-dark font-monospace fs-8">${it.employeeObj.employeeCode}</span>` : ''}
                 </div>
               </div>
             </td>
-            <td><span class="badge bg-light text-dark border fs-8">${it.department}</span></td>
             <td>
               <div class="d-flex align-items-center gap-2">
                 <img src="${eqImg}" class="rounded-3 border" style="width: 32px; height: 32px; object-fit: cover;" />
                 <div>
-                  <div class="fw-semibold text-dark fs-8">${it.equipmentName}</div>
+                  <div class="fw-semibold text-dark fs-8 text-nowrap">${it.equipmentName}</div>
                   <span class="badge bg-secondary font-monospace fs-8" style="font-size: 9px;">${it.equipmentCode || 'EQ'}</span>
                 </div>
               </div>
@@ -12646,17 +13841,14 @@
               ${it.dueDateStr ? `<div class="fw-bold text-danger mt-0.5" style="font-size: 10px;"><i class="bi bi-calendar-check me-1"></i>กำหนดคืน: ${it.dueDateStr}</div>` : ''}
             </td>
             <td class="text-center">${overdueBadge}</td>
-            <td class="text-center fw-bold text-danger fs-6">${it.remainingQty} ${it.unit}</td>
+            <td><span class="badge bg-light text-dark border fs-8 text-nowrap">${it.department}</span></td>
             <td class="text-center pe-3 text-nowrap">
               <div class="d-flex align-items-center justify-content-center gap-1">
-                <button type="button" class="btn btn-xs btn-success rounded-pill px-2.5 py-1 fs-8 fw-bold shadow-sm d-inline-flex align-items-center gap-1" onclick="sendLineOverdueReminder('${it.employeeId || ''}', '${it.employeeName.replace(/'/g, "\\'")}', '${it.equipmentName.replace(/'/g, "\\'")}', '${it.equipmentCode || ''}', ${it.remainingQty}, '${it.unit || 'ชิ้น'}', ${it.daysOverdue || 0}, '${it.dueDateStr || ''}')" title="ส่งการแจ้งเตือนติดตามคืนอุปกรณ์เกินกำหนดทาง LINE">
+                <button type="button" class="btn btn-xs btn-success rounded-pill px-2.5 py-1 fs-8 fw-bold shadow-sm d-inline-flex align-items-center gap-1" onclick="sendLineOverdueReminder('${it.employeeId || ''}', '${cleanEmpName.replace(/'/g, "\\'")}', '${it.equipmentName.replace(/'/g, "\\'")}', '${it.equipmentCode || ''}', ${it.remainingQty}, '${it.unit || 'ชิ้น'}', ${it.daysOverdue || 0}, '${it.dueDateStr || ''}')" title="ส่งการแจ้งเตือนติดตามคืนอุปกรณ์เกินกำหนดทาง LINE">
                   <i class="bi bi-line fs-7"></i> LINE
                 </button>
-                <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-2 py-1 fs-8 fw-semibold" onclick="sendOverdueReminder('${it.employeeId || ''}', '${it.employeeName.replace(/'/g, "\\'")}', '${it.equipmentName.replace(/'/g, "\\'")}')" title="ส่งการแจ้งเตือนติดตามคืนอุปกรณ์">
+                <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-2 py-1 fs-8 fw-semibold" onclick="sendOverdueReminder('${it.employeeId || ''}', '${cleanEmpName.replace(/'/g, "\\'")}', '${it.equipmentName.replace(/'/g, "\\'")}')" title="ส่งการแจ้งเตือนติดตามคืนอุปกรณ์">
                   <i class="bi bi-bell-fill text-warning me-1"></i> แจ้งเตือน
-                </button>
-                <button type="button" class="btn btn-xs btn-primary rounded-pill px-2.5 py-1 fs-8 fw-bold" onclick="quickReturnOverdueTransaction('${it.employeeId || ''}', '${it.equipmentId || ''}', ${it.remainingQty})" title="ทำรายการคืนอุปกรณ์ชิ้นนี้ทันที">
-                  <i class="bi bi-box-arrow-in-down me-1"></i> คืนด่วน
                 </button>
               </div>
             </td>
@@ -12774,48 +13966,154 @@
       }, 300);
     };
 
-    window.quickReturnOverdueTransaction = function(empId, equipId, qty) {
-      const modalElem = document.getElementById('overdueBorrowingsModal');
-      if (modalElem) {
-        const modal = bootstrap.Modal.getInstance(modalElem);
-        if (modal) modal.hide();
+    window.quickReturnOverdueTransaction = async function(e, empId, equipId, returnQty) {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+
+      try {
+        const equipObj = (equipmentList || []).find(x => String(x.id) === String(equipId) || String(x.code) === String(equipId));
+        const empObj = (employeeList || []).find(x => String(x.id) === String(empId) || String(x.code) === String(empId));
+        const equipName = equipObj ? equipObj.name : 'อุปกรณ์';
+        const empName = empObj ? empObj.name : (itEmpNameFallback(empId) || 'พนักงาน');
+        const unit = equipObj ? equipObj.unit : 'ชิ้น';
+        const qtyNum = parseInt(returnQty, 10) || 1;
+
+        // Check damage report for this employee & equipment
+        const dmgKey = `${equipId}_${empObj ? empObj.id : (empId || '')}`;
+        const damagesMap = (window.damagedEquipmentReports || {});
+        const dmgRecord = damagesMap[dmgKey] || {};
+        const damagedQty = Math.min(qtyNum, Number(dmgRecord.damagedQty || 0));
+        const goodQty = Math.max(0, qtyNum - damagedQty);
+        const damageNote = dmgRecord.note || '';
+
+        let confirmMsg = `ต้องการบันทึกรับคืน "${equipName}" จำนวน ${qtyNum} ${unit} จากคุณ ${empName} เข้าคลังทันทีหรือไม่?`;
+        if (damagedQty > 0) {
+          confirmMsg = `ต้องการบันทึกรับคืน "${equipName}" จากคุณ ${empName} หรือไม่?\n• สภาพสมบูรณ์: ${goodQty} ${unit} (นำกลับเข้าคลัง)\n• ชำรุด: ${damagedQty} ${unit} (แยกเข้าหมวดรอซ่อม)`;
+        }
+
+        let confirmed = false;
+        if (typeof window.showConfirmDialog === 'function') {
+          confirmed = await window.showConfirmDialog({
+            title: "ยืนยันรับคืนอุปกรณ์",
+            message: confirmMsg,
+            type: damagedQty > 0 ? "warning" : "info",
+            icon: damagedQty > 0 ? "bi-tools" : "bi-box-arrow-in-down",
+            confirmText: "คืน",
+            cancelText: "ยกเลิก",
+            target: e ? (e.currentTarget || e.target) : null
+          });
+        } else {
+          confirmed = true;
+        }
+
+        if (!confirmed) return;
+
+        // 1. Update inventory stock (แบบที่ 1: สภาพสมบูรณ์กลับเข้า quantity, ส่วนชำรุดแยกเข้า repairCount)
+        if (equipObj) {
+          equipObj.quantity = (equipObj.quantity || 0) + goodQty;
+          if (damagedQty > 0) {
+            equipObj.repairCount = (equipObj.repairCount || 0) + damagedQty;
+          }
+          equipObj.borrowedCount = Math.max(0, (equipObj.borrowedCount || 0) - qtyNum);
+
+          if (isFirebaseReady && db && equipObj.id) {
+            setDoc(doc(db, "equipment", equipObj.id), equipObj, { merge: true }).catch(err => {
+              console.warn("Firestore update equipment stock error on overdue return:", err);
+            });
+          }
+        }
+
+        // Clear damaged report record if returned
+        if (damagesMap[dmgKey]) {
+          delete damagesMap[dmgKey];
+          try {
+            localStorage.setItem('flora_equipment_damages', JSON.stringify(damagesMap));
+          } catch (e) {}
+        }
+
+        // 2. Create transaction record
+        const now = new Date();
+        const docNo = 'DOC-' + String(Date.now()).slice(-6);
+        const txNote = damagedQty > 0
+          ? `บันทึกรับคืนอุปกรณ์เกินกำหนด: สมบูรณ์ ${goodQty} ${unit}, ชำรุดส่งซ่อม ${damagedQty} ${unit}${damageNote ? ` (${damageNote})` : ''}`
+          : 'คืนอุปกรณ์จากการติดตามรายการยืมเกินกำหนด';
+
+        const newTx = {
+          id: 'tx-' + String(Date.now()).slice(-6),
+          docNo: docNo,
+          type: 'คืนอุปกรณ์',
+          employeeId: empObj ? empObj.id : (empId || 'UNKNOWN'),
+          employeeName: empObj ? `${empObj.name} (${empObj.department || 'แผนกทั่วไป'})` : empName,
+          employeeCode: empObj ? (empObj.code || empObj.id) : '',
+          employeeDepartment: empObj ? (empObj.department || 'แผนกทั่วไป') : 'แผนกทั่วไป',
+          items: [{
+            equipmentId: equipId,
+            equipmentName: equipName,
+            equipmentCode: equipObj ? (equipObj.code || equipObj.id) : '',
+            quantity: qtyNum,
+            unit: unit
+          }],
+          equipmentId: equipId,
+          equipmentName: equipName,
+          equipmentCode: equipObj ? (equipObj.code || equipObj.id) : '',
+          quantity: qtyNum,
+          unit: unit,
+          timestamp: typeof formatThaiDateTime === 'function' ? formatThaiDateTime(now) : now.toLocaleString('th-TH'),
+          rawTimestamp: now.getTime(),
+          note: txNote,
+          damagedQty: damagedQty,
+          goodQty: goodQty
+        };
+
+        transactionHistory.unshift(newTx);
+        saveToLocalStorage();
+
+        if (isFirebaseReady && db) {
+          try {
+            await setDoc(doc(db, "transactions", newTx.id), newTx, { merge: true });
+          } catch (err) {
+            console.warn("Firestore add transaction error on overdue return:", err);
+          }
+        }
+
+        if (typeof logAuditAction === 'function') {
+          logAuditAction('ประวัติรายการ', 'เพิ่ม', `ทำรายการคืนอุปกรณ์เกินกำหนด: ${equipName} จำนวน ${qtyNum} ${unit} จากคุณ ${empName}${damagedQty > 0 ? ` (ชำรุด ${damagedQty} ${unit})` : ''}`, newTx.id);
+        }
+
+        let summaryToast = `✅ บันทึกรับคืน "${equipName}" (${qtyNum} ${unit}) จากคุณ ${empName} เข้าคลังเรียบร้อยแล้ว`;
+        if (damagedQty > 0) {
+          summaryToast = `✅ รับคืน "${equipName}": สภาพสมบูรณ์ ${goodQty} ${unit} เข้าคลัง, ชำรุด ${damagedQty} ${unit} แยกเข้าหมวดรอซ่อม`;
+        }
+        showToast(summaryToast);
+
+        // Refresh overdue table & stats immediately in this modal without closing
+        renderOverdueTable();
+        updateStats();
+        renderCatalogGrid();
+        renderStaffTable();
+        renderHistoryTable();
+
+        // Refresh borrowers modal if open
+        if (typeof showEquipmentBorrowersModal === 'function' && equipObj && equipObj.id) {
+          const borrowersModalElem = document.getElementById('equipmentBorrowersModal');
+          if (borrowersModalElem && borrowersModalElem.classList.contains('show')) {
+            showEquipmentBorrowersModal(equipObj.id);
+          }
+        }
+
+        if (typeof validateFirestoreHistorySync === 'function') {
+          validateFirestoreHistorySync(false);
+        }
+      } catch (err) {
+        console.error("Overdue quick return error:", err);
+        showToast("เกิดข้อผิดพลาดในการบันทึกคืนอุปกรณ์");
       }
-
-      setTimeout(() => {
-        const tabBtn = document.getElementById('transaction-tab');
-        if (tabBtn) {
-          const bsTab = new bootstrap.Tab(tabBtn);
-          bsTab.show();
-        }
-
-        const typeReturnRadio = document.getElementById('typeReturn');
-        if (typeReturnRadio) {
-          typeReturnRadio.checked = true;
-          if (typeof toggleTransTypeUI === 'function') toggleTransTypeUI();
-        }
-
-        const empSelect = document.getElementById('transEmployeeSelect');
-        if (empSelect && empId) {
-          empSelect.value = empId;
-        }
-
-        if (equipId && typeof quickSelectTransaction === 'function') {
-          quickSelectTransaction(equipId);
-        }
-
-        const qtyInput = document.getElementById('transQty');
-        if (qtyInput && qty > 0) {
-          qtyInput.value = qty;
-        }
-
-        const noteInput = document.getElementById('transNote');
-        if (noteInput) {
-          noteInput.value = `คืนอุปกรณ์ยืมเกินกำหนด (ติดตามผ่านระบบแจ้งเตือน)`;
-        }
-
-        showToast(`↩️ เตรียมข้อมูลคืนอุปกรณ์ "${qty} ชิ้น" เรียบร้อยแล้ว กรุณาตรวจสอบและกดบันทึกรายการ`);
-      }, 300);
     };
+
+    function itEmpNameFallback(empId) {
+      const emp = (employeeList || []).find(x => x.id === empId);
+      return emp ? emp.name : 'พนักงาน';
+    }
 
     window.copyOverdueNotificationText = function() {
       const thresh = window.currentOverdueThresholdDays !== undefined ? window.currentOverdueThresholdDays : 3;
@@ -13654,14 +14952,27 @@
     let html5QrScannerInstance = null;
     let isScannerActive = false;
     let activeScannedItemId = null;
+    let activeScannerDetectedEmpId = null;
     let activeScannedUnknownCode = null;
+    let currentScannerModalMode = 'NORMAL'; // 'NORMAL' | 'FOCUS_CARD'
+
+    window.openCatalogEquipmentScannerModal = function() {
+      currentScannerModalMode = 'FOCUS_CARD';
+      window.openBarcodeQrScannerModal();
+    };
 
     window.openBarcodeQrScannerModal = function() {
+      activeScannedItemId = null;
+      activeScannerDetectedEmpId = null;
+      activeScannedUnknownCode = null;
+
       const promptState = document.getElementById('scannedItemPromptState');
       const resultCard = document.getElementById('scannedItemResultCard');
+      const empCard = document.getElementById('scannedEmpResultCard');
       const notFoundCard = document.getElementById('scannedItemNotFoundCard');
       if (promptState) promptState.classList.remove('d-none');
       if (resultCard) resultCard.classList.add('d-none');
+      if (empCard) empCard.classList.add('d-none');
       if (notFoundCard) notFoundCard.classList.add('d-none');
 
       const modalElem = document.getElementById('barcodeQrScannerModal');
@@ -13697,7 +15008,13 @@
       try {
         const config = { 
           fps: 15, 
-          qrbox: { width: 240, height: 240 },
+          qrbox: (viewfinderWidth, viewfinderHeight) => {
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            return {
+              width: Math.max(220, Math.floor(viewfinderWidth * 0.85)),
+              height: Math.max(160, Math.floor(minEdge * 0.75))
+            };
+          },
           aspectRatio: 1.0
         };
 
@@ -13739,47 +15056,149 @@
     };
 
     window.handleScannedBarcodeCode = function(rawCode) {
-      let cleanCode = rawCode.trim();
-      if (cleanCode.startsWith('EQUIPMENT:')) {
-        cleanCode = cleanCode.replace('EQUIPMENT:', '').trim();
-      }
-
-      // Find item in equipmentList
-      const item = equipmentList.find(x => 
-        (x.code && x.code.toLowerCase() === cleanCode.toLowerCase()) || 
-        (x.id && x.id.toLowerCase() === cleanCode.toLowerCase()) ||
-        (x.name && x.name.toLowerCase().includes(cleanCode.toLowerCase()))
-      );
+      if (!rawCode) return;
+      let cleanCode = String(rawCode).trim();
+      if (!cleanCode) return;
 
       const promptState = document.getElementById('scannedItemPromptState');
       const foundCard = document.getElementById('scannedItemResultCard');
+      const empCard = document.getElementById('scannedEmpResultCard');
       const notFoundCard = document.getElementById('scannedItemNotFoundCard');
 
       if (promptState) promptState.classList.add('d-none');
 
+      // 1. Try resolveScannedCodeEntity
+      const res = (typeof resolveScannedCodeEntity === 'function') 
+        ? resolveScannedCodeEntity(cleanCode) 
+        : null;
+
+      let item = null;
+      let emp = null;
+
+      if (res && res.type === 'EMPLOYEE' && res.entity) {
+        emp = res.entity;
+      } else if (res && res.type === 'EQUIPMENT' && res.entity) {
+        item = res.entity;
+      } else {
+        // Fallback resolution with prefix stripping
+        let lookupCode = cleanCode;
+        if (/^(EQUIPMENT|EQ|TOOL|ASSET)\s*[:=\-_\/]\s*/i.test(lookupCode)) {
+          lookupCode = lookupCode.replace(/^(EQUIPMENT|EQ|TOOL|ASSET)\s*[:=\-_\/]\s*/i, '').trim();
+        }
+        if (/^(EMPLOYEE|EMP|STAFF|PERSON)\s*[:=\-_\/]\s*/i.test(lookupCode)) {
+          lookupCode = lookupCode.replace(/^(EMPLOYEE|EMP|STAFF|PERSON)\s*[:=\-_\/]\s*/i, '').trim();
+        }
+
+        const lowerLookup = lookupCode.toLowerCase();
+        // Check equipment list first
+        item = (equipmentList || []).find(x => 
+          (x.code && x.code.toLowerCase() === lowerLookup) || 
+          (x.id && x.id.toLowerCase() === lowerLookup) ||
+          (x.name && x.name.toLowerCase().includes(lowerLookup))
+        );
+
+        // Check employee list
+        if (!item) {
+          emp = (employeeList || []).find(e => 
+            (e.id && e.id.toLowerCase() === lowerLookup) || 
+            (e.code && e.code.toLowerCase() === lowerLookup) ||
+            (e.name && e.name.toLowerCase().includes(lowerLookup)) ||
+            (e.phone && e.phone.replace(/[^0-9]/g, '') === lookupCode.replace(/[^0-9]/g, '') && lookupCode.length >= 9)
+          );
+        }
+      }
+
       if (item) {
+        // If opened from catalog search bar to focus equipment card
+        if (currentScannerModalMode === 'FOCUS_CARD') {
+          stopHtml5Scanner();
+          const modalElem = document.getElementById('barcodeQrScannerModal');
+          if (modalElem) {
+            const modalInst = bootstrap.Modal.getInstance(modalElem);
+            if (modalInst) modalInst.hide();
+          }
+          currentScannerModalMode = 'NORMAL';
+
+          if (typeof window.returnToCatalogEquipment === 'function') {
+            window.returnToCatalogEquipment(item.id);
+          }
+          showToast(`🔍 สแกนพบอุปกรณ์ "${item.name}" [${item.code}] โฟกัสตำแหน่งในคลังเรียบร้อย!`);
+          return;
+        }
+
         activeScannedItemId = item.id;
+        activeScannerDetectedEmpId = null;
+        if (empCard) empCard.classList.add('d-none');
         if (notFoundCard) notFoundCard.classList.add('d-none');
         if (foundCard) foundCard.classList.remove('d-none');
 
-        document.getElementById('scannedItemImg').src = item.imageUrl || DEFAULT_EQUIPMENT_IMAGE;
-        document.getElementById('scannedItemName').textContent = item.name;
-        document.getElementById('scannedItemCategory').textContent = item.category;
-        document.getElementById('scannedItemCode').textContent = `รหัสสินค้า: ${item.code}`;
-        document.getElementById('scannedItemLocation').textContent = item.location || 'คลังกลาง';
-        document.getElementById('scannedItemStock').textContent = `${item.quantity} ${item.unit}`;
+        const imgElem = document.getElementById('scannedItemImg');
+        if (imgElem) imgElem.src = item.imageUrl || DEFAULT_EQUIPMENT_IMAGE;
+        const nameElem = document.getElementById('scannedItemName');
+        if (nameElem) nameElem.textContent = item.name;
+        const catElem = document.getElementById('scannedItemCategory');
+        if (catElem) catElem.textContent = item.category;
+        const codeElem = document.getElementById('scannedItemCode');
+        if (codeElem) codeElem.textContent = `รหัสสินค้า: ${item.code}`;
+        const locElem = document.getElementById('scannedItemLocation');
+        if (locElem) locElem.textContent = item.location || 'คลังกลาง';
+        const stockElem = document.getElementById('scannedItemStock');
+        if (stockElem) stockElem.textContent = `${item.quantity} ${item.unit}`;
 
-        showToast(`📷 สแกนพบสินค้า: "${item.name}" (สต็อก: ${item.quantity} ${item.unit})`);
+        showToast(`📷 สแกนพบอุปกรณ์: "${item.name}" (สต็อก: ${item.quantity} ${item.unit})`);
 
         const autoSelectCheck = document.getElementById('autoSelectBarcodeScannerCheckbox');
         if (autoSelectCheck && autoSelectCheck.checked) {
           selectFromScannerToForm();
         }
+      } else if (emp) {
+        if (currentScannerModalMode === 'FOCUS_CARD') {
+          showToast(`ℹ️ สแกนพบบัตรผู้ทำรายการ (${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}) หากต้องการทำรายการเบิกด่วน กรุณาใช้ปุ่ม "สแกนเบิก" ด้านบน`);
+        }
+
+        activeScannerDetectedEmpId = emp.id;
+        activeScannedItemId = null;
+        if (foundCard) foundCard.classList.add('d-none');
+        if (notFoundCard) notFoundCard.classList.add('d-none');
+        if (empCard) empCard.classList.remove('d-none');
+
+        const isStaff = emp.role === 'STAFF';
+        const roleLabel = isStaff ? 'เจ้าหน้าที่สำนักงาน (Staff)' : 'พนักงานทำเกษตร (Worker)';
+        const roleBadgeClass = isStaff ? 'bg-primary' : 'bg-success';
+
+        const empImg = document.getElementById('scannedModalEmpImg');
+        if (empImg) empImg.src = emp.photoUrl || DEFAULT_EMP_PHOTO || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80';
+        const empName = document.getElementById('scannedModalEmpName');
+        if (empName) empName.textContent = typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name;
+        const roleElem = document.getElementById('scannedModalEmpRoleBadge');
+        if (roleElem) {
+          roleElem.textContent = roleLabel;
+          roleElem.className = `badge ${roleBadgeClass} fs-8 mb-1`;
+        }
+        const idElem = document.getElementById('scannedModalEmpIdCode');
+        if (idElem) idElem.textContent = `รหัสประจำตัว: ${emp.id}`;
+        const deptElem = document.getElementById('scannedModalEmpDept');
+        if (deptElem) deptElem.textContent = emp.department || 'ทั่วไป';
+        const phoneElem = document.getElementById('scannedModalEmpPhone');
+        if (phoneElem) phoneElem.textContent = emp.phone || '-';
+        const posElem = document.getElementById('scannedModalEmpPosition');
+        if (posElem) posElem.textContent = emp.position || '-';
+
+        showToast(`👤 สแกนพบผู้ทำรายการ: "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" [${emp.id}]`);
+
+        const autoSelectCheck = document.getElementById('autoSelectBarcodeScannerCheckbox');
+        if (autoSelectCheck && autoSelectCheck.checked && currentScannerModalMode !== 'FOCUS_CARD') {
+          selectScannedEmpToFormAndOpenTransaction();
+        }
       } else {
         activeScannedUnknownCode = cleanCode;
+        activeScannedItemId = null;
+        activeScannerDetectedEmpId = null;
         if (foundCard) foundCard.classList.add('d-none');
+        if (empCard) empCard.classList.add('d-none');
         if (notFoundCard) notFoundCard.classList.remove('d-none');
-        document.getElementById('scannedUnknownCodeText').textContent = cleanCode;
+        const unkElem = document.getElementById('scannedUnknownCodeText');
+        if (unkElem) unkElem.textContent = cleanCode;
       }
     };
 
@@ -13836,13 +15255,49 @@
 
     window.selectFromScannerToForm = function() {
       if (activeScannedItemId) {
-        const item = equipmentList.find(x => x.id === activeScannedItemId);
+        const item = (equipmentList || []).find(x => x.id === activeScannedItemId);
         quickSelectTransaction(activeScannedItemId);
         stopHtml5Scanner();
         const modalElem = document.getElementById('barcodeQrScannerModal');
         const modalInst = bootstrap.Modal.getInstance(modalElem);
         if (modalInst) modalInst.hide();
-        if (item) showToast(`⚡ เลือกอุปกรณ์ "${item.name}" [${item.code}] ลงฟอร์มทำรายการเรียบร้อยแล้ว`);
+        if (item) showToast(`📦 สแกนพบอุปกรณ์ "${item.name}" [${item.code}] พร้อมเปิดหน้าต่างเบิก-รับเข้า-ยืม-คืน เรียบร้อยแล้ว`);
+      }
+    };
+
+    window.selectScannedEmpToFormAndOpenTransaction = function() {
+      if (activeScannerDetectedEmpId) {
+        const emp = (employeeList || []).find(x => x.id === activeScannerDetectedEmpId);
+        if (emp) {
+          if (typeof selectEmployeeToFormDirectly === 'function') {
+            selectEmployeeToFormDirectly(emp);
+          } else {
+            const searchInput = document.getElementById('transEmpSearchInput');
+            if (searchInput) {
+              searchInput.value = emp.name;
+              if (typeof filterTransEmployeeSelect === 'function') filterTransEmployeeSelect(emp.name);
+            }
+            const select = document.getElementById('empSelect');
+            if (select) select.value = emp.id;
+          }
+          stopHtml5Scanner();
+          const modalElem = document.getElementById('barcodeQrScannerModal');
+          const modalInst = bootstrap.Modal.getInstance(modalElem);
+          if (modalInst) modalInst.hide();
+          window.openTransactionModal();
+          showToast(`👤 สแกนพบผู้ทำรายการ "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" พร้อมเปิดหน้าต่างเบิก-รับเข้า-ยืม-คืน เรียบร้อยแล้ว`);
+        }
+      }
+    };
+
+    window.openEmpBorrowHistoryFromScannerModal = function() {
+      if (activeScannerDetectedEmpId) {
+        const empId = activeScannerDetectedEmpId;
+        stopHtml5Scanner();
+        const modalElem = document.getElementById('barcodeQrScannerModal');
+        const modalInst = bootstrap.Modal.getInstance(modalElem);
+        if (modalInst) modalInst.hide();
+        openEmployeeBorrowHistoryModalFromScanner(empId);
       }
     };
 
@@ -13870,9 +15325,371 @@
     };
 
     // ==========================================
+    // FAST CHECKOUT SCANNER (สแกนเบิกด่วน 2 ขั้นตอน: ผู้ทำรายการ + อุปกรณ์)
+    // ==========================================
+    let fastCheckoutEmp = null;
+    let fastCheckoutEquip = null;
+    let fastCheckoutHtml5Scanner = null;
+    let isFastCheckoutScannerActive = false;
+    let fastCheckoutLastScanCode = '';
+    let fastCheckoutLastScanTime = 0;
+
+    window.openFastCheckoutScannerModal = function() {
+      const modalElem = document.getElementById('fastCheckoutScannerModal');
+      if (!modalElem) return;
+      const modalInst = bootstrap.Modal.getOrCreateInstance(modalElem);
+      modalInst.show();
+
+      updateFastScanUI();
+
+      setTimeout(() => {
+        startFastCheckoutScanner();
+      }, 300);
+    };
+
+    window.stopFastCheckoutScanner = function() {
+      if (fastCheckoutHtml5Scanner && isFastCheckoutScannerActive) {
+        fastCheckoutHtml5Scanner.stop().then(() => {
+          isFastCheckoutScannerActive = false;
+        }).catch(err => console.warn("Stop fast checkout scanner:", err));
+      }
+    };
+
+    window.restartFastCheckoutScanner = function() {
+      stopFastCheckoutScanner();
+      setTimeout(() => {
+        startFastCheckoutScanner();
+      }, 300);
+    };
+
+    function startFastCheckoutScanner() {
+      if (isFastCheckoutScannerActive) return;
+
+      const loadingElem = document.getElementById('fastCheckoutScannerLoading');
+      if (loadingElem) loadingElem.classList.remove('d-none');
+
+      try {
+        const config = { 
+          fps: 15, 
+          qrbox: (viewfinderWidth, viewfinderHeight) => {
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            return {
+              width: Math.max(220, Math.floor(viewfinderWidth * 0.85)),
+              height: Math.max(160, Math.floor(minEdge * 0.75))
+            };
+          },
+          aspectRatio: 1.0
+        };
+
+        fastCheckoutHtml5Scanner = new Html5Qrcode("fastCheckoutScannerReaderContainer");
+        
+        fastCheckoutHtml5Scanner.start(
+          { facingMode: "environment" },
+          config,
+          (decodedText) => {
+            handleFastCheckoutScannedCode(decodedText);
+          },
+          (errorMessage) => {
+            // ignore frame decode errors
+          }
+        ).then(() => {
+          isFastCheckoutScannerActive = true;
+          if (loadingElem) loadingElem.classList.add('d-none');
+        }).catch(err => {
+          console.warn("Fast checkout camera access error:", err);
+          if (loadingElem) {
+            loadingElem.innerHTML = `
+              <div class="alert alert-warning fs-8 m-2 text-start">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> ไม่สามารถเปิดกล้องได้ คุณสามารถพิมพ์ค้นหาหรือยิงบาร์โค้ดในช่องด้านล่างแทนได้
+              </div>`;
+          }
+        });
+      } catch (e) {
+        console.warn("Fast checkout scanner init error:", e);
+      }
+    }
+
+    window.handleManualFastCheckoutSearch = function() {
+      const input = document.getElementById('manualFastCheckoutInput');
+      if (input && input.value.trim()) {
+        handleFastCheckoutScannedCode(input.value.trim());
+        input.value = '';
+      }
+    };
+
+    window.handleFastCheckoutScannedCode = function(rawCode) {
+      if (!rawCode) return;
+      const cleanCode = String(rawCode).trim();
+      if (!cleanCode) return;
+
+      const now = Date.now();
+      if (cleanCode === fastCheckoutLastScanCode && (now - fastCheckoutLastScanTime) < 1200) {
+        return;
+      }
+      fastCheckoutLastScanCode = cleanCode;
+      fastCheckoutLastScanTime = now;
+
+      // Resolve entity using existing resolveScannedCodeEntity or fallback
+      let res = (typeof resolveScannedCodeEntity === 'function') 
+        ? resolveScannedCodeEntity(cleanCode) 
+        : null;
+
+      let item = null;
+      let emp = null;
+
+      if (res && res.type === 'EMPLOYEE' && res.entity) {
+        emp = res.entity;
+      } else if (res && res.type === 'EQUIPMENT' && res.entity) {
+        item = res.entity;
+      } else {
+        let lookupCode = cleanCode;
+        if (/^(EQUIPMENT|EQ|TOOL|ASSET)\s*[:=\-_\/]\s*/i.test(lookupCode)) {
+          lookupCode = lookupCode.replace(/^(EQUIPMENT|EQ|TOOL|ASSET)\s*[:=\-_\/]\s*/i, '').trim();
+        }
+        if (/^(EMPLOYEE|EMP|STAFF|PERSON)\s*[:=\-_\/]\s*/i.test(lookupCode)) {
+          lookupCode = lookupCode.replace(/^(EMPLOYEE|EMP|STAFF|PERSON)\s*[:=\-_\/]\s*/i, '').trim();
+        }
+
+        const lower = lookupCode.toLowerCase();
+        item = (equipmentList || []).find(x => 
+          (x.code && x.code.toLowerCase() === lower) || 
+          (x.id && x.id.toLowerCase() === lower) ||
+          (x.name && x.name.toLowerCase().includes(lower))
+        );
+
+        if (!item) {
+          emp = (employeeList || []).find(e => 
+            (e.id && e.id.toLowerCase() === lower) || 
+            (e.code && e.code.toLowerCase() === lower) ||
+            (e.name && e.name.toLowerCase().includes(lower)) ||
+            (e.phone && e.phone.replace(/[^0-9]/g, '') === lookupCode.replace(/[^0-9]/g, '') && lookupCode.length >= 9)
+          );
+        }
+      }
+
+      if (emp) {
+        playScanBeep();
+        fastCheckoutEmp = emp;
+        updateFastScanUI();
+
+        if (!fastCheckoutEquip) {
+          // Scanned employee first! Show status banner and keep scanning!
+          const empNameStr = typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name;
+          showFastScanBanner(
+            'warning',
+            `👤 บันทึกผู้ทำรายการ: "${empNameStr}" เรียบร้อย (ขั้นตอนที่ 1 จาก 2) → กรุณาสแกนอุปกรณ์ต่อ...`
+          );
+          showToast(`👤 บันทึกผู้ทำรายการคุณ "${empNameStr}" แล้ว กรุณาสแกนอุปกรณ์ต่อ`);
+        } else {
+          // BOTH ARE READY!
+          triggerFinishFastCheckout();
+        }
+      } else if (item) {
+        playScanBeep();
+        fastCheckoutEquip = item;
+        updateFastScanUI();
+
+        if (!fastCheckoutEmp) {
+          // Scanned equipment first! Show status banner and keep scanning!
+          showFastScanBanner(
+            'warning',
+            `📦 บันทึกอุปกรณ์: "${item.name}" [${item.code}] เรียบร้อย (ขั้นตอนที่ 1 จาก 2) → กรุณาสแกนบัตรหรือชื่อผู้ทำรายการต่อ...`
+          );
+          showToast(`📦 บันทึกอุปกรณ์ "${item.name}" แล้ว กรุณาสแกนบัตรผู้ทำรายการต่อ`);
+        } else {
+          // BOTH ARE READY!
+          triggerFinishFastCheckout();
+        }
+      } else {
+        // Unknown code
+        playHardwareScanErrorSound();
+        showFastScanBanner(
+          'danger',
+          `⚠️ ไม่พบข้อมูลสำหรับรหัส: "${cleanCode}" กรุณาตรวจสอบและสแกนใหม่อีกครั้ง`
+        );
+        showToast(`⚠️ ไม่พบข้อมูลสำหรับรหัส: "${cleanCode}"`);
+      }
+    };
+
+    function showFastScanBanner(type, message) {
+      const banner = document.getElementById('fastScanStatusBanner');
+      const textElem = document.getElementById('fastScanStatusText');
+      if (banner && textElem) {
+        banner.className = `alert alert-${type} border-0 rounded-3 py-2 px-3 fs-8 mb-0 d-flex align-items-center gap-2`;
+        textElem.innerHTML = message;
+      }
+    }
+
+    function updateFastScanUI() {
+      // Update Employee card
+      const empCard = document.getElementById('fastScanEmpCard');
+      const empBadge = document.getElementById('fastScanEmpStatusBadge');
+      const empPhoto = document.getElementById('fastScanEmpPhoto');
+      const empName = document.getElementById('fastScanEmpName');
+      const empDetail = document.getElementById('fastScanEmpDetail');
+      const btnResetEmp = document.getElementById('btnResetFastScanEmp');
+
+      if (fastCheckoutEmp) {
+        if (empCard) {
+          empCard.classList.remove('border-secondary', 'border-opacity-25');
+          empCard.classList.add('border-success', 'bg-success', 'bg-opacity-10');
+        }
+        if (empBadge) {
+          empBadge.className = 'badge bg-success text-white fs-9';
+          empBadge.innerHTML = '<i class="bi bi-check-circle-fill me-0.5"></i> สแกนแล้ว';
+        }
+        if (empPhoto) {
+          empPhoto.src = fastCheckoutEmp.photoUrl || DEFAULT_EMP_PHOTO || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80';
+          empPhoto.classList.remove('d-none');
+        }
+        if (empName) empName.textContent = typeof formatEmpName === 'function' ? formatEmpName(fastCheckoutEmp) : fastCheckoutEmp.name;
+        if (empDetail) empDetail.textContent = `รหัส ${fastCheckoutEmp.id} • ${fastCheckoutEmp.department || 'ทั่วไป'}`;
+        if (btnResetEmp) btnResetEmp.classList.remove('d-none');
+      } else {
+        if (empCard) {
+          empCard.classList.remove('border-success', 'bg-success', 'bg-opacity-10');
+          empCard.classList.add('border-secondary', 'border-opacity-25');
+        }
+        if (empBadge) {
+          empBadge.className = 'badge bg-light text-muted border fs-9';
+          empBadge.innerHTML = '<i class="bi bi-hourglass-split me-0.5"></i> รอสแกน';
+        }
+        if (empPhoto) empPhoto.classList.add('d-none');
+        if (empName) empName.textContent = 'ยังไม่ได้สแกนบัตรผู้ทำรายการ';
+        if (empDetail) empDetail.textContent = 'ส่องกล้องไปที่ QR/บาร์โค้ด บัตรพนักงาน';
+        if (btnResetEmp) btnResetEmp.classList.add('d-none');
+      }
+
+      // Update Equipment card
+      const equipCard = document.getElementById('fastScanEquipCard');
+      const equipBadge = document.getElementById('fastScanEquipStatusBadge');
+      const equipPhoto = document.getElementById('fastScanEquipPhoto');
+      const equipName = document.getElementById('fastScanEquipName');
+      const equipDetail = document.getElementById('fastScanEquipDetail');
+      const btnResetEquip = document.getElementById('btnResetFastScanEquip');
+
+      if (fastCheckoutEquip) {
+        if (equipCard) {
+          equipCard.classList.remove('border-secondary', 'border-opacity-25');
+          equipCard.classList.add('border-success', 'bg-success', 'bg-opacity-10');
+        }
+        if (equipBadge) {
+          equipBadge.className = 'badge bg-success text-white fs-9';
+          equipBadge.innerHTML = '<i class="bi bi-check-circle-fill me-0.5"></i> สแกนแล้ว';
+        }
+        if (equipPhoto) {
+          equipPhoto.src = fastCheckoutEquip.imageUrl || DEFAULT_EQUIPMENT_IMAGE;
+          equipPhoto.classList.remove('d-none');
+        }
+        if (equipName) equipName.textContent = fastCheckoutEquip.name;
+        if (equipDetail) equipDetail.textContent = `รหัส ${fastCheckoutEquip.code} • สต๊อก ${fastCheckoutEquip.quantity} ${fastCheckoutEquip.unit}`;
+        if (btnResetEquip) btnResetEquip.classList.remove('d-none');
+      } else {
+        if (equipCard) {
+          equipCard.classList.remove('border-success', 'bg-success', 'bg-opacity-10');
+          equipCard.classList.add('border-secondary', 'border-opacity-25');
+        }
+        if (equipBadge) {
+          equipBadge.className = 'badge bg-light text-muted border fs-9';
+          equipBadge.innerHTML = '<i class="bi bi-hourglass-split me-0.5"></i> รอสแกน';
+        }
+        if (equipPhoto) equipPhoto.classList.add('d-none');
+        if (equipName) equipName.textContent = 'ยังไม่ได้สแกนบาร์โค้ดอุปกรณ์';
+        if (equipDetail) equipDetail.textContent = 'ส่องกล้องไปที่ QR/บาร์โค้ด บนอุปกรณ์';
+        if (btnResetEquip) btnResetEquip.classList.add('d-none');
+      }
+    }
+
+    window.resetFastScanEmp = function() {
+      fastCheckoutEmp = null;
+      updateFastScanUI();
+      showFastScanBanner('info', 'นำบาร์โค้ดหรือคิวอาร์โค้ดของบัตรผู้ทำรายการ มาส่องหน้ากล้อง');
+    };
+
+    window.resetFastScanEquip = function() {
+      fastCheckoutEquip = null;
+      updateFastScanUI();
+      showFastScanBanner('info', 'นำบาร์โค้ดหรือคิวอาร์โค้ดของอุปกรณ์ มาส่องหน้ากล้อง');
+    };
+
+    window.resetAllFastScan = function() {
+      fastCheckoutEmp = null;
+      fastCheckoutEquip = null;
+      updateFastScanUI();
+      showFastScanBanner('info', 'นำบาร์โค้ดหรือคิวอาร์โค้ดของบัตรผู้ทำรายการ หรืออุปกรณ์ มาส่องหน้ากล้อง (สามารถสแกนสิ่งใดก่อนก็ได้)');
+    };
+
+    function triggerFinishFastCheckout() {
+      showFastScanBanner('success', '🎉 สแกนครบทั้ง 2 รายการเรียบร้อย! กำลังเปิดหน้าต่างเบิก-รับเข้า-ยืม-คืน...');
+      playHardwareScanSuccessSound();
+
+      const savedEmp = fastCheckoutEmp;
+      const savedEquip = fastCheckoutEquip;
+
+      // Stop scanner & close modal
+      stopFastCheckoutScanner();
+      const modalElem = document.getElementById('fastCheckoutScannerModal');
+      if (modalElem) {
+        const modalInst = bootstrap.Modal.getInstance(modalElem);
+        if (modalInst) modalInst.hide();
+      }
+
+      // Reset state for next session
+      fastCheckoutEmp = null;
+      fastCheckoutEquip = null;
+
+      // Execute transaction form opening
+      setTimeout(() => {
+        // 1. Select employee to form
+        if (typeof selectEmployeeToFormDirectly === 'function') {
+          selectEmployeeToFormDirectly(savedEmp);
+        }
+
+        // 2. Select equipment to form / cart
+        if (typeof quickSelectTransaction === 'function') {
+          quickSelectTransaction(savedEquip.id);
+        } else if (typeof openTransactionModal === 'function') {
+          openTransactionModal(savedEquip.id);
+        }
+
+        // 3. Focus and scroll to: 4. ระบุจำนวน เบิก/ยืม/คืน/รับเข้า
+        setTimeout(() => {
+          const qtyInput = document.getElementById('transQty');
+          const qtyLabel = document.getElementById('transQtyLabel');
+          if (qtyLabel) {
+            qtyLabel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          if (qtyInput) {
+            qtyInput.focus();
+            qtyInput.select();
+            qtyInput.classList.add('border-warning', 'shadow');
+            setTimeout(() => {
+              qtyInput.classList.remove('border-warning', 'shadow');
+            }, 2500);
+          }
+        }, 300);
+
+        const empNameStr = typeof formatEmpName === 'function' ? formatEmpName(savedEmp) : savedEmp.name;
+        showToast(`⚡ สแกนเบิกด่วนสำเร็จ! ผู้ทำรายการ: คุณ ${empNameStr} | อุปกรณ์: "${savedEquip.name}" พร้อมระบุจำนวนได้ทันที`);
+      }, 350);
+    }
+
+    // ==========================================
     // PRINTABLE BARCODE & QR CODE LABEL GENERATOR
     // ==========================================
     window.openPrintLabelModal = function(equipId = 'ALL') {
+      const catSelect = document.getElementById('labelCategoryFilterSelect');
+      if (catSelect) {
+        const categories = [...new Set(equipmentList.map(item => item.category).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'th'));
+        let catOptions = '<option value="ALL">🏷️ ทุกหมวดหมู่อุปกรณ์</option>';
+        categories.forEach(cat => {
+          const count = equipmentList.filter(item => item.category === cat).length;
+          catOptions += `<option value="${cat}">🏷️ ${cat} (${count} รายการ)</option>`;
+        });
+        catSelect.innerHTML = catOptions;
+        catSelect.value = 'ALL';
+      }
+
       const select = document.getElementById('labelItemSelect');
       if (select) {
         let optionsHtml = `
@@ -13906,45 +15723,209 @@
       modalInst.show();
     };
 
+    window.adjustLabelCopies = function(delta) {
+      const input = document.getElementById('labelCopiesInput');
+      if (!input) return;
+      let val = parseInt(input.value, 10) || 1;
+      val = Math.max(1, Math.min(100, val + delta));
+      input.value = val;
+      if (typeof renderPrintableLabelsPreview === 'function') {
+        renderPrintableLabelsPreview();
+      }
+    };
+
     window.renderPrintableLabelsPreview = function() {
       const selectElem = document.getElementById('labelItemSelect');
       const selectedScope = selectElem ? selectElem.value : 'ALL';
-      const cols = parseInt(document.getElementById('labelColsSelect').value) || 3;
-      const copiesCount = parseInt(document.getElementById('labelCopiesInput').value) || 1;
+      const catSelect = document.getElementById('labelCategoryFilterSelect');
+      const selectedCat = catSelect ? catSelect.value : 'ALL';
+      const cols = parseInt(document.getElementById('labelColsSelect')?.value) || 3;
+      const rows = parseInt(document.getElementById('labelRowsSelect')?.value) || 7;
+      const copiesCount = parseInt(document.getElementById('labelCopiesInput')?.value) || 1;
 
-      const showBarcode = document.getElementById('chkShowBarcode').checked;
-      const showQr = document.getElementById('chkShowQr').checked;
-      const showName = document.getElementById('chkShowName').checked;
-      const showDetails = document.getElementById('chkShowDetails').checked;
+      // Update dimension badge info
+      const approxWidthCm = (19.4 / cols).toFixed(1);
+      const approxHeightCm = (27.8 / rows).toFixed(1);
+      const totalPerSheet = cols * rows;
+      const badgeElem = document.getElementById('labelDimensionInfoBadge');
+      if (badgeElem) {
+        badgeElem.textContent = `${cols} x ${rows} = ${totalPerSheet} ดวง/แผ่น (~${approxWidthCm} x ${approxHeightCm} ซม.)`;
+      }
+
+      const showBarcode = document.getElementById('chkShowBarcode')?.checked ?? true;
+      const showQr = document.getElementById('chkShowQr')?.checked ?? true;
+      const showName = document.getElementById('chkShowName')?.checked ?? true;
+      const showDetails = document.getElementById('chkShowDetails')?.checked ?? true;
 
       let itemsToPrint = [];
       if (selectedScope === 'ALL') {
-        itemsToPrint = [...equipmentList];
+        itemsToPrint = selectedCat === 'ALL'
+          ? [...equipmentList]
+          : equipmentList.filter(x => x.category === selectedCat);
       } else if (selectedScope === 'LOW_STOCK') {
-        itemsToPrint = equipmentList.filter(x => x.quantity <= (x.minQuantity !== undefined ? x.minQuantity : 3));
+        itemsToPrint = equipmentList.filter(x => {
+          const matchesCat = selectedCat === 'ALL' || x.category === selectedCat;
+          return matchesCat && x.quantity <= (x.minQuantity !== undefined ? x.minQuantity : 3);
+        });
       } else if (selectedScope === 'SELECTED') {
-        itemsToPrint = equipmentList.filter(x => window.selectedStaffItemIds && window.selectedStaffItemIds.has(x.id));
+        itemsToPrint = equipmentList.filter(x => {
+          const matchesCat = selectedCat === 'ALL' || x.category === selectedCat;
+          return matchesCat && window.selectedStaffItemIds && window.selectedStaffItemIds.has(x.id);
+        });
       } else {
         const found = equipmentList.find(x => x.id === selectedScope);
-        if (found) itemsToPrint = [found];
+        if (found) {
+          if (selectedCat === 'ALL' || found.category === selectedCat) {
+            itemsToPrint = [found];
+          }
+        }
       }
 
       const container = document.getElementById('labelSheetPreviewContainer');
       const printSheet = document.getElementById('printableLabelSheet');
 
       if (itemsToPrint.length === 0) {
-        if (container) container.innerHTML = `<div class="text-center py-5 text-muted"><i class="bi bi-tag display-4 d-block mb-2"></i>ไม่พบรายการอุปกรณ์สำหรับพิมพ์ฉลาก</div>`;
+        if (container) container.innerHTML = `<div class="text-center py-5 text-muted"><i class="bi bi-tag display-4 d-block mb-2"></i>ไม่พบรายการอุปกรณ์สำหรับพิมพ์ฉลาก${selectedCat !== 'ALL' ? ` ในหมวดหมู่ "${selectedCat}"` : ''}</div>`;
         if (printSheet) printSheet.innerHTML = '';
         return;
       }
 
       let gridClass = 'col-4';
-      if (cols === 2) gridClass = 'col-6';
+      if (cols === 1) gridClass = 'col-12';
+      else if (cols === 2) gridClass = 'col-6';
       else if (cols === 3) gridClass = 'col-4';
       else if (cols === 4) gridClass = 'col-3';
 
+      // Dynamic typography & sizing based on rows (2..10) & cols (1..4)
+      let nameFontSize = '12px';
+      let titleFontSize = '10px';
+      let badgeFontSize = '9.5px';
+      let detailFontSize = '9px';
+      let bcHeight = 24;
+      let bcWidth = 1.1;
+      let boxPadding = '6px';
+      let previewMinHeight = 130;
+      let printHeightMm = ((280 / rows) - 1.8).toFixed(1);
+
+      if (rows === 2) {
+        previewMinHeight = 280;
+        boxPadding = '12px';
+        titleFontSize = cols === 1 ? '16px' : (cols === 2 ? '14px' : '13px');
+        badgeFontSize = cols === 1 ? '15px' : (cols === 2 ? '13px' : '12px');
+        detailFontSize = cols === 1 ? '15px' : (cols === 2 ? '13px' : '12px');
+        nameFontSize = cols === 1 ? '22px' : (cols === 2 ? '18px' : (cols === 3 ? '16px' : '14px'));
+        bcHeight = cols === 1 ? 58 : (cols === 2 ? 48 : 42);
+        bcWidth = cols === 1 ? 2.2 : (cols === 2 ? 1.7 : 1.3);
+      } else if (rows === 3) {
+        previewMinHeight = 210;
+        boxPadding = '10px';
+        titleFontSize = cols === 1 ? '14.5px' : (cols === 2 ? '13px' : '12px');
+        badgeFontSize = cols === 1 ? '14px' : (cols === 2 ? '12px' : '11px');
+        detailFontSize = cols === 1 ? '13.5px' : (cols === 2 ? '12px' : '11px');
+        nameFontSize = cols === 1 ? '19px' : (cols === 2 ? '16px' : (cols === 3 ? '14px' : '12.5px'));
+        bcHeight = cols === 1 ? 50 : (cols === 2 ? 40 : 34);
+        bcWidth = cols === 1 ? 2.0 : (cols === 2 ? 1.5 : 1.2);
+      } else if (rows === 4) {
+        previewMinHeight = 165;
+        boxPadding = '8px';
+        titleFontSize = cols <= 2 ? '12.5px' : '11px';
+        badgeFontSize = cols <= 2 ? '11.5px' : '10.5px';
+        detailFontSize = cols <= 2 ? '11.5px' : '10px';
+        nameFontSize = cols === 1 ? '17px' : (cols === 2 ? '14.5px' : (cols === 3 ? '13px' : '11.5px'));
+        bcHeight = cols === 1 ? 42 : (cols === 2 ? 34 : 28);
+        bcWidth = cols === 1 ? 1.8 : (cols === 2 ? 1.4 : 1.1);
+      } else if (rows === 5) {
+        previewMinHeight = 145;
+        boxPadding = '7px';
+        titleFontSize = cols <= 2 ? '11.5px' : '10.5px';
+        badgeFontSize = cols <= 2 ? '11px' : '10px';
+        detailFontSize = cols <= 2 ? '11px' : '9.5px';
+        nameFontSize = cols === 1 ? '15.5px' : (cols === 2 ? '13.5px' : (cols === 3 ? '12px' : '10.5px'));
+        bcHeight = cols === 1 ? 36 : (cols === 2 ? 30 : 25);
+        bcWidth = cols === 1 ? 1.6 : (cols === 2 ? 1.3 : 1.05);
+      } else if (rows === 6) {
+        previewMinHeight = 125;
+        boxPadding = '6px';
+        titleFontSize = cols <= 2 ? '11px' : '9.5px';
+        badgeFontSize = cols <= 2 ? '10px' : '9px';
+        detailFontSize = cols <= 2 ? '10px' : '9px';
+        nameFontSize = cols === 1 ? '14px' : (cols === 2 ? '12.5px' : (cols === 3 ? '11px' : '9.5px'));
+        bcHeight = cols === 1 ? 30 : (cols === 2 ? 26 : 22);
+        bcWidth = cols === 1 ? 1.5 : (cols === 2 ? 1.2 : 1.0);
+      } else if (rows === 7) {
+        previewMinHeight = 112;
+        boxPadding = '5px';
+        titleFontSize = cols <= 2 ? '10.5px' : '9px';
+        badgeFontSize = cols <= 2 ? '9.5px' : '8.5px';
+        detailFontSize = cols <= 2 ? '9.5px' : '8.5px';
+        nameFontSize = cols === 1 ? '13px' : (cols === 2 ? '11.5px' : (cols === 3 ? '10.5px' : '9px'));
+        bcHeight = cols === 1 ? 24 : (cols === 2 ? 20 : 17);
+        bcWidth = cols === 1 ? 1.3 : (cols === 2 ? 1.1 : 0.95);
+      } else if (rows === 8) {
+        previewMinHeight = 98;
+        boxPadding = '4px';
+        titleFontSize = cols <= 2 ? '9.5px' : '8.5px';
+        badgeFontSize = cols <= 2 ? '9px' : '8px';
+        detailFontSize = cols <= 2 ? '9px' : '8px';
+        nameFontSize = cols === 1 ? '12px' : (cols === 2 ? '10.5px' : (cols === 3 ? '9.5px' : '8.5px'));
+        bcHeight = cols === 1 ? 20 : (cols === 2 ? 18 : 15);
+        bcWidth = cols === 1 ? 1.2 : (cols === 2 ? 1.0 : 0.9);
+      } else if (rows === 9) {
+        previewMinHeight = 88;
+        boxPadding = '3.5px';
+        titleFontSize = cols <= 2 ? '9px' : '8px';
+        badgeFontSize = cols <= 2 ? '8.5px' : '7.5px';
+        detailFontSize = cols <= 2 ? '8.5px' : '7.5px';
+        nameFontSize = cols === 1 ? '11px' : (cols === 2 ? '10px' : (cols === 3 ? '9px' : '8px'));
+        bcHeight = cols === 1 ? 18 : (cols === 2 ? 15 : 13);
+        bcWidth = cols === 1 ? 1.1 : (cols === 2 ? 0.95 : 0.85);
+      } else {
+        // rows === 10 (จิ๋ว)
+        previewMinHeight = 80;
+        boxPadding = '3px';
+        titleFontSize = cols <= 2 ? '8.5px' : '7.5px';
+        badgeFontSize = cols <= 2 ? '8px' : '7px';
+        detailFontSize = cols <= 2 ? '8px' : '7px';
+        nameFontSize = cols === 1 ? '10.5px' : (cols === 2 ? '9.5px' : (cols === 3 ? '8.5px' : '7.5px'));
+        bcHeight = cols === 1 ? 15 : (cols === 2 ? 13 : 11);
+        bcWidth = cols === 1 ? 1.0 : (cols === 2 ? 0.9 : 0.8);
+      }
+
+      // Dynamic calculation of QR code dimensions based on label box width and height
+      // Print mode: in millimeters
+      const printHeaderFooterMm = rows <= 3 ? 18 : (rows <= 5 ? 14 : 11);
+      const printMiddleHeightMm = Math.max(14, parseFloat(printHeightMm) - printHeaderFooterMm);
+      const printLabelWidthMm = Math.max(20, (196 / cols) - (rows <= 3 ? 10 : 6));
+      const printVerticalMarginMm = rows <= 3 ? 4.5 : (rows <= 5 ? 3.0 : 2.0);
+      const printTargetMiddleHeightMm = Math.max(12, printMiddleHeightMm - (printVerticalMarginMm * 2));
+
+      let printQrMm = 22;
+      if (!showBarcode) {
+        // Full label available for QR Code
+        printQrMm = Math.round(Math.min(printTargetMiddleHeightMm, printLabelWidthMm - 8));
+      } else {
+        // Shared with barcode
+        const maxQrWidthMm = printLabelWidthMm * (cols === 1 ? 0.35 : (cols === 2 ? 0.40 : 0.44));
+        printQrMm = Math.round(Math.min(printTargetMiddleHeightMm, maxQrWidthMm));
+      }
+      printQrMm = Math.max(14, printQrMm);
+
+      // Preview mode: in pixels
+      const prevHeaderFooterPx = rows <= 3 ? 60 : (rows <= 5 ? 46 : 38);
+      const prevMiddleHeightPx = Math.max(45, previewMinHeight - prevHeaderFooterPx);
+      const prevVerticalMarginPx = rows <= 3 ? 14 : (rows <= 5 ? 10 : 6);
+      const prevTargetMiddleHeightPx = Math.max(36, prevMiddleHeightPx - (prevVerticalMarginPx * 2));
+
+      let previewQrPx = 48;
+      if (!showBarcode) {
+        previewQrPx = Math.round(prevTargetMiddleHeightPx * 0.94);
+      } else {
+        previewQrPx = Math.round(prevTargetMiddleHeightPx * 0.85);
+      }
+      previewQrPx = Math.max(38, previewQrPx);
+
       let previewHtml = `<div class="row g-2">`;
-      let printHtml = `<div class="row g-2">`;
+      let printHtml = `<div class="row g-1">`;
       const renderTasks = [];
 
       itemsToPrint.forEach((item, itemIdx) => {
@@ -13954,43 +15935,57 @@
           const prBcId = `pr-bc-${itemIdx}-${c}`;
           const prQrId = `pr-qr-${itemIdx}-${c}`;
 
-          const labelTemplate = (bcId, qrId) => `
+          const labelTemplate = (bcId, qrId, isPrint = false) => {
+            const heightStyle = isPrint 
+              ? `height: ${printHeightMm}mm !important; max-height: ${printHeightMm}mm !important;` 
+              : `min-height: ${previewMinHeight}px; height: 100%;`;
+            const currentPadding = isPrint ? (rows >= 7 ? '2.5px 3.5px' : '4px 6px') : boxPadding;
+            const currentQrDim = isPrint ? `${printQrMm}mm` : `${previewQrPx}px`;
+            const middleMarginStyle = isPrint 
+              ? `margin-top: ${printVerticalMarginMm}mm !important; margin-bottom: ${printVerticalMarginMm}mm !important;` 
+              : `margin-top: ${prevVerticalMarginPx}px !important; margin-bottom: ${prevVerticalMarginPx}px !important;`;
+
+            return `
             <div class="${gridClass}">
-              <div class="sticker-label-box p-2 border rounded-3 bg-white text-dark h-100 position-relative" style="font-size: 0.8rem; page-break-inside: avoid; break-inside: avoid;">
-                <div class="d-flex align-items-center justify-content-between mb-1 border-bottom pb-1">
-                  <div class="fw-bold text-success text-truncate fs-8"><i class="bi bi-flower1 me-1"></i>${item.category}</div>
-                  <span class="badge bg-dark font-monospace">${item.code}</span>
+              <div class="sticker-label-box border rounded-2 bg-white text-dark d-flex flex-column justify-content-between position-relative" style="${heightStyle} font-size: ${detailFontSize}; padding: ${currentPadding}; page-break-inside: avoid; break-inside: avoid; overflow: hidden; box-sizing: border-box;">
+                <div>
+                  <div class="d-flex align-items-center justify-content-between mb-0.5 border-bottom pb-0.5" style="font-size: ${titleFontSize}; line-height: 1.1;">
+                    <div class="fw-bold text-success text-truncate"><i class="bi bi-flower1 me-1"></i>${item.category}</div>
+                    <span class="badge bg-dark font-monospace" style="font-size: ${badgeFontSize};">${item.code}</span>
+                  </div>
+
+                  ${showName ? `<div class="fw-bold text-dark text-truncate" style="font-size: ${nameFontSize}; line-height: 1.15; padding-bottom: 1px;" title="${item.name}">${item.name}</div>` : ''}
                 </div>
 
-                ${showName ? `<div class="fw-bold fs-7 text-dark mb-1 text-truncate" title="${item.name}">${item.name}</div>` : ''}
-
-                <div class="d-flex align-items-center justify-content-center gap-2 my-1">
+                <div class="d-flex align-items-center justify-content-center gap-2 overflow-hidden w-100 flex-grow-1" style="${middleMarginStyle} min-height: 0;">
                   ${showBarcode ? `
-                    <div class="text-center flex-grow-1 overflow-hidden" style="max-height: 52px;">
-                      <svg id="${bcId}"></svg>
+                    <div class="text-center ${showQr ? 'flex-grow-1' : 'w-100'} d-flex align-items-center justify-content-center overflow-hidden" style="max-height: 100%;">
+                      <svg id="${bcId}" style="max-width: 100%; height: ${bcHeight + 6}px; display: block; margin: 0 auto;"></svg>
                     </div>
                   ` : ''}
                   ${showQr ? `
-                    <div class="text-center flex-shrink-0">
-                      <canvas id="${qrId}" style="width: 52px; height: 52px;"></canvas>
+                    <div class="text-center ${showBarcode ? 'flex-shrink-0' : 'w-100'} d-flex align-items-center justify-content-center" style="width: ${currentQrDim}; height: ${currentQrDim}; max-height: 100%; max-width: 100%;">
+                      <canvas id="${qrId}" style="width: ${currentQrDim}; height: ${currentQrDim}; max-width: 100%; max-height: 100%; aspect-ratio: 1/1; display: block; margin: 0 auto; object-fit: contain;"></canvas>
+                      <img id="${qrId}-img" style="width: ${currentQrDim}; height: ${currentQrDim}; max-width: 100%; max-height: 100%; display: none; margin: 0 auto; object-fit: contain;" alt="QR" />
                     </div>
                   ` : ''}
                 </div>
 
                 ${showDetails ? `
-                  <div class="d-flex justify-content-between align-items-center fs-8 text-muted mt-1 border-top pt-1">
-                    <div><i class="bi bi-geo-alt me-1 text-danger"></i>${item.location || 'คลังกลาง'}</div>
-                    <div class="font-monospace text-dark fw-bold"><i class="bi bi-tag-fill me-1 text-success"></i>${item.code}</div>
+                  <div class="d-flex justify-content-between align-items-center text-muted border-top pt-1" style="font-size: ${detailFontSize}; line-height: 1.1;">
+                    <div class="text-truncate me-1"><i class="bi bi-geo-alt me-0.5 text-danger"></i>${item.location || 'คลังกลาง'}</div>
+                    <div class="font-monospace text-dark fw-bold text-nowrap"><i class="bi bi-tag-fill me-0.5 text-success"></i>${item.code}</div>
                   </div>
                 ` : ''}
               </div>
             </div>
           `;
+          };
 
-          previewHtml += labelTemplate(prevBcId, prevQrId);
-          printHtml += labelTemplate(prBcId, prQrId);
+          previewHtml += labelTemplate(prevBcId, prevQrId, false);
+          printHtml += labelTemplate(prBcId, prQrId, true);
 
-          renderTasks.push({ item, prevBcId, prevQrId, prBcId, prQrId });
+          renderTasks.push({ item, prevBcId, prevQrId, prBcId, prQrId, previewQrPx, printQrMm, bcWidth, bcHeight, rows, cols, detailFontSize });
         }
       });
 
@@ -14009,11 +16004,11 @@
                 try {
                   JsBarcode(svgElem, task.item.code, {
                     format: "CODE128",
-                    width: 1.4,
-                    height: 32,
-                    displayValue: true,
-                    fontSize: 10,
-                    margin: 2
+                    width: task.bcWidth,
+                    height: task.bcHeight,
+                    displayValue: task.rows <= 6 && task.cols <= 3,
+                    fontSize: Math.max(8, parseInt(task.detailFontSize)),
+                    margin: 1
                   });
                 } catch(e){}
               }
@@ -14021,17 +16016,112 @@
           }
 
           if (showQr) {
-            [task.prevQrId, task.prQrId].forEach(id => {
-              const canvasElem = document.getElementById(id);
-              if (canvasElem && typeof QRCode === 'object' && QRCode.toCanvas) {
-                try {
-                  QRCode.toCanvas(canvasElem, `EQUIPMENT:${task.item.code}`, {
-                    width: 52,
-                    margin: 1
-                  });
-                } catch(e){}
+            const qrText = `EQUIPMENT:${task.item.code || ''}`;
+            const targetPrevPx = task.previewQrPx;
+            const targetPrintMm = task.printQrMm;
+            const renderPx = Math.max(targetPrevPx * 3, Math.round(targetPrintMm * 14), 260);
+
+            // Render Preview Canvas
+            const prevCanvasElem = document.getElementById(task.prevQrId);
+            const prevImgElem = document.getElementById(task.prevQrId + '-img');
+            if (prevCanvasElem && typeof QRCode !== 'undefined' && QRCode.toCanvas) {
+              try {
+                QRCode.toCanvas(prevCanvasElem, qrText, {
+                  width: renderPx,
+                  margin: 1,
+                  color: { dark: '#000000', light: '#ffffff' }
+                }, function(err) {
+                  if (!err) {
+                    prevCanvasElem.style.width = targetPrevPx + 'px';
+                    prevCanvasElem.style.height = targetPrevPx + 'px';
+                    prevCanvasElem.style.maxWidth = '100%';
+                    prevCanvasElem.style.maxHeight = '100%';
+                    prevCanvasElem.style.aspectRatio = '1 / 1';
+                    prevCanvasElem.style.objectFit = 'contain';
+                    prevCanvasElem.style.display = 'block';
+                  } else if (prevImgElem && QRCode.toDataURL) {
+                    QRCode.toDataURL(qrText, { width: renderPx, margin: 1 }, function(err2, url) {
+                      if (!err2 && url) {
+                        prevImgElem.src = url;
+                        prevImgElem.style.width = targetPrevPx + 'px';
+                        prevImgElem.style.height = targetPrevPx + 'px';
+                        prevImgElem.style.maxWidth = '100%';
+                        prevImgElem.style.maxHeight = '100%';
+                        prevImgElem.style.objectFit = 'contain';
+                        prevImgElem.style.display = 'block';
+                        prevCanvasElem.style.display = 'none';
+                      }
+                    });
+                  }
+                });
+                prevCanvasElem.style.width = targetPrevPx + 'px';
+                prevCanvasElem.style.height = targetPrevPx + 'px';
+                prevCanvasElem.style.maxWidth = '100%';
+                prevCanvasElem.style.maxHeight = '100%';
+                prevCanvasElem.style.aspectRatio = '1 / 1';
+                prevCanvasElem.style.objectFit = 'contain';
+              } catch(e) {}
+            }
+
+            // Render Print Canvas
+            const prCanvasElem = document.getElementById(task.prQrId);
+            const prImgElem = document.getElementById(task.prQrId + '-img');
+            if (prCanvasElem && typeof QRCode !== 'undefined' && QRCode.toCanvas) {
+              try {
+                QRCode.toCanvas(prCanvasElem, qrText, {
+                  width: renderPx,
+                  margin: 1,
+                  color: { dark: '#000000', light: '#ffffff' }
+                }, function(err) {
+                  if (!err) {
+                    prCanvasElem.style.width = targetPrintMm + 'mm';
+                    prCanvasElem.style.height = targetPrintMm + 'mm';
+                    prCanvasElem.style.maxWidth = '100%';
+                    prCanvasElem.style.maxHeight = '100%';
+                    prCanvasElem.style.aspectRatio = '1 / 1';
+                    prCanvasElem.style.objectFit = 'contain';
+                    prCanvasElem.style.display = 'block';
+                  } else if (prImgElem && QRCode.toDataURL) {
+                    QRCode.toDataURL(qrText, { width: renderPx, margin: 1 }, function(err2, url) {
+                      if (!err2 && url) {
+                        prImgElem.src = url;
+                        prImgElem.style.width = targetPrintMm + 'mm';
+                        prImgElem.style.height = targetPrintMm + 'mm';
+                        prImgElem.style.maxWidth = '100%';
+                        prImgElem.style.maxHeight = '100%';
+                        prImgElem.style.objectFit = 'contain';
+                        prImgElem.style.display = 'block';
+                        prCanvasElem.style.display = 'none';
+                      }
+                    });
+                  }
+                });
+                prCanvasElem.style.width = targetPrintMm + 'mm';
+                prCanvasElem.style.height = targetPrintMm + 'mm';
+                prCanvasElem.style.maxWidth = '100%';
+                prCanvasElem.style.maxHeight = '100%';
+                prCanvasElem.style.aspectRatio = '1 / 1';
+                prCanvasElem.style.objectFit = 'contain';
+              } catch(e) {}
+            }
+
+            // Fallback if QRCode library missing
+            if (typeof QRCode === 'undefined') {
+              if (prevImgElem) {
+                prevImgElem.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=EQUIPMENT:${encodeURIComponent(task.item.code || '')}`;
+                prevImgElem.style.width = targetPrevPx + 'px';
+                prevImgElem.style.height = targetPrevPx + 'px';
+                prevImgElem.style.display = 'block';
+                if (prevCanvasElem) prevCanvasElem.style.display = 'none';
               }
-            });
+              if (prImgElem) {
+                prImgElem.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=EQUIPMENT:${encodeURIComponent(task.item.code || '')}`;
+                prImgElem.style.width = targetPrintMm + 'mm';
+                prImgElem.style.height = targetPrintMm + 'mm';
+                prImgElem.style.display = 'block';
+                if (prCanvasElem) prCanvasElem.style.display = 'none';
+              }
+            }
           }
         });
       }, 80);
@@ -14047,8 +16137,8 @@
           window.print();
           setTimeout(() => {
             printSheet.classList.add('d-none');
-          }, 1000);
-        }, 200);
+          }, 1500);
+        }, 350);
       } else {
         window.print();
       }
@@ -15055,7 +17145,7 @@
       const groups = getDepartmentDropdownGroups(departmentsList);
 
       for (const [key, grp] of Object.entries(groups)) {
-        if (grp.items.length > 0) {
+        if (grp && Array.isArray(grp.items) && grp.items.length > 0) {
           const optGroup = document.createElement('optgroup');
           optGroup.label = grp.label;
 
@@ -15394,17 +17484,17 @@
           }
         });
 
-        if (groups.leader.items.length === 0) {
+        if (groups.leader && Array.isArray(groups.leader.items) && groups.leader.items.length === 0) {
           const cleanName = typeof stripStructureCode === 'function' ? stripStructureCode(currentDept) : currentDept;
           groups.leader.items.push(`หัวหน้า${cleanName}`);
         }
-        if (!groups.worker.items.includes('พนักงานปฏิบัติการ')) {
+        if (groups.worker && Array.isArray(groups.worker.items) && !groups.worker.items.includes('พนักงานปฏิบัติการ')) {
           groups.worker.items.push('พนักงานปฏิบัติการ');
         }
       }
 
       for (const [key, grp] of Object.entries(groups)) {
-        if (grp.items.length > 0) {
+        if (grp && Array.isArray(grp.items) && grp.items.length > 0) {
           const optGroup = document.createElement('optgroup');
           optGroup.label = grp.label;
           grp.items.forEach(posName => {
@@ -16011,6 +18101,9 @@
       }
 
       const modal = new bootstrap.Modal(document.getElementById('addEquipmentModal'));
+      if (typeof window.applyEquipmentCodeInputRolePermissions === 'function') {
+        window.applyEquipmentCodeInputRolePermissions();
+      }
       modal.show();
     };
 
@@ -16022,15 +18115,57 @@
     };
 
     window.resetAddModal = function() {
-      document.getElementById('addEquipmentForm').reset();
-      document.getElementById('editEquipId').value = '';
-      document.getElementById('equipCodeInput').value = '';
-      if (document.getElementById('equipMinQtyInput')) document.getElementById('equipMinQtyInput').value = 3;
+      const form = document.getElementById('addEquipmentForm');
+      if (form) form.reset();
+
+      const editIdElem = document.getElementById('editEquipId');
+      if (editIdElem) editIdElem.value = '';
+
+      const nameElem = document.getElementById('equipNameThai');
+      if (nameElem) nameElem.value = '';
+
+      const codeElem = document.getElementById('equipCodeInput');
+      if (codeElem) codeElem.value = '';
+
+      const catElem = document.getElementById('equipCategorySelect');
+      if (catElem) catElem.value = '';
+
+      const qtyElem = document.getElementById('equipQtyInput');
+      if (qtyElem) qtyElem.value = 10;
+
+      const minQtyElem = document.getElementById('equipMinQtyInput');
+      if (minQtyElem) minQtyElem.value = 3;
+
+      const unitElem = document.getElementById('equipUnitInput');
+      if (unitElem) unitElem.value = 'อัน';
+
+      populateLocationDropdowns('');
+      const locElem = document.getElementById('equipLocationInput');
+      if (locElem) locElem.value = '';
+
+      const manualUrlElem = document.getElementById('equipManualImgUrl');
+      if (manualUrlElem) manualUrlElem.value = '';
+
+      const descElem = document.getElementById('equipDescInput');
+      if (descElem) descElem.value = '';
+
+      const fileInput = document.getElementById('equipImageFileInput');
+      if (fileInput) fileInput.value = '';
+
+      const cameraInput = document.getElementById('equipImageCameraInput');
+      if (cameraInput) cameraInput.value = '';
+
       document.getElementById('equipModalTitle').innerHTML = '<i class="bi bi-plus-circle me-2"></i>เพิ่มรายการอุปกรณ์การเกษตรใหม่';
       document.getElementById('autoSearchLoadingOverlay').classList.add('d-none');
-      populateLocationDropdowns();
+
       const box = document.getElementById('equipImgPreviewBox');
       if (box) box.classList.add('d-none');
+      const img = document.getElementById('equipImgPreview');
+      if (img) img.src = '';
+
+      if (typeof window.applyEquipmentCodeInputRolePermissions === 'function') {
+        window.applyEquipmentCodeInputRolePermissions();
+      }
 
       if (typeof updateEquipmentCodeForCategory === 'function') {
         updateEquipmentCodeForCategory();
@@ -16581,7 +18716,7 @@
       if (!tbody) return;
 
       if (!categoriesList || categoriesList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">ยังไม่มีหมวดหมู่อุปกรณ์</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">ยังไม่มีหมวดหมู่อุปกรณ์</td></tr>`;
         return;
       }
 
@@ -16589,25 +18724,30 @@
       categoriesList.forEach((cat, idx) => {
         const itemCount = equipmentList.filter(eq => eq.category === cat.name).length;
         const catCode = cat.code || (cat.id && cat.id.startsWith('CAT-') ? cat.id : `CAT-${String(idx + 1).padStart(3, '0')}`);
+        const safeName = typeof escapeHtml === 'function' ? escapeHtml(cat.name || '') : (cat.name || '');
+        const safeLabel = typeof escapeHtml === 'function' ? escapeHtml(cat.label || '-') : (cat.label || '-');
+        const safePrefix = cat.prefix ? String(cat.prefix).toUpperCase() : '-';
 
         html += `
-          <tr>
-            <td class="text-center"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 font-monospace fs-8 px-2 py-1">${catCode}</span></td>
-            <td class="text-center fs-5">${cat.icon || '📦'}</td>
-            <td class="fw-bold text-dark">
-              ${cat.name}
-              ${cat.prefix ? `<span class="badge bg-secondary bg-opacity-10 text-secondary border ms-1 fs-8">${cat.prefix}</span>` : ''}
-            </td>
-            <td class="text-secondary">${cat.label || '-'}</td>
-            <td class="text-center"><span class="badge bg-light text-dark border">${itemCount} รายการ</span></td>
-            <td class="text-end pe-3">
-              <button class="btn btn-sm btn-outline-primary rounded-circle me-1" title="แก้ไขหมวดหมู่" onclick="editCategory('${cat.id}')">
+          <tr id="category-row-${idx}">
+            <td class="text-center">
+              <button type="button" class="btn btn-sm btn-outline-primary rounded-circle me-1" title="แก้ไขหมวดหมู่" onclick="editCategoryByIndex(${idx})">
                 <i class="bi bi-pencil-fill"></i>
               </button>
-              <button class="btn btn-sm btn-outline-danger rounded-circle" title="ลบหมวดหมู่" onclick="deleteCategory('${cat.id}')">
+              <button type="button" class="btn btn-sm btn-outline-danger rounded-circle" title="ลบหมวดหมู่" onclick="deleteCategoryByIndex(${idx})">
                 <i class="bi bi-trash-fill"></i>
               </button>
             </td>
+            <td class="text-center fs-5">${cat.icon || '📦'}</td>
+            <td class="fw-bold text-dark">${safeName}</td>
+            <td class="text-center">
+              <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 font-monospace fw-bold fs-7 px-2.5 py-1">
+                ${safePrefix}
+              </span>
+            </td>
+            <td class="text-secondary">${safeLabel}</td>
+            <td class="text-center"><span class="badge bg-light text-dark border">${itemCount} รายการ</span></td>
+            <td class="text-center"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 font-monospace fs-8 px-2 py-1">${catCode}</span></td>
           </tr>
         `;
       });
@@ -16618,48 +18758,155 @@
     window.handleSaveCategory = async function(e) {
       if (e) e.preventDefault();
 
-      const editId = document.getElementById('editCatId').value;
-      const name = document.getElementById('catNameInput').value.trim();
-      const icon = document.getElementById('catIconInput').value.trim();
-      const label = document.getElementById('catLabelInput').value.trim();
+      const editId = (document.getElementById('editCatId')?.value || '').trim();
+      const name = (document.getElementById('catNameInput')?.value || '').trim();
+      let prefix = (document.getElementById('catPrefixInput')?.value || '').trim().toUpperCase();
+      const icon = (document.getElementById('catIconInput')?.value || '').trim();
+      const label = (document.getElementById('catLabelInput')?.value || '').trim();
 
       if (!name) {
         showToast("กรุณาระบุชื่อหมวดหมู่");
         return;
       }
 
-      const existingIndex = categoriesList.findIndex(c => c.name.toLowerCase() === name.toLowerCase() && c.id !== editId);
+      const existingIndex = categoriesList.findIndex(c => 
+        c && c.name && c.name.toLowerCase() === name.toLowerCase() && 
+        c.id !== editId && c.code !== editId && c.name !== editId
+      );
       if (existingIndex !== -1) {
         showToast("ชื่อหมวดหมู่นี้มีอยู่แล้วในระบบ");
         return;
       }
 
+      // If prefix is empty, auto-generate guaranteed unique prefix
+      if (!prefix) {
+        prefix = window.generateUniqueCategoryPrefix(name, editId);
+      }
+      prefix = prefix.replace(/[^A-Z0-9]/g, '').slice(0, 4);
+      if (!prefix) prefix = 'EQ';
+
+      // Validate prefix uniqueness across categories (Must NOT duplicate)
+      const prefixConflict = categoriesList.find(c => 
+        c && c.prefix && c.prefix.toUpperCase() === prefix && 
+        c.id !== editId && c.code !== editId && c.name !== editId
+      );
+      if (prefixConflict) {
+        showToast(`⚠️ ตัวย่อรหัส "${prefix}" ถูกใช้งานแล้วในหมวดหมู่ "${prefixConflict.name}" กรุณาระบุตัวย่ออื่น`);
+        const prefixInputElem = document.getElementById('catPrefixInput');
+        if (prefixInputElem) {
+          prefixInputElem.focus();
+          prefixInputElem.select();
+        }
+        return;
+      }
+
       let oldName = null;
       let targetCatId = editId;
+      let equipCodeUpdateCount = 0;
+
       if (editId) {
-        const catIdx = categoriesList.findIndex(c => c.id === editId);
+        const catIdx = categoriesList.findIndex(c => c && (c.id === editId || c.code === editId || c.name === editId));
         if (catIdx !== -1) {
           oldName = categoriesList[catIdx].name;
-          const catPrefix = getCategoryPrefix(name);
+          const oldPrefix = (categoriesList[catIdx].prefix || '').trim().toUpperCase();
           const code = categoriesList[catIdx].code || (editId.startsWith('CAT-') ? editId : `CAT-${String(catIdx + 1).padStart(3, '0')}`);
+          const finalId = categoriesList[catIdx].id || code || editId;
+          targetCatId = finalId;
           categoriesList[catIdx] = {
             ...categoriesList[catIdx],
+            id: finalId,
             code,
             name,
-            prefix: catPrefix,
+            prefix: prefix,
             icon: icon || '📦',
             label: label || name
           };
 
+          // 1. If Category Name changed, cascade update to equipment category fields
           if (oldName && oldName !== name) {
-            equipmentList.forEach(item => {
-              if (item.category === oldName) {
+            (equipmentList || []).forEach(item => {
+              if (item && item.category === oldName) {
                 item.category = name;
+                item.updatedAt = new Date().toISOString();
               }
             });
           }
+
+          // 2. If Category Prefix changed, cascade update all equipment item codes in this category
+          if (oldPrefix && prefix && oldPrefix !== prefix) {
+            const targetCategoryName = name;
+            const matchedEquipItems = (equipmentList || []).filter(item => 
+              item && (item.category === targetCategoryName || (oldName && item.category === oldName))
+            );
+
+            // Sort matched items to preserve sequence order
+            matchedEquipItems.sort((a, b) => {
+              const codeA = a.code ? String(a.code).trim().toUpperCase() : '';
+              const codeB = b.code ? String(b.code).trim().toUpperCase() : '';
+              const matchA = codeA.match(new RegExp(`^${oldPrefix}-(\\d+)$`, 'i'));
+              const matchB = codeB.match(new RegExp(`^${oldPrefix}-(\\d+)$`, 'i'));
+              const numA = matchA ? parseInt(matchA[1], 10) : null;
+              const numB = matchB ? parseInt(matchB[1], 10) : null;
+              if (numA !== null && numB !== null) return numA - numB;
+              if (numA !== null) return -1;
+              if (numB !== null) return 1;
+              return 0;
+            });
+
+            for (let i = 0; i < matchedEquipItems.length; i++) {
+              const item = matchedEquipItems[i];
+              const oldCode = item.code;
+              const oldItemId = item.id;
+
+              let numSuffix = String(i + 1).padStart(3, '0');
+              if (oldCode) {
+                const matchOld = String(oldCode).trim().match(new RegExp(`^${oldPrefix}-(\\d+)$`, 'i'));
+                if (matchOld) {
+                  numSuffix = matchOld[1].padStart(3, '0');
+                }
+              }
+
+              const newCode = `${prefix}-${numSuffix}`;
+              if (oldCode !== newCode || oldItemId !== newCode) {
+                item.code = newCode;
+                item.id = newCode;
+                item.updatedAt = new Date().toISOString();
+                equipCodeUpdateCount++;
+
+                // Cascade update transaction history references
+                if (Array.isArray(transactionHistory) && oldCode) {
+                  transactionHistory.forEach(tx => {
+                    if (tx && (tx.equipmentCode === oldCode || tx.equipmentId === oldItemId)) {
+                      tx.equipmentCode = newCode;
+                      tx.equipmentId = newCode;
+                    }
+                  });
+                }
+
+                // Sync Firestore equipment docs
+                if (isFirebaseReady && db) {
+                  try {
+                    if (oldItemId && oldItemId !== newCode) {
+                      await deleteDoc(doc(db, "equipment", oldItemId));
+                    }
+                    if (oldCode && oldCode !== newCode && oldCode !== oldItemId) {
+                      await deleteDoc(doc(db, "equipment", oldCode));
+                    }
+                    await setDoc(doc(db, "equipment", newCode), item, { merge: true });
+                  } catch (dbErr) {
+                    console.warn("Firestore equipment code fix error:", dbErr);
+                  }
+                }
+              }
+            }
+          }
         }
-        showToast("แก้ไขหมวดหมู่อุปกรณ์เรียบร้อยแล้ว");
+
+        if (equipCodeUpdateCount > 0) {
+          showToast(`✅ แก้ไขหมวดหมู่สำเร็จ และปรับปรุงรหัสอุปกรณ์ในหมวดนี้ทั้งหมด ${equipCodeUpdateCount} รายการเรียบร้อยแล้ว`);
+        } else {
+          showToast("แก้ไขหมวดหมู่อุปกรณ์เรียบร้อยแล้ว");
+        }
       } else {
         let maxNum = 0;
         categoriesList.forEach(c => {
@@ -16672,12 +18919,11 @@
         const nextNum = maxNum > 0 ? maxNum + 1 : (categoriesList.length + 1);
         const catCode = `CAT-${String(nextNum).padStart(3, '0')}`;
         targetCatId = catCode;
-        const catPrefix = getCategoryPrefix(name);
         const newCat = {
           id: catCode,
           code: catCode,
           name,
-          prefix: catPrefix,
+          prefix: prefix,
           icon: icon || '📦',
           label: label || name
         };
@@ -16689,14 +18935,14 @@
 
       if (isFirebaseReady && db) {
         try {
-          const catPrefix = getCategoryPrefix(name);
           if (editId) {
-            const found = categoriesList.find(c => c.id === editId);
-            await setDoc(doc(db, "categories", editId), {
-              id: editId,
-              code: (found && found.code) ? found.code : editId,
+            const found = categoriesList.find(c => c && (c.id === editId || c.code === editId || c.name === editId)) || {};
+            const saveDocId = targetCatId || editId;
+            await setDoc(doc(db, "categories", saveDocId), {
+              id: saveDocId,
+              code: found.code || saveDocId,
               name,
-              prefix: catPrefix,
+              prefix: prefix,
               icon: icon || '📦',
               label: label || name
             }, { merge: true });
@@ -16713,44 +18959,125 @@
 
       if (typeof logAuditAction === 'function') {
         const actionType = editId ? 'แก้ไข' : 'เพิ่ม';
-        const detailsText = editId ? `แก้ไขหมวดหมู่อุปกรณ์ "${name}"` : `เพิ่มหมวดหมู่อุปกรณ์ใหม่ "${name}"`;
-        logAuditAction('หมวดหมู่', actionType, detailsText, editId || (categoriesList[categoriesList.length - 1]?.id || ''));
+        const detailsText = editId ? `แก้ไขหมวดหมู่อุปกรณ์ "${name}" [ตัวย่อ: ${prefix}]` : `เพิ่มหมวดหมู่อุปกรณ์ใหม่ "${name}" [ตัวย่อ: ${prefix}]`;
+        logAuditAction('หมวดหมู่', actionType, detailsText, targetCatId || (categoriesList[categoriesList.length - 1]?.id || ''));
       }
 
       renderCategoryDropdowns();
       renderCategoryManagementList();
       renderCatalogGrid();
       renderStaffTable();
+      populateEquipmentDropdown();
+      populateQuickScanDropdown();
+      if (typeof updateStats === 'function') updateStats();
       resetCategoryForm();
     };
 
-    window.editCategory = function(catId) {
-      const cat = categoriesList.find(c => c.id === catId);
-      if (!cat) return;
+    window.editCategory = function(catId, index) {
+      let cat = null;
+      if (typeof index === 'number' && categoriesList[index]) {
+        cat = categoriesList[index];
+      } else if (catId) {
+        cat = categoriesList.find(c => c && (c.id === catId || c.code === catId || c.name === catId));
+      }
+      if (!cat) {
+        showToast("ไม่พบข้อมูลหมวดหมู่อุปกรณ์ที่ต้องการแก้ไข");
+        return;
+      }
 
-      document.getElementById('editCatId').value = cat.id;
-      document.getElementById('catNameInput').value = cat.name;
-      document.getElementById('catIconInput').value = cat.icon || '';
-      document.getElementById('catLabelInput').value = cat.label || '';
+      const activeId = cat.id || cat.code || cat.name;
+      const editCatIdElem = document.getElementById('editCatId');
+      const catNameInputElem = document.getElementById('catNameInput');
+      const catPrefixInputElem = document.getElementById('catPrefixInput');
+      const catIconInputElem = document.getElementById('catIconInput');
+      const catLabelInputElem = document.getElementById('catLabelInput');
 
-      document.getElementById('catFormHeader').innerHTML = '<i class="bi bi-pencil-square me-1"></i> แก้ไขหมวดหมู่อุปกรณ์';
-      document.getElementById('btnSaveCat').innerHTML = '<i class="bi bi-check-lg me-1"></i> บันทึกการแก้ไข';
-      document.getElementById('btnCancelEditCat').classList.remove('d-none');
+      if (editCatIdElem) editCatIdElem.value = activeId;
+      if (catNameInputElem) catNameInputElem.value = cat.name || '';
+      if (catPrefixInputElem) {
+        catPrefixInputElem.value = cat.prefix || '';
+        delete catPrefixInputElem.dataset.autoGenerated;
+      }
+      if (catIconInputElem) catIconInputElem.value = cat.icon || '';
+      if (catLabelInputElem) catLabelInputElem.value = cat.label || '';
+
+      const headerElem = document.getElementById('catFormHeader');
+      if (headerElem) {
+        const safeName = typeof escapeHtml === 'function' ? escapeHtml(cat.name) : cat.name;
+        headerElem.innerHTML = `<i class="bi bi-pencil-square text-primary me-1"></i> แก้ไขหมวดหมู่: <span class="text-primary fw-bold">${safeName}</span>`;
+      }
+      const saveBtn = document.getElementById('btnSaveCat');
+      if (saveBtn) {
+        saveBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i> บันทึก';
+      }
+
+      // Highlight active row in table
+      document.querySelectorAll('#categoryTableBody tr').forEach(r => r.classList.remove('table-warning'));
+      const activeRow = (typeof index === 'number') ? document.getElementById(`category-row-${index}`) : null;
+      if (activeRow) {
+        activeRow.classList.add('table-warning');
+      }
+
+      // Smooth scroll to form and focus input
+      const formCard = document.getElementById('categoryForm')?.closest('.card') || document.getElementById('categoryForm');
+      if (formCard) {
+        formCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        formCard.classList.add('border-primary', 'shadow');
+        setTimeout(() => {
+          formCard.classList.remove('border-primary', 'shadow');
+        }, 1500);
+      }
+
+      if (catNameInputElem) {
+        catNameInputElem.focus();
+        catNameInputElem.select();
+      }
+
+      showToast(`✏️ ดึงข้อมูลหมวดหมู่ "${cat.name}" เรียบร้อยแล้ว กรุณาแก้ไขข้อมูลด้านบนแล้วกดบันทึก`, {
+        title: "แก้ไขด้านบน",
+        type: "primary",
+        icon: "bi-pencil-square"
+      });
+    };
+
+    window.editCategoryByIndex = function(idx) {
+      editCategory(null, idx);
     };
 
     window.resetCategoryForm = function() {
-      document.getElementById('editCatId').value = '';
-      document.getElementById('catNameInput').value = '';
-      document.getElementById('catIconInput').value = '';
-      document.getElementById('catLabelInput').value = '';
+      const editCatIdElem = document.getElementById('editCatId');
+      const catNameInputElem = document.getElementById('catNameInput');
+      const catPrefixInputElem = document.getElementById('catPrefixInput');
+      const catIconInputElem = document.getElementById('catIconInput');
+      const catLabelInputElem = document.getElementById('catLabelInput');
 
-      document.getElementById('catFormHeader').innerHTML = '<i class="bi bi-plus-circle me-1"></i> เพิ่มหมวดหมู่อุปกรณ์ใหม่';
-      document.getElementById('btnSaveCat').innerHTML = '<i class="bi bi-check-lg me-1"></i> บันทึก';
-      document.getElementById('btnCancelEditCat').classList.add('d-none');
+      if (editCatIdElem) editCatIdElem.value = '';
+      if (catNameInputElem) catNameInputElem.value = '';
+      if (catPrefixInputElem) {
+        catPrefixInputElem.value = '';
+        delete catPrefixInputElem.dataset.autoGenerated;
+      }
+      if (catIconInputElem) catIconInputElem.value = '';
+      if (catLabelInputElem) catLabelInputElem.value = '';
+
+      const headerElem = document.getElementById('catFormHeader');
+      if (headerElem) {
+        headerElem.innerHTML = '<i class="bi bi-plus-circle me-1"></i> เพิ่มหมวดหมู่อุปกรณ์ใหม่';
+      }
+      const saveBtn = document.getElementById('btnSaveCat');
+      if (saveBtn) {
+        saveBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i> บันทึก';
+      }
+      document.querySelectorAll('#categoryTableBody tr').forEach(r => r.classList.remove('table-warning'));
     };
 
-    window.deleteCategory = async function(catId) {
-      const cat = categoriesList.find(c => c.id === catId);
+    window.deleteCategory = async function(catId, index) {
+      let cat = null;
+      if (typeof index === 'number' && categoriesList[index]) {
+        cat = categoriesList[index];
+      } else if (catId) {
+        cat = categoriesList.find(c => c && (c.id === catId || c.code === catId || c.name === catId));
+      }
       if (!cat) return;
 
       const affectedItems = equipmentList.filter(eq => eq.category === cat.name);
@@ -16775,19 +19102,20 @@
         });
       }
 
-      categoriesList = categoriesList.filter(c => c.id !== catId);
+      const targetDeleteId = cat.id || cat.code || cat.name;
+      categoriesList = categoriesList.filter(c => c !== cat && c.id !== targetDeleteId && c.name !== cat.name);
       saveToLocalStorage();
 
       if (isFirebaseReady && db) {
         try {
-          await deleteDoc(doc(db, "categories", catId));
+          await deleteDoc(doc(db, "categories", targetDeleteId));
         } catch (err) {
           console.warn("Firestore category delete error:", err);
         }
       }
 
       if (typeof logAuditAction === 'function') {
-        logAuditAction('หมวดหมู่', 'ลบ', `ลบหมวดหมู่อุปกรณ์ "${cat.name}"`, catId);
+        logAuditAction('หมวดหมู่', 'ลบ', `ลบหมวดหมู่อุปกรณ์ "${cat.name}"`, targetDeleteId);
       }
 
       showToast(`ลบหมวดหมู่ "${cat.name}" เรียบร้อยแล้ว`);
@@ -16796,6 +19124,10 @@
       renderCatalogGrid();
       renderStaffTable();
       resetCategoryForm();
+    };
+
+    window.deleteCategoryByIndex = function(idx) {
+      deleteCategory(null, idx);
     };
 
     // ==========================================

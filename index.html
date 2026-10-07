@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบพัสดุและอุปกรณ์ - โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา</title>
 
   <script>
@@ -192,6 +192,12 @@
     </div>
 
     <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+      <!-- Fast Checkout Scan Button (ปุ่มสแกนเบิก ด้านบน) -->
+      <button id="btnTopFastCheckoutScan" class="btn btn-warning btn-sm rounded-pill px-2.5 px-md-3 py-1 fw-bold shadow-sm d-flex align-items-center gap-1.5 text-dark" onclick="openFastCheckoutScannerModal()" title="สแกนเบิกด่วน (สแกนผู้ทำรายการและอุปกรณ์ เพื่อเปิดหน้าต่างเบิกทันที)">
+        <i class="bi bi-qr-code-scan fs-6 text-dark"></i>
+        <span class="fs-7 fw-bold text-dark">สแกนเบิก</span>
+      </button>
+
       <!-- Compact Profile & Settings Dropdown Button -->
       <div class="dropdown" id="topNavSettingsDropdown">
         <button class="btn btn-outline-light btn-sm rounded-pill px-2.5 py-1 fw-semibold d-flex align-items-center gap-1.5 shadow-sm dropdown-toggle" type="button" id="settingsAccountDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="บัญชีผู้ใช้และการตั้งค่า">
@@ -236,13 +242,13 @@
   <div class="container-fluid px-3 px-md-4 mt-4">
 
     <!-- Summary Overview Stats Cards Header & Toggle Button -->
-    <div class="d-flex align-items-center justify-content-between gap-1.5 gap-md-2 mb-3 px-1">
+    <div class="d-flex align-items-center justify-content-between gap-1.5 gap-md-2 mb-3 px-1 flex-wrap">
       <div class="d-flex align-items-center gap-1.5 text-nowrap flex-shrink-0">
         <i class="bi bi-bar-chart-line-fill text-success fs-5"></i>
         <span class="fw-bold text-dark fs-7 d-none d-md-inline">สรุปสต๊อกอุปกรณ์</span>
         <span class="fw-bold text-dark fs-7 d-inline d-md-none">สรุปสต๊อก</span>
       </div>
-      <div class="d-flex align-items-center gap-1.5 gap-md-2 flex-nowrap">
+      <div class="d-flex align-items-center gap-1.5 gap-md-2 flex-wrap justify-content-end">
         <!-- Hardware Barcode/QR Scanner Auto-Detect Status Button -->
         <button id="btnHardwareScannerStatus" class="btn btn-outline-success btn-sm rounded-pill px-2.5 px-md-3 py-1 py-md-1.5 fw-bold shadow-sm d-flex align-items-center gap-1.5 text-nowrap" onclick="openHardwareScannerSettingsModal()" title="เปิดการตั้งค่าและทดสอบโหมดยิงสแกน QR Code / Barcode อัตโนมัติ">
           <i class="bi bi-upc-scan text-success fs-7"></i>
@@ -256,7 +262,7 @@
         </button>
         <button class="btn btn-outline-secondary btn-sm rounded-pill px-2.5 px-md-3 py-1 py-md-1.5 fw-semibold shadow-sm d-flex align-items-center gap-1.5 text-nowrap" id="btnToggleSummaryStats" onclick="toggleSummaryStats()">
           <i class="bi bi-eye-fill text-primary" id="toggleSummaryStatsIcon"></i>
-          <span id="toggleSummaryStatsText" class="fs-8">แสดงสรุปข้อมูล</span>
+          <span id="toggleSummaryStatsText" class="fs-8">สรุปข้อมูล</span>
         </button>
       </div>
     </div>
@@ -481,9 +487,10 @@
               <div class="input-group">
                 <span class="input-group-text bg-light border-0"><i class="bi bi-search text-muted"></i></span>
                 <input type="text" id="catalogSearchInput" class="form-control border-0 bg-light" placeholder="ค้นหาชื่ออุปกรณ์, รหัสสินค้า..." oninput="renderCatalogGrid()" />
-                <button class="btn btn-warning fw-bold px-3 d-flex align-items-center gap-1 text-dark shadow-sm" type="button" onclick="openBarcodeQrScannerModal()" title="สแกนบาร์โค้ดค้นชื่ออุปกรณ์">
-                  <i class="bi bi-upc-scan text-dark fs-5"></i>
-                  <span class="fs-8 d-none d-sm-inline text-dark">สแกนบาร์โค้ดอุปกรณ์</span>
+                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearCatalogSearch()" title="ล้างคำค้นหา"><i class="bi bi-x-circle-fill"></i></button>
+                <button class="btn btn-warning fw-bold px-3 d-flex align-items-center gap-1 text-dark shadow-sm" type="button" onclick="openCatalogEquipmentScannerModal()" title="สแกนอุปกรณ์ (บาร์โค้ด & คิวอาร์โค้ด) เพื่อโฟกัสตำแหน่งการ์ดอุปกรณ์ในคลัง">
+                  <i class="bi bi-qr-code-scan text-dark fs-5"></i>
+                  <span class="fs-8 d-none d-sm-inline text-dark">สแกนอุปกรณ์</span>
                 </button>
               </div>
             </div>
@@ -524,23 +531,26 @@
         </div>
 
         <!-- Overdue Alert Banner -->
-        <div id="overdueAlertBanner" class="alert alert-danger border-0 shadow-sm rounded-4 p-3 mb-4 d-none align-items-center justify-content-between flex-wrap gap-2 overdue-pulse-row">
-          <div class="d-flex align-items-center gap-2.5">
-            <div class="bg-danger text-white rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0 overdue-pulse-badge" style="width: 38px; height: 38px;">
-              <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+        <div id="overdueAlertBanner" class="alert alert-danger border-0 shadow-sm rounded-4 p-3 mb-4 d-none flex-column gap-2 overdue-pulse-row">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 w-100">
+            <div class="d-flex align-items-center gap-2.5">
+              <div class="bg-danger text-white rounded-circle p-1.5 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0 overdue-pulse-badge" style="width: 34px; height: 34px;">
+                <i class="bi bi-exclamation-triangle-fill fs-6"></i>
+              </div>
+              <h6 class="fw-bold text-danger mb-0">ยืมอุปกรณ์เกินกำหนด <span id="overdueBannerCount" class="badge bg-danger text-white rounded-pill overdue-pulse-badge">0</span> รายการ!</h6>
             </div>
-            <div>
-              <h6 class="fw-bold text-danger mb-0">แจ้งเตือน: พบรายการยืมอุปกรณ์เกินกำหนด <span id="overdueBannerCount" class="badge bg-danger text-white rounded-pill overdue-pulse-badge">0</span> รายการ!</h6>
-              <small class="text-muted">โปรดติดตามพนักงานเพื่อนำอุปกรณ์กลับคืนคลังตามกำหนด</small>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm d-inline-flex align-items-center gap-1.5" onclick="sendAllOverdueLineNotify()" title="ส่งข้อความแจ้งเตือนติดตามคืนอุปกรณ์เกินกำหนดทั้งหมดทาง LINE">
+                <i class="bi bi-line fs-6"></i> แจ้งทาง LINE
+              </button>
+              <button type="button" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold shadow-sm d-inline-flex align-items-center gap-1.5" onclick="showOverdueBorrowingsModal()">
+                <i class="bi bi-bell-fill"></i> ติดตามคืน
+              </button>
             </div>
           </div>
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm d-inline-flex align-items-center gap-1.5" onclick="sendAllOverdueLineNotify()" title="ส่งข้อความแจ้งเตือนติดตามคืนอุปกรณ์เกินกำหนดทั้งหมดทาง LINE">
-              <i class="bi bi-line fs-6"></i> แจ้งเตือนทาง LINE
-            </button>
-            <button type="button" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold shadow-sm d-inline-flex align-items-center gap-1.5" onclick="showOverdueBorrowingsModal()">
-              <i class="bi bi-bell-fill"></i> ดูรายการและติดตามคืน
-            </button>
+          <!-- Compact quick staff buttons for overdue borrowings -->
+          <div id="overdueBannerStaffList" class="d-none align-items-center gap-1.5 flex-wrap pt-2 border-top border-danger border-opacity-25 w-100 fs-8">
+            <!-- Injected dynamically in script.js -->
           </div>
         </div>
 
@@ -2299,17 +2309,23 @@
             </div>
 
             <!-- Select Employee -->
-            <div class="mb-3">
+            <div class="mb-3 position-relative">
               <label class="form-label fw-bold" for="empSelect" id="transEmpSelectLabel">2. เลือกรายชื่อผู้ทำรายการ <span class="text-danger">*</span></label>
               <div class="input-group mb-2">
                 <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" id="transEmpSearchInput" class="form-control border-start-0 bg-light fs-7" placeholder="🔍 พิมพ์ชื่อ หรือ รหัสพนักงานเพื่อค้นหา (เรียงตามชื่อ)..." oninput="filterTransEmployeeSelect(this.value)" />
+                <input type="text" id="transEmpSearchInput" class="form-control border-start-0 bg-light fs-7" placeholder="🔍 พิมพ์ชื่อ, ชื่อเล่น หรือ รหัสพนักงานเพื่อค้นหา..." oninput="filterTransEmployeeSelect(this.value)" onfocus="if(this.value.trim().length > 0) filterTransEmployeeSelect(this.value)" autocomplete="off" />
                 <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearTransEmpSearch()" title="ล้างคำค้นหา"><i class="bi bi-x-circle-fill"></i></button>
                 <button class="btn btn-success fw-bold px-2.5 px-md-3 d-flex align-items-center gap-1" type="button" onclick="openScanEmpBadgeModal()" title="สแกน QR Code บัตรพนักงาน เพื่อค้นรายชื่อพนักงาน">
                   <i class="bi bi-qr-code-scan"></i>
                   <span class="d-none d-md-inline ms-1">สแกน QR บัตรพนักงาน</span>
                 </button>
               </div>
+
+              <!-- Instant Search Results Dropdown List Container -->
+              <div id="transEmpSearchResultsBox" class="position-absolute w-100 bg-white border border-2 border-success rounded-3 shadow-lg p-1 d-none" style="z-index: 1055; max-height: 280px; overflow-y: auto; top: 76px; left: 0;">
+                <!-- Populated dynamically with matched employee cards -->
+              </div>
+
               <div class="input-group">
                 <span class="input-group-text bg-light"><i class="bi bi-person-fill text-success"></i></span>
                 <select id="empSelect" class="form-select fw-semibold" required oninvalid="this.setCustomValidity('กรุณาเลือก หรือ พิมพ์รายชื่อผู้ทำรายการก่อน')" oninput="this.setCustomValidity('')" onchange="this.setCustomValidity(''); handleTransEmpSelectionChange()">
@@ -2319,18 +2335,23 @@
             </div>
 
             <!-- Select Equipment -->
-            <div class="mb-3">
+            <div class="mb-3 position-relative">
               <label class="form-label fw-bold" for="equipSelect" id="transEquipSelectLabel">3. เลือกอุปกรณ์การเกษตร</label>
               
               <!-- Search Input & Barcode Scan Button -->
               <div class="input-group mb-2">
                 <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" id="equipSearchInput" class="form-control border-start-0 bg-light fs-7" placeholder="🔍 พิมพ์ชื่ออุปกรณ์, รหัสบาร์โค้ด หรือสถานที่เพื่อค้นหา..." oninput="filterEquipSelectDropdown(this.value)" />
+                <input type="text" id="equipSearchInput" class="form-control border-start-0 bg-light fs-7" placeholder="🔍 พิมพ์ชื่ออุปกรณ์, รหัส หรือสถานที่เพื่อค้นหา..." oninput="filterEquipSelectDropdown(this.value)" onfocus="if(this.value.trim().length > 0) filterEquipSelectDropdown(this.value)" autocomplete="off" />
                 <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearEquipSearch()" title="ล้างคำค้นหา"><i class="bi bi-x-circle-fill"></i></button>
                 <button class="btn btn-warning fw-bold px-2.5 px-md-3 d-flex align-items-center gap-1 text-dark shadow-sm" type="button" onclick="openBarcodeQrScannerModal()" title="สแกนบาร์โค้ดอุปกรณ์เพื่อค้นชื่ออุปกรณ์">
                   <i class="bi bi-upc-scan text-dark fs-5"></i>
                   <span class="d-none d-md-inline ms-1 text-dark">สแกนบาร์โค้ดอุปกรณ์</span>
                 </button>
+              </div>
+
+              <!-- Instant Equipment Search Results Dropdown List Container -->
+              <div id="transEquipSearchResultsBox" class="position-absolute w-100 bg-white border border-2 border-success rounded-3 shadow-lg p-1 d-none" style="z-index: 1055; max-height: 290px; overflow-y: auto; top: 76px; left: 0;">
+                <!-- Populated dynamically with matched equipment cards -->
               </div>
 
               <div class="input-group">
@@ -2484,44 +2505,42 @@
 
   <!-- ==================== MODAL: EQUIPMENT TRANSACTION HISTORY ==================== -->
   <div class="modal fade" id="equipmentTransactionHistoryModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
-      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+    <div class="modal-dialog modal-fullscreen">
+      <div class="modal-content border-0 shadow-none d-flex flex-column h-100">
         <!-- Header -->
-        <div class="modal-header bg-primary bg-gradient text-white py-3">
+        <div class="modal-header bg-primary bg-gradient text-white py-3 flex-shrink-0">
           <div class="d-flex align-items-center gap-2">
             <div class="bg-white bg-opacity-20 rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; flex-shrink: 0;">
               <i class="bi bi-clock-history fs-4 text-white"></i>
             </div>
             <div>
-              <h5 class="modal-title fw-bold mb-0">ประวัติการทำรายการอุปกรณ์การเกษตร</h5>
-              <small class="text-white-50 fs-8">ตรวจสอบประวัติการเบิก-จ่าย-ยืม-คืน-รับเข้า ทั้งหมด เรียงตามวันที่ล่าสุด</small>
+              <h5 class="modal-title fw-bold mb-0">ประวัติอุปกรณ์การเกษตร</h5>
             </div>
           </div>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          <div class="d-flex align-items-center gap-2 ms-auto">
+            <!-- Toggle Metrics Eye Button in Header -->
+            <button type="button" class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center p-0 shadow-sm flex-shrink-0" style="width: 36px; height: 36px;" id="eqHistToggleMetricsBtn" onclick="toggleEqHistMetrics()" title="แสดง/ซ่อนข้อมูลสรุป">
+              <i class="bi bi-eye" id="eqHistEyeIcon" style="font-size: 1.15rem;"></i>
+            </button>
+            <button type="button" class="btn-close btn-close-white ms-1" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
         </div>
 
-        <div class="modal-body p-3 p-md-4 bg-light">
+        <div class="modal-body p-3 p-md-4 bg-light flex-grow-1 overflow-auto d-flex flex-column">
           <!-- Equipment Info Card & Summary Metrics -->
-          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3">
-            <div class="d-flex align-items-center justify-content-between gap-3">
-              <div class="d-flex align-items-center gap-3">
-                <img id="eqHistModalImg" src="" class="rounded-3 border shadow-sm" style="width: 64px; height: 64px; object-fit: cover; flex-shrink: 0;" onerror="this.src='https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&auto=format&fit=crop&q=80'" />
-                <div class="overflow-hidden">
-                  <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                    <h5 id="eqHistModalName" class="fw-bold text-dark mb-0 fs-6 text-truncate"></h5>
-                    <span id="eqHistModalCode" class="badge bg-dark font-monospace fs-8"></span>
-                    <span id="eqHistModalCat" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8"></span>
-                  </div>
-                  <div class="d-flex align-items-center gap-3 fs-8 text-secondary flex-wrap mt-1">
-                    <div><i class="bi bi-geo-alt-fill me-1 text-danger"></i><span id="eqHistModalLoc">คลังกลาง</span></div>
-                  </div>
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3 flex-shrink-0">
+            <div class="d-flex align-items-center gap-3">
+              <img id="eqHistModalImg" src="" class="rounded-3 border shadow-sm" style="width: 64px; height: 64px; object-fit: cover; flex-shrink: 0;" onerror="this.src='https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&auto=format&fit=crop&q=80'" />
+              <div class="overflow-hidden flex-grow-1" style="min-width: 0;">
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                  <h5 id="eqHistModalName" class="fw-bold text-dark mb-0 fs-6 text-truncate"></h5>
+                  <span id="eqHistModalCode" class="badge bg-dark font-monospace fs-8"></span>
+                  <span id="eqHistModalCat" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8"></span>
+                </div>
+                <div class="d-flex align-items-center gap-3 fs-8 text-secondary flex-wrap mt-1">
+                  <div><i class="bi bi-geo-alt-fill me-1 text-danger"></i><span id="eqHistModalLoc">คลังกลาง</span></div>
                 </div>
               </div>
-
-              <!-- Toggle Metrics Eye Button -->
-              <button type="button" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-0 shadow-sm flex-shrink-0" style="width: 36px; height: 36px;" id="eqHistToggleMetricsBtn" onclick="toggleEqHistMetrics()" title="แสดง/ซ่อนข้อมูลสรุป">
-                <i class="bi bi-eye" id="eqHistEyeIcon" style="font-size: 1.15rem;"></i>
-              </button>
             </div>
 
             <!-- Summary Metrics Counters (Default Hidden) -->
@@ -2552,7 +2571,7 @@
           </div>
 
           <!-- Filter & Search Toolbar -->
-          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3">
+          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3 flex-shrink-0">
             <div class="row g-2 align-items-center">
               <div class="col-12 col-md-6 col-lg-5">
                 <div class="input-group input-group-sm">
@@ -2566,10 +2585,10 @@
               <div class="col-12 col-sm-6 col-md-3 col-lg-4">
                 <select id="eqHistTypeFilter" class="form-select form-select-sm rounded-pill fs-8" onchange="renderEquipmentHistoryModalTable()">
                   <option value="ALL">📋 ทุกประเภทรายการ (เบิก/ยืม/คืน/รับเข้า)</option>
-                  <option value="เบิกจ่าย">📤 เบิกจ่าย (Disbursed)</option>
-                  <option value="ยืมอุปกรณ์">🔄 ยืมอุปกรณ์ (Borrowed)</option>
-                  <option value="คืนอุปกรณ์">📥 คืนอุปกรณ์ (Returned)</option>
-                  <option value="รับเข้าสต๊อก">📦 รับเข้าสต๊อก / เติมสต๊อก (Restocked)</option>
+                  <option value="เบิกจ่าย">📤 เบิกจ่าย</option>
+                  <option value="ยืมอุปกรณ์">🔄 ยืมอุปกรณ์</option>
+                  <option value="คืนอุปกรณ์">📥 คืนอุปกรณ์</option>
+                  <option value="รับเข้าสต๊อก">📦 รับเข้าสต๊อก / เติมสต๊อก</option>
                 </select>
               </div>
               <div class="col-12 col-sm-6 col-md-3 col-lg-3 text-sm-end">
@@ -2581,8 +2600,8 @@
           </div>
 
           <!-- Transaction Records Table Card -->
-          <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
-            <div class="table-responsive" style="max-height: 400px; min-height: 180px; overflow-y: auto;">
+          <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden flex-grow-1 d-flex flex-column mb-0">
+            <div class="table-responsive flex-grow-1" style="min-height: 280px; overflow-y: auto;">
               <table class="table table-hover align-middle mb-0 fs-8">
                 <thead class="table-light text-secondary sticky-top" style="z-index: 2;">
                   <tr>
@@ -2592,8 +2611,8 @@
                     <th class="text-center" style="width: 90px;">จำนวน</th>
                     <th style="width: 130px;">กำหนดคืน / สถานะ</th>
                     <th>สถานที่ / จุดใช้งาน</th>
-                    <th>หมายเหตุ</th>
-                    <th class="text-center pe-3" style="width: 80px;">เอกสาร</th>
+                    <th style="width: 200px;">หมายเหตุ</th>
+                    <th class="text-center pe-3" style="width: 170px;">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody id="eqHistTableBody">
@@ -2612,12 +2631,106 @@
         </div>
 
         <!-- Modal Footer -->
-        <div class="modal-footer bg-white py-2 px-3 d-flex justify-content-between align-items-center">
+        <div class="modal-footer bg-white py-2 px-3 d-flex justify-content-between align-items-center flex-shrink-0">
           <button type="button" id="btnEqHistOpenBorrowers" class="btn btn-outline-warning btn-sm rounded-pill fw-bold fs-8 d-none" onclick="openBorrowersFromHistModal()">
             <i class="bi bi-people-fill me-1"></i> ดูรายชื่อผู้ยืมปัจจุบัน (<span id="btnEqHistBorrowersCount">0</span>)
           </button>
           <button type="button" class="btn btn-secondary rounded-pill fw-semibold px-4 fs-7 ms-auto" data-bs-dismiss="modal">ปิดหน้าต่าง</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: EDIT TRANSACTION (แก้ไขวันที่และจำนวน) ==================== -->
+  <div class="modal fade" id="editTransactionModal" tabindex="-1" aria-hidden="true" style="z-index: 1065;">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+        <div class="modal-header bg-primary text-white py-3">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-pencil-square fs-5"></i>
+            <div>
+              <h5 class="modal-title fw-bold mb-0">แก้ไขรายการประวัติอุปกรณ์</h5>
+              <small class="text-white-50 fs-8" id="editTxDocInfo">#TX-xxxx</small>
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-danger rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; padding: 0;" data-bs-dismiss="modal" aria-label="Close" title="ปิดหน้าต่าง">
+            <i class="bi bi-x-lg fw-bold"></i>
+          </button>
+        </div>
+
+        <form id="editTransactionForm" onsubmit="handleSaveEditedTransaction(event)">
+          <input type="hidden" id="editTxId" value="" />
+          <input type="hidden" id="editTxEquipId" value="" />
+          <input type="hidden" id="editTxType" value="" />
+          <input type="hidden" id="editTxOldQty" value="1" />
+
+          <div class="modal-body p-4 bg-light">
+            <!-- Transaction summary card -->
+            <div class="card border-0 shadow-2xs rounded-3 p-3 bg-white mb-3">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="fs-8 text-secondary">ประเภทรายการ:</span>
+                <span id="editTxTypeBadge" class="badge bg-secondary fs-8"></span>
+              </div>
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="fs-8 text-secondary">อุปกรณ์:</span>
+                <span id="editTxEquipName" class="fw-bold text-dark fs-8 text-end"></span>
+              </div>
+              <div class="d-flex align-items-center justify-content-between">
+                <span class="fs-8 text-secondary">ผู้ทำรายการ:</span>
+                <span id="editTxEmpName" class="fw-semibold text-secondary fs-8 text-end"></span>
+              </div>
+            </div>
+
+            <!-- Date and Time Picker -->
+            <div class="mb-3">
+              <label class="form-label fw-bold text-dark fs-7 mb-1" for="editTxDatetimeInput">
+                <i class="bi bi-calendar-event me-1 text-primary"></i> วันที่และเวลาทำรายการ <span class="text-danger">*</span>
+              </label>
+              <input type="text" id="editTxDatetimeInput" class="form-control form-control-sm rounded-3 shadow-2xs bg-white" placeholder="เช่น 05/10/2569 14:30 น." required />
+              <div class="form-text fs-8 text-muted">ระบุวัน เดือน ปี พ.ศ. และเวลาที่ต้องการบันทึกประวัติย้อนหลังหรือแก้ไข</div>
+            </div>
+
+            <!-- Quantity Input -->
+            <div class="mb-3">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <label class="form-label fw-bold text-dark fs-7 mb-0" for="editTxQuantityInput">
+                  <i class="bi bi-123 me-1 text-success"></i> จำนวน (<span id="editTxUnitLabel">ชิ้น</span>) <span class="text-danger">*</span>
+                </label>
+                <span class="badge bg-light text-secondary border fs-8" id="editTxOldQtyLabel">จำนวนเดิม: 1</span>
+              </div>
+              <div class="input-group input-group-sm shadow-2xs">
+                <button type="button" class="btn btn-outline-secondary px-3" onclick="adjustEditTxQty(-1)">-</button>
+                <input type="number" id="editTxQuantityInput" min="1" max="99999" class="form-control text-center fw-bold fs-6 text-success" required />
+                <button type="button" class="btn btn-outline-secondary px-3" onclick="adjustEditTxQty(1)">+</button>
+              </div>
+              <div class="form-text fs-8 text-success mt-1" id="editTxStockNotice">
+                <i class="bi bi-info-circle me-1"></i> ระบบจะคำนวณปรับยอดสต๊อกคงเหลือในคลังให้อัตโนมัติตามผลต่างจำนวน
+              </div>
+            </div>
+
+            <!-- Location / Notes -->
+            <div class="mb-2">
+              <label class="form-label fw-bold text-dark fs-8 mb-1" for="editTxLocationInput">
+                <i class="bi bi-geo-alt me-1 text-danger"></i> สถานที่ใช้งาน / จุดเก็บ
+              </label>
+              <input type="text" id="editTxLocationInput" class="form-control form-control-sm rounded-3 shadow-2xs" placeholder="ระบุสถานที่ใช้งาน" />
+            </div>
+
+            <div class="mb-1">
+              <label class="form-label fw-bold text-dark fs-8 mb-1" for="editTxNoteInput">
+                <i class="bi bi-chat-left-text me-1 text-secondary"></i> หมายเหตุเพิ่มเติม
+              </label>
+              <textarea id="editTxNoteInput" rows="2" class="form-control form-control-sm rounded-3 shadow-2xs" placeholder="ระบุเหตุผลการแก้ไข หรือหมายเหตุ"></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer border-0 bg-white py-2 px-4 d-flex justify-content-between">
+            <button type="button" class="btn btn-light rounded-pill px-3 fs-7" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold fs-7 shadow-sm" id="btnSaveEditTx">
+              <i class="bi bi-check-lg me-1"></i> บันทึกการแก้ไข
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -2652,6 +2765,7 @@
                   <div><i class="bi bi-geo-alt me-1 text-danger"></i><span id="eqBorrowersLoc"></span></div>
                   <div><i class="bi bi-box-seam me-1 text-primary"></i>คงเหลือในคลัง: <strong id="eqBorrowersStock" class="text-dark">0</strong></div>
                   <div><i class="bi bi-arrow-repeat me-1 text-warning"></i>ถูกยืมรวม: <strong id="eqBorrowersTotal" class="text-warning">0</strong></div>
+                  <div><i class="bi bi-tools me-1 text-danger"></i>รอซ่อม: <strong id="eqBorrowersDamaged" class="text-danger">0</strong></div>
                 </div>
               </div>
             </div>
@@ -2660,7 +2774,7 @@
           <!-- Section 1: Current Borrowers List -->
           <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3">
             <div class="d-flex align-items-center justify-content-between mb-2">
-              <h6 class="fw-bold text-dark mb-0"><i class="bi bi-person-lines-fill text-warning me-2"></i>พนักงานที่กำลังยืมขณะนี้</h6>
+              <h6 class="fw-bold text-dark mb-0"><i class="bi bi-person-lines-fill text-warning me-2"></i>พนักงานที่ยืมขณะนี้</h6>
               <span id="eqBorrowersCountBadge" class="badge bg-warning text-dark rounded-pill fw-bold fs-8">0 พนักงาน</span>
             </div>
             
@@ -2668,12 +2782,14 @@
               <table class="table table-hover align-middle mb-0">
                 <thead class="table-light fs-8 text-secondary">
                   <tr>
+                    <th class="text-center" style="width: 85px;">คืนอุปกรณ์</th>
+                    <th class="text-center" style="width: 100px;">จำนวนที่ยืม</th>
+                    <th class="text-center" style="width: 95px;">แจ้งชำรุด</th>
                     <th>พนักงาน</th>
                     <th>แผนก/งาน</th>
-                    <th class="text-center">จำนวนที่ยืม</th>
                     <th class="text-center">วัน-เวลาที่ยืมล่าสุด</th>
                     <th class="text-center" title="คลิกที่วันเวลาเพื่อแก้ไขกำหนดวัน/เวลาส่งคืน">กำหนดวัน/เวลาส่งคืน <i class="bi bi-pencil-square text-muted fs-8"></i></th>
-                    <th class="text-center">การจัดการ</th>
+                    <th class="text-center" style="width: 125px;">ติดตาม / ประวัติ</th>
                   </tr>
                 </thead>
                 <tbody id="eqBorrowersTableBody" class="fs-7">
@@ -2716,70 +2832,123 @@
     </div>
   </div>
 
-  <!-- ==================== MODAL: EDIT BORROWER DUE DATE ==================== -->
-  <div class="modal fade" id="editBorrowerDueDateModal" tabindex="-1" aria-hidden="true" style="z-index: 1065;">
-    <div class="modal-dialog modal-dialog-centered modal-md">
+  <!-- ==================== MODAL: REPORT DAMAGED EQUIPMENT ==================== -->
+  <div class="modal fade" id="reportDamageModal" tabindex="-1" aria-hidden="true" style="z-index: 1068;">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
       <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-        <div class="modal-header bg-success bg-gradient text-white py-3">
+        <div class="modal-header bg-danger bg-gradient text-white py-2.5 px-3">
           <div class="d-flex align-items-center gap-2">
-            <div class="bg-white bg-opacity-20 rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-              <i class="bi bi-calendar-event fs-5 text-white"></i>
+            <div class="bg-white bg-opacity-20 rounded-circle p-1.5 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+              <i class="bi bi-tools fs-6 text-white"></i>
+            </div>
+            <h6 class="modal-title fw-bold mb-0 fs-7">บันทึกแจ้งอุปกรณ์ชำรุด</h6>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3 bg-light">
+          <input type="hidden" id="damageEquipId" />
+          <input type="hidden" id="damageEmpId" />
+          <input type="hidden" id="damageMaxQty" />
+          
+          <div class="card border-0 shadow-xs rounded-3 p-2.5 bg-white mb-2.5">
+            <div class="mb-1.5">
+              <span class="text-muted fs-8 d-block">อุปกรณ์:</span>
+              <strong id="damageEquipName" class="text-dark fs-7 d-block text-truncate">-</strong>
             </div>
             <div>
-              <h5 class="modal-title fw-bold mb-0">แก้ไขกำหนดวัน/เวลาส่งคืน</h5>
-              <small class="text-white-50 fs-8">ปรับเปลี่ยนหรือขยายเวลาส่งคืนอุปกรณ์การเกษตร</small>
+              <span class="text-muted fs-8 d-block">ผู้ยืม:</span>
+              <strong id="damageEmpName" class="text-dark fs-7 d-block text-truncate">-</strong>
             </div>
+          </div>
+
+          <div class="card border-0 shadow-xs rounded-3 p-2.5 bg-white mb-2.5">
+            <label class="form-label fs-8 fw-bold text-dark mb-1">จำนวนที่ชำรุด (ไม่เกินยอดที่ยืม)</label>
+            <div class="input-group input-group-sm">
+              <input type="number" id="damageQtyInput" class="form-control text-center fw-bold text-danger fs-6 rounded-start-pill" min="0" value="0" />
+              <span id="damageUnitLabel" class="input-group-text rounded-end-pill fs-8 text-secondary">ชิ้น</span>
+            </div>
+            <small id="damageMaxHint" class="text-muted fs-8 mt-1 d-block text-center"></small>
+          </div>
+
+          <div class="card border-0 shadow-xs rounded-3 p-2.5 bg-white mb-3">
+            <label class="form-label fs-8 fw-bold text-dark mb-1">อาการชำรุด / รายละเอียด</label>
+            <textarea id="damageNoteInput" class="form-control form-control-sm rounded-3 fs-7" rows="2" placeholder="ระบุอาการชำรุด เช่น ใบมีดหัก, สตาร์ทไม่ติด, ด้ามแตก..."></textarea>
+          </div>
+
+          <div class="d-grid gap-1.5">
+            <button type="button" class="btn btn-danger btn-sm rounded-pill fw-bold py-1.5 shadow-sm" onclick="saveEquipmentDamageReport()">
+              บันทึกแจ้งชำรุด
+            </button>
+            <button type="button" class="btn btn-light btn-sm rounded-pill text-secondary py-1" data-bs-dismiss="modal">
+              ยกเลิก
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: EDIT BORROWER DUE DATE ==================== -->
+  <div class="modal fade" id="editBorrowerDueDateModal" tabindex="-1" aria-hidden="true" style="z-index: 1065;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+        <div class="modal-header bg-success bg-gradient text-white py-2.5 px-3 px-md-4">
+          <div class="d-flex align-items-center gap-2">
+            <div class="bg-white bg-opacity-20 rounded-circle p-1.5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+              <i class="bi bi-calendar-event fs-5 text-white"></i>
+            </div>
+            <h5 class="modal-title fw-bold mb-0 fs-6">แก้ไขกำหนดวัน/เวลาส่งคืน</h5>
           </div>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
 
-        <div class="modal-body p-3 p-md-4 bg-light">
-          <!-- Summary card -->
-          <div class="card border-0 shadow-sm rounded-3 p-3 bg-white mb-3">
-            <div class="row g-2 fs-7">
-              <div class="col-12 col-sm-6">
-                <span class="text-muted d-block fs-8">อุปกรณ์:</span>
-                <strong id="editDueDateEquipName" class="text-dark">-</strong>
+        <div class="modal-body p-3 p-md-3 bg-light">
+          <!-- Summary card: 4 items in a single row on desktop -->
+          <div class="card border-0 shadow-sm rounded-3 p-2.5 bg-white mb-2.5">
+            <div class="row g-2 fs-7 align-items-center">
+              <div class="col-12 col-sm-6 col-lg-4">
+                <span class="text-muted fs-8 d-block">อุปกรณ์:</span>
+                <strong id="editDueDateEquipName" class="text-dark text-truncate d-block">-</strong>
               </div>
-              <div class="col-12 col-sm-6">
-                <span class="text-muted d-block fs-8">ผู้ยืม:</span>
-                <strong id="editDueDateEmpName" class="text-primary">-</strong>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <span class="text-muted fs-8 d-block">ผู้ยืม:</span>
+                <strong id="editDueDateEmpName" class="text-primary text-truncate d-block">-</strong>
               </div>
-              <div class="col-12 col-sm-6">
-                <span class="text-muted d-block fs-8">จำนวนที่ยืม:</span>
+              <div class="col-6 col-lg-2">
+                <span class="text-muted fs-8 d-block">จำนวนที่ยืม:</span>
                 <strong id="editDueDateBorrowQty" class="text-warning">-</strong>
               </div>
-              <div class="col-12 col-sm-6">
-                <span class="text-muted d-block fs-8">กำหนดเดิม:</span>
-                <span id="editDueDateCurrentText" class="badge bg-light text-dark border">-</span>
+              <div class="col-6 col-lg-3">
+                <span class="text-muted fs-8 d-block">กำหนดเดิม:</span>
+                <span id="editDueDateCurrentText" class="badge bg-light text-dark border text-truncate d-inline-block mw-100">-</span>
               </div>
             </div>
           </div>
 
-          <!-- Input fields -->
+          <!-- Input form -->
           <form id="editDueDateForm" onsubmit="event.preventDefault(); saveEditedBorrowerDueDate();">
             <input type="hidden" id="editDueDateEquipId" value="" />
             <input type="hidden" id="editDueDateEmpId" value="" />
             <input type="hidden" id="editDueDateTxId" value="" />
 
-            <div class="row g-3 mb-3">
+            <!-- Row 1: Date & Time in the same row -->
+            <div class="row g-2 mb-2.5">
               <div class="col-12 col-sm-7">
-                <label class="form-label fw-bold fs-7 text-dark" for="editDueDateInput">
+                <label class="form-label fw-bold fs-7 text-dark mb-1" for="editDueDateInput">
                   <i class="bi bi-calendar3 text-success me-1"></i> วันที่กำหนดส่งคืน <span class="text-danger">*</span>
                 </label>
                 <div class="input-group">
-                  <span class="input-group-text bg-white border-end-0 text-success"><i class="bi bi-calendar-event"></i></span>
-                  <input type="text" id="editDueDateInput" class="form-control rounded-end-3 border-start-0 fw-bold fs-7 bg-white cursor-pointer" placeholder="เลือกวัน/เดือน/ปีพุทธศักราช" readonly required />
+                  <span class="input-group-text bg-white border-end-0 text-success py-1.5"><i class="bi bi-calendar-event"></i></span>
+                  <input type="text" id="editDueDateInput" class="form-control rounded-end-3 border-start-0 fw-bold fs-7 bg-white cursor-pointer py-1.5" placeholder="เลือกวัน/เดือน/ปีพุทธศักราช" readonly required />
                 </div>
-                <small class="text-muted fs-8">ปฏิทินภาษาไทย ปีพุทธศักราช</small>
               </div>
               <div class="col-12 col-sm-5">
-                <label class="form-label fw-bold fs-7 text-dark" for="editDueTimeSelect">
+                <label class="form-label fw-bold fs-7 text-dark mb-1" for="editDueTimeSelect">
                   <i class="bi bi-clock text-success me-1"></i> เวลาส่งคืน <span class="text-danger">*</span>
                 </label>
                 <div class="input-group">
-                  <span class="input-group-text bg-white border-end-0 text-success"><i class="bi bi-clock-history"></i></span>
-                  <select id="editDueTimeSelect" class="form-select rounded-end-3 border-start-0 font-monospace fw-bold text-dark fs-7" required>
+                  <span class="input-group-text bg-white border-end-0 text-success py-1.5"><i class="bi bi-clock-history"></i></span>
+                  <select id="editDueTimeSelect" class="form-select rounded-end-3 border-start-0 font-monospace fw-bold text-dark fs-7 py-1.5" required>
                     <option value="07:00">07:00 น.</option>
                     <option value="07:30">07:30 น.</option>
                     <option value="08:00">08:00 น.</option>
@@ -2810,43 +2979,47 @@
                     <option value="22:00">22:00 น.</option>
                   </select>
                 </div>
-                <small class="text-muted fs-8">รูปแบบเวลา 24 ชั่วโมง</small>
               </div>
             </div>
 
-            <!-- Quick extension buttons -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold fs-8 text-secondary mb-1.5 d-block">
-                <i class="bi bi-lightning-charge-fill text-warning me-1"></i> ปุ่มลัดเลือกด่วน (ขยายเวลาจากปัจจุบัน):
-              </label>
-              <div class="d-flex flex-wrap gap-1.5">
-                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill fs-8 fw-semibold" onclick="applyQuickDueDateOffset(1)">
+            <!-- Row 2: Quick extension buttons in a single inline bar -->
+            <div class="d-flex align-items-center gap-2 flex-wrap mb-2.5 p-2 bg-white rounded-3 border">
+              <span class="fw-bold fs-8 text-secondary text-nowrap">
+                <i class="bi bi-lightning-charge-fill text-warning me-1"></i>ปุ่มลัดเลือกด่วน:
+              </span>
+              <div class="d-flex flex-wrap gap-1.5 align-items-center">
+                <button type="button" class="btn btn-outline-secondary btn-xs rounded-pill fs-8 fw-semibold px-2 py-0.5" onclick="applyQuickDueDateOffset(1)">
                   +1 วัน
                 </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill fs-8 fw-semibold" onclick="applyQuickDueDateOffset(3)">
+                <button type="button" class="btn btn-outline-secondary btn-xs rounded-pill fs-8 fw-semibold px-2 py-0.5" onclick="applyQuickDueDateOffset(3)">
                   +3 วัน
                 </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill fs-8 fw-semibold" onclick="applyQuickDueDateOffset(7)">
+                <button type="button" class="btn btn-outline-secondary btn-xs rounded-pill fs-8 fw-semibold px-2 py-0.5" onclick="applyQuickDueDateOffset(7)">
                   +7 วัน (1 สัปดาห์)
                 </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill fs-8 fw-semibold" onclick="applyQuickDueDateOffset(14)">
+                <button type="button" class="btn btn-outline-secondary btn-xs rounded-pill fs-8 fw-semibold px-2 py-0.5" onclick="applyQuickDueDateOffset(14)">
                   +14 วัน (2 สัปดาห์)
                 </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill fs-8 fw-semibold" onclick="applyQuickDueDateOffset(30)">
+                <button type="button" class="btn btn-outline-secondary btn-xs rounded-pill fs-8 fw-semibold px-2 py-0.5" onclick="applyQuickDueDateOffset(30)">
                   +30 วัน (1 เดือน)
                 </button>
               </div>
             </div>
 
-            <!-- Optional note -->
-            <div class="mb-2">
-              <label class="form-label fw-bold fs-7 text-dark" for="editDueDateNoteInput">
-                <i class="bi bi-chat-left-text text-secondary me-1"></i> เหตุผลการขอขยายเวลาหรือบันทึกเพิ่มเติม (ไม่บังคับ)
-              </label>
-              <input type="text" id="editDueDateNoteInput" class="form-control rounded-3 fs-7" placeholder="เช่น ขอขยายเวลาใช้งานในแปลงทดลองเพิ่มอีก 3 วัน" />
+            <!-- Row 3: Note in a single line on desktop -->
+            <div class="row g-2 align-items-center mb-3">
+              <div class="col-12 col-md-4 col-lg-3">
+                <label class="form-label fw-bold fs-7 text-dark mb-0 text-nowrap" for="editDueDateNoteInput">
+                  <i class="bi bi-chat-left-text text-secondary me-1"></i> เหตุผล/บันทึกเพิ่มเติม:
+                </label>
+              </div>
+              <div class="col-12 col-md-8 col-lg-9">
+                <input type="text" id="editDueDateNoteInput" class="form-control rounded-3 fs-7 py-1.5" placeholder="ระบุเหตุผล เช่น ขอขยายเวลาใช้งานในแปลงทดลอง (ไม่บังคับ)" />
+              </div>
             </div>
 
-            <div class="modal-footer border-0 px-0 pb-0 mt-4 d-flex justify-content-end gap-2">
+            <!-- Footer: Buttons inside the same view without scroll -->
+            <div class="modal-footer border-0 px-0 pb-0 pt-1 d-flex justify-content-end gap-2">
               <button type="button" class="btn btn-light rounded-pill px-3 fs-7" data-bs-dismiss="modal">ยกเลิก</button>
               <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold fs-7 shadow-sm">
                 <i class="bi bi-check-circle-fill me-1"></i> บันทึกกำหนดส่งคืนใหม่
@@ -2863,22 +3036,25 @@
     <div class="modal-dialog modal-dialog-centered modal-xl">
       <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
         <!-- Header -->
-        <div class="modal-header bg-danger bg-gradient text-white py-3">
+        <div class="modal-header bg-danger bg-gradient text-white py-2.5">
           <div class="d-flex align-items-center gap-2">
-            <div class="bg-white text-danger rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm" style="width: 42px; height: 42px;">
-              <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+            <div class="bg-white text-danger rounded-circle p-1.5 d-flex align-items-center justify-content-center shadow-sm" style="width: 36px; height: 36px;">
+              <i class="bi bi-exclamation-triangle-fill fs-5"></i>
             </div>
-            <div>
-              <h5 class="modal-title fw-bold mb-0 text-white">ระบบจัดการและแจ้งเตือนการยืมอุปกรณ์เกินกำหนด</h5>
-              <small class="text-white-50 fs-8">ติดตามรายการยืมอุปกรณ์ที่ค้างส่งคืนเกินกำหนด เพื่อเร่งรัดการนำส่งคืนคลัง</small>
-            </div>
+            <h5 class="modal-title fw-bold mb-0 text-white">ยืมอุปกรณ์เกินกำหนด</h5>
           </div>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1.5 shadow-sm" id="toggleOverdueStatsBtn" onclick="toggleOverdueStatsCards()" title="แสดง/ซ่อน สรุปสถิติ">
+              <i class="bi bi-eye-fill" id="toggleOverdueStatsIcon"></i>
+              <span class="fs-8 fw-semibold" id="toggleOverdueStatsText">ดูสรุปสถิติ</span>
+            </button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
         </div>
 
         <div class="modal-body p-3 p-md-4 bg-light">
-          <!-- Top Stats Summary inside Modal -->
-          <div class="row g-3 mb-3">
+          <!-- Top Stats Summary inside Modal (Toggled via eye button) -->
+          <div id="overdueStatsCardsRow" class="row g-3 mb-3 d-none">
             <div class="col-12 col-md-4">
               <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
                 <div class="d-flex align-items-center gap-3">
@@ -2921,27 +3097,18 @@
           </div>
 
           <!-- Filter Toolbar & Action Buttons -->
-          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3">
-            <div class="row g-2 align-items-center justify-content-between">
-              <!-- Threshold Filter -->
-              <div class="col-12 col-md-auto d-flex align-items-center gap-2 flex-wrap">
-                <span class="fs-8 fw-bold text-dark text-nowrap"><i class="bi bi-funnel-fill text-danger me-1"></i>เกณฑ์ระยะเวลา:</span>
-                <div class="btn-group btn-group-sm rounded-pill p-1 bg-light border" role="group">
-                  <button type="button" class="btn btn-sm rounded-pill fw-semibold overdue-thresh-btn btn-danger text-white active" onclick="setOverdueDaysThreshold(3, this)">เกิน 3 วัน</button>
-                  <button type="button" class="btn btn-sm rounded-pill fw-semibold overdue-thresh-btn btn-light text-dark" onclick="setOverdueDaysThreshold(7, this)">เกิน 7 วัน</button>
-                  <button type="button" class="btn btn-sm rounded-pill fw-semibold overdue-thresh-btn btn-light text-dark" onclick="setOverdueDaysThreshold(14, this)">เกิน 14 วัน</button>
-                  <button type="button" class="btn btn-sm rounded-pill fw-semibold overdue-thresh-btn btn-light text-dark" onclick="setOverdueDaysThreshold(0, this)">ยืมอยู่ทั้งหมด</button>
-                </div>
+          <div class="card border-0 shadow-sm rounded-4 p-2.5 bg-white mb-3">
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+              <!-- Search Box -->
+              <div class="position-relative flex-grow-1" style="max-width: 360px;">
+                <input type="text" id="overdueSearchInput" class="form-control form-control-sm rounded-pill ps-4" placeholder="ค้นหาชื่อพนักงาน / อุปกรณ์..." oninput="renderOverdueTable()" />
+                <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2.5 text-muted fs-8"></i>
               </div>
 
-              <!-- Search Box & Batch Actions -->
-              <div class="col-12 col-md-auto d-flex align-items-center gap-2 flex-wrap ms-auto">
-                <div class="position-relative" style="min-width: 200px;">
-                  <input type="text" id="overdueSearchInput" class="form-control form-control-sm rounded-pill ps-4" placeholder="ค้นหาชื่อพนักงาน / อุปกรณ์..." oninput="renderOverdueTable()" />
-                  <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2.5 text-muted fs-8"></i>
-                </div>
+              <!-- Action Buttons -->
+              <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
                 <button type="button" class="btn btn-sm btn-success rounded-pill fw-bold d-inline-flex align-items-center gap-1.5 shadow-sm px-3" onclick="sendAllOverdueLineNotify()" title="ส่งข้อความแจ้งเตือนติดตามคืนอุปกรณ์เกินกำหนดทั้งหมดทาง LINE">
-                  <i class="bi bi-line fs-6"></i> แจ้งเตือนทาง LINE
+                  <i class="bi bi-line fs-6"></i> แจ้งทาง LINE
                 </button>
                 <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-semibold d-inline-flex align-items-center gap-1" onclick="copyOverdueNotificationText()" title="คัดลอกข้อความสรุปติดตามคืนสำหรับส่งไลน์/ข้อความ">
                   <i class="bi bi-clipboard-check"></i> คัดลอกข้อความ
@@ -2954,15 +3121,17 @@
           <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
             <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
               <table class="table table-hover align-middle mb-0 fs-7">
-                <thead class="table-light text-secondary sticky-top">
+                <thead class="table-light text-secondary sticky-top text-nowrap">
                   <tr>
-                    <th class="ps-3">พนักงานผู้ยืม</th>
-                    <th>แผนก/งาน</th>
-                    <th>รายการอุปกรณ์</th>
-                    <th class="text-center">วันที่ยืม</th>
-                    <th class="text-center">ระยะเวลาที่ยืม</th>
-                    <th class="text-center">จำนวนค้าง</th>
-                    <th class="text-center pe-3">การจัดการ</th>
+                    <th class="text-center ps-3 text-nowrap" style="width: 85px;">คืนอุปกรณ์</th>
+                    <th class="text-center text-nowrap" style="width: 105px;">จำนวนที่ยืม</th>
+                    <th class="text-center text-nowrap" style="width: 95px;">แจ้งชำรุด</th>
+                    <th class="text-nowrap">ผู้ยืม</th>
+                    <th class="text-nowrap">อุปกรณ์</th>
+                    <th class="text-center text-nowrap">วันที่ยืม</th>
+                    <th class="text-center text-nowrap">ระยะเวลาที่ยืม</th>
+                    <th class="text-nowrap">แผนก/งาน</th>
+                    <th class="text-center pe-3 text-nowrap" style="width: 130px;">ติดตาม</th>
                   </tr>
                 </thead>
                 <tbody id="overdueTableBody">
@@ -3078,8 +3247,8 @@
                   <i class="bi bi-qr-code fs-5"></i>
                 </div>
                 <div>
-                  <div class="fw-bold text-dark fs-7">ดู QR Code</div>
-                  <small class="text-muted fs-8">แสดง QR Code สำหรับสแกนเบิก-ยืม</small>
+                  <div class="fw-bold text-dark fs-7">ดู/พิมพ์ QR code</div>
+                  <small class="text-muted fs-8">แสดงและพิมพ์ QR Code สำหรับสแกนเบิก-ยืม</small>
                 </div>
               </div>
               <i class="bi bi-chevron-right text-secondary fs-7"></i>
@@ -3135,8 +3304,11 @@
           </div>
           <small class="text-muted fs-8 d-block">สามารถสแกน QR นี้เพื่อเบิก หรือตัดยอดสต๊อกได้ทันที</small>
         </div>
-        <div class="modal-footer border-0 pt-0 justify-content-center">
-          <button type="button" class="btn btn-success btn-sm rounded-pill px-3" onclick="selectFromQrModal()">
+        <div class="modal-footer border-0 pt-0 justify-content-center d-flex flex-wrap gap-2">
+          <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-2xs fw-semibold" onclick="printEquipmentQrCode()" title="พิมพ์ QR Code ติดอุปกรณ์">
+            <i class="bi bi-printer-fill me-1"></i> พิมพ์ QR Code
+          </button>
+          <button type="button" class="btn btn-success btn-sm rounded-pill px-3 shadow-2xs fw-semibold" onclick="selectFromQrModal()">
             <i class="bi bi-cart-check me-1"></i> เลือกสแกนเบิกชิ้นนี้
           </button>
         </div>
@@ -3189,16 +3361,132 @@
     </div>
   </div>
 
+  <!-- ==================== MODAL: FAST CHECKOUT SCANNER (สแกนเบิก ด่วน) ==================== -->
+  <div class="modal fade" id="fastCheckoutScannerModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+        <div class="modal-header bg-warning text-dark border-0 py-3">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-qr-code-scan fs-4 text-dark"></i>
+            <div>
+              <h5 class="modal-title fw-bold mb-0 text-dark">ระบบสแกนเบิกด่วน (ผู้ทำรายการ & อุปกรณ์)</h5>
+              <small class="text-dark fs-8">สแกนบัตรผู้ทำรายการและอุปกรณ์ให้ครบทั้ง 2 รายการเพื่อเปิดหน้าต่างเบิกทันที</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopFastCheckoutScanner()"></button>
+        </div>
+
+        <div class="modal-body p-3 p-md-4 bg-light">
+          <!-- Step Status Badges Progress Bar -->
+          <div class="row g-2 mb-3">
+            <!-- Step: Employee Status Card -->
+            <div class="col-12 col-md-6">
+              <div id="fastScanEmpCard" class="card border border-2 border-secondary border-opacity-25 shadow-xs rounded-3 p-2.5 bg-white transition-all h-100">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <div class="d-flex align-items-center gap-1.5">
+                    <span id="fastScanEmpStepBadge" class="badge bg-secondary rounded-pill fs-9">1</span>
+                    <span class="fw-bold fs-8 text-secondary">ผู้ทำรายการ (พนักงาน/ผู้เบิก)</span>
+                  </div>
+                  <span id="fastScanEmpStatusBadge" class="badge bg-light text-muted border fs-9">
+                    <i class="bi bi-hourglass-split me-0.5"></i> รอสแกน
+                  </span>
+                </div>
+                <div class="d-flex align-items-center gap-2 mt-1">
+                  <img id="fastScanEmpPhoto" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" class="rounded-circle border d-none" style="width: 38px; height: 38px; object-fit: cover;" />
+                  <div class="overflow-hidden flex-grow-1">
+                    <div id="fastScanEmpName" class="fw-bold text-dark fs-7 text-truncate">ยังไม่ได้สแกนบัตรผู้ทำรายการ</div>
+                    <div id="fastScanEmpDetail" class="text-muted fs-8 text-truncate">ส่องกล้องไปที่ QR/บาร์โค้ด บัตรพนักงาน</div>
+                  </div>
+                  <button type="button" id="btnResetFastScanEmp" class="btn btn-outline-danger btn-sm rounded-circle p-1 d-none" onclick="resetFastScanEmp()" title="ล้างและสแกนใหม่">
+                    <i class="bi bi-x-lg fs-8"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step: Equipment Status Card -->
+            <div class="col-12 col-md-6">
+              <div id="fastScanEquipCard" class="card border border-2 border-secondary border-opacity-25 shadow-xs rounded-3 p-2.5 bg-white transition-all h-100">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <div class="d-flex align-items-center gap-1.5">
+                    <span id="fastScanEquipStepBadge" class="badge bg-secondary rounded-pill fs-9">2</span>
+                    <span class="fw-bold fs-8 text-secondary">อุปกรณ์การเกษตร</span>
+                  </div>
+                  <span id="fastScanEquipStatusBadge" class="badge bg-light text-muted border fs-9">
+                    <i class="bi bi-hourglass-split me-0.5"></i> รอสแกน
+                  </span>
+                </div>
+                <div class="d-flex align-items-center gap-2 mt-1">
+                  <img id="fastScanEquipPhoto" src="" class="rounded-3 border d-none" style="width: 38px; height: 38px; object-fit: cover;" />
+                  <div class="overflow-hidden flex-grow-1">
+                    <div id="fastScanEquipName" class="fw-bold text-dark fs-7 text-truncate">ยังไม่ได้สแกนบาร์โค้ดอุปกรณ์</div>
+                    <div id="fastScanEquipDetail" class="text-muted fs-8 text-truncate">ส่องกล้องไปที่ QR/บาร์โค้ด บนอุปกรณ์</div>
+                  </div>
+                  <button type="button" id="btnResetFastScanEquip" class="btn btn-outline-danger btn-sm rounded-circle p-1 d-none" onclick="resetFastScanEquip()" title="ล้างและสแกนใหม่">
+                    <i class="bi bi-x-lg fs-8"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Real Camera Viewport -->
+          <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-dark text-white mb-3">
+            <div class="p-2 bg-secondary bg-opacity-25 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <span class="fs-8 fw-semibold text-warning">
+                <i class="bi bi-record-circle text-danger me-1 animate-pulse"></i> กล้องอ่านบาร์โค้ด & คิวอาร์โค้ด (สแกนต่อเนื่องได้)
+              </span>
+              <button type="button" class="btn btn-dark btn-sm rounded-circle p-1 px-2 fs-8" onclick="restartFastCheckoutScanner()" title="รีสตาร์ทกล้อง">
+                <i class="bi bi-arrow-clockwise"></i> รีสตาร์ท
+              </button>
+            </div>
+
+            <!-- Viewport Container -->
+            <div id="fastCheckoutScannerReaderContainer" style="width: 100%; min-height: 260px;" class="bg-black"></div>
+            <div id="fastCheckoutScannerLoading" class="p-3 text-center fs-7 text-white-50">
+              <span class="spinner-border spinner-border-sm text-warning me-2"></span> กำลังเปิดกล้อง...
+            </div>
+
+            <!-- Manual Search Fallback -->
+            <div class="p-2 bg-dark border-top">
+              <div class="input-group input-group-sm">
+                <input type="text" id="manualFastCheckoutInput" class="form-control bg-secondary bg-opacity-25 text-white border-0" placeholder="พิมพ์ชื่ออุปกรณ์, รหัสสินค้า หรือชื่อ/รหัสผู้ทำรายการ..." onkeydown="if(event.key==='Enter') handleManualFastCheckoutSearch()" />
+                <button class="btn btn-warning fw-bold text-dark shadow-sm" type="button" onclick="handleManualFastCheckoutSearch()">
+                  <i class="bi bi-search text-dark"></i> ป้อนรหัส/ค้นหา
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alert / Status Guidance Banner -->
+          <div id="fastScanStatusBanner" class="alert alert-info border-0 rounded-3 py-2 px-3 fs-8 mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-info-circle-fill fs-6 text-info"></i>
+            <span id="fastScanStatusText">นำบาร์โค้ดหรือคิวอาร์โค้ดของบัตรผู้ทำรายการ หรืออุปกรณ์ มาส่องหน้ากล้อง (สามารถสแกนสิ่งใดก่อนก็ได้)</span>
+          </div>
+        </div>
+
+        <div class="modal-footer bg-light border-0 py-2 d-flex justify-content-between">
+          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="resetAllFastScan()">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> ล้างการสแกนทั้งหมด
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm rounded-pill px-4" data-bs-dismiss="modal" onclick="stopFastCheckoutScanner()">
+            ปิดหน้าต่าง
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== MODAL: REAL CAMERA BARCODE SCANNER (EQUIPMENT) ==================== -->
   <div class="modal fade" id="barcodeQrScannerModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content border-0 shadow-lg rounded-4">
         <div class="modal-header bg-dark text-white border-0 py-3">
           <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-upc-scan text-warning fs-4"></i>
+            <i class="bi bi-qr-code-scan text-warning fs-4"></i>
             <div>
-              <h5 class="modal-title fw-bold mb-0">ระบบสแกนบาร์โค้ดอุปกรณ์ (ค้นชื่ออุปกรณ์ / สต๊อก)</h5>
-              <small class="text-white-50 fs-8">ส่องกล้องไปที่บาร์โค้ด 1D หรือ QR บนอุปกรณ์การเกษตร เพื่อค้นชื่ออุปกรณ์ เบิก-คืน หรืออัปเดตสต็อกด่วน</small>
+              <h5 class="modal-title fw-bold mb-0">ระบบสแกนบาร์โค้ด & คิวอาร์โค้ด (อุปกรณ์ & ผู้ทำรายการ)</h5>
+              <small class="text-white-50 fs-8">ส่องกล้องหรือยิงสแกนบาร์โค้ด 1D / QR Code ทั้งอุปกรณ์และบัตรผู้ทำรายการ เพื่อค้นหาและเปิดหน้าต่างเบิก-รับเข้า-ยืม-คืน อัตโนมัติ</small>
             </div>
           </div>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopHtml5Scanner()"></button>
@@ -3209,7 +3497,7 @@
             <div class="col-12 col-md-6">
               <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-dark text-white">
                 <div class="p-2 bg-secondary bg-opacity-25 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
-                  <span class="fs-8 fw-semibold text-warning"><i class="bi bi-record-circle text-danger me-1 animate-pulse"></i> กล้องอ่านบาร์โค้ดอุปกรณ์</span>
+                  <span class="fs-8 fw-semibold text-warning"><i class="bi bi-record-circle text-danger me-1 animate-pulse"></i> กล้องอ่านบาร์โค้ด & คิวอาร์โค้ด</span>
                   <div class="d-flex align-items-center gap-2">
                     <div class="form-check form-switch mb-0 d-flex align-items-center gap-1.5 bg-dark bg-opacity-50 px-2.5 py-1 rounded-pill border border-secondary border-opacity-25">
                       <input class="form-check-input bg-warning border-warning cursor-pointer m-0" type="checkbox" id="autoSelectBarcodeScannerCheckbox" checked role="switch">
@@ -3232,9 +3520,9 @@
                 <!-- Manual Code Input Fallback -->
                 <div class="p-2 bg-dark border-top">
                   <div class="input-group input-group-sm">
-                    <input type="text" id="manualScannerBarcodeInput" class="form-control bg-secondary bg-opacity-25 text-white border-0" placeholder="พิมพ์ชื่ออุปกรณ์ / ยิงรหัสบาร์โค้ด..." />
+                    <input type="text" id="manualScannerBarcodeInput" class="form-control bg-secondary bg-opacity-25 text-white border-0" placeholder="พิมพ์ชื่ออุปกรณ์, รหัสสินค้า หรือชื่อ/รหัสผู้ทำรายการ..." />
                     <button class="btn btn-warning fw-bold text-dark shadow-sm" type="button" onclick="handleManualBarcodeSearch()">
-                      <i class="bi bi-search text-dark"></i> ค้นชื่ออุปกรณ์
+                      <i class="bi bi-search text-dark"></i> ค้นหา / สแกน
                     </button>
                   </div>
                 </div>
@@ -3246,10 +3534,10 @@
               <!-- Default Prompt State -->
               <div id="scannedItemPromptState" class="card border-0 shadow-sm rounded-4 p-4 text-center h-100 d-flex flex-column justify-content-center align-items-center bg-white">
                 <div class="bg-warning bg-opacity-10 text-warning p-3 rounded-circle mb-3">
-                  <i class="bi bi-upc-scan display-5"></i>
+                  <i class="bi bi-qr-code-scan display-5"></i>
                 </div>
-                <h6 class="fw-bold text-dark mb-1">พร้อมสแกนบาร์โค้ดอุปกรณ์</h6>
-                <p class="text-muted fs-8 mb-0">นำบาร์โค้ดบนอุปกรณ์ส่องกล้อง หรือพิมพ์ค้นชื่ออุปกรณ์ ระบบจะค้นหารายการอุปกรณ์และแสดงปุ่มอัปเดตสต็อกทันที</p>
+                <h6 class="fw-bold text-dark mb-1">พร้อมสแกนบาร์โค้ด & คิวอาร์โค้ด</h6>
+                <p class="text-muted fs-8 mb-0">นำบาร์โค้ดหรือคิวอาร์โค้ดของอุปกรณ์ หรือบัตรผู้ทำรายการส่องกล้อง ระบบจะค้นหาและเปิดหน้าต่างเบิก-รับเข้า-ยืม-คืน ให้อัตโนมัติ</p>
               </div>
 
               <!-- Item Found Result Card -->
@@ -3296,7 +3584,7 @@
 
                 <div class="d-flex flex-wrap gap-2">
                   <button class="btn btn-primary btn-sm flex-fill rounded-pill fw-bold" onclick="selectFromScannerToForm()">
-                    <i class="bi bi-pencil-square me-1"></i> เลือกสแกนลงฟอร์ม
+                    <i class="bi bi-file-earmark-plus me-1"></i> เปิดหน้าต่างเบิก-รับเข้า-ยืม-คืน
                   </button>
                   <button class="btn btn-success btn-sm flex-fill rounded-pill fw-bold" onclick="addScannedItemToCart()">
                     <i class="bi bi-cart-plus-fill me-1"></i> เพิ่มเข้าเอกสารเบิก/ยืม
@@ -3310,11 +3598,47 @@
                 </div>
               </div>
 
+              <!-- Employee Found Result Card -->
+              <div id="scannedEmpResultCard" class="card border-2 border-primary shadow-sm rounded-4 p-3 bg-white d-none">
+                <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-3">
+                  <img id="scannedModalEmpImg" src="" class="rounded-circle border shadow-sm" style="width: 70px; height: 70px; object-fit: cover;" />
+                  <div class="overflow-hidden">
+                    <span id="scannedModalEmpRoleBadge" class="badge bg-primary fs-8 mb-1">ผู้ทำรายการ</span>
+                    <h6 id="scannedModalEmpName" class="fw-bold text-dark mb-0 text-truncate"></h6>
+                    <div id="scannedModalEmpIdCode" class="font-monospace text-muted fs-8"></div>
+                    <div class="fs-8 text-secondary mt-1"><i class="bi bi-building text-primary me-1"></i><span id="scannedModalEmpDept"></span></div>
+                  </div>
+                </div>
+
+                <div class="bg-light p-3 rounded-3 text-center mb-3">
+                  <small class="text-muted text-uppercase fw-bold fs-8">ข้อมูลผู้ทำรายการ</small>
+                  <div class="row g-2 mt-1">
+                    <div class="col-6 text-start ps-3">
+                      <span class="text-muted fs-8 d-block">เบอร์โทรศัพท์</span>
+                      <span id="scannedModalEmpPhone" class="fw-bold text-dark fs-7">-</span>
+                    </div>
+                    <div class="col-6 text-start ps-3">
+                      <span class="text-muted fs-8 d-block">ตำแหน่ง</span>
+                      <span id="scannedModalEmpPosition" class="fw-bold text-dark fs-7">-</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="d-flex flex-column gap-2">
+                  <button class="btn btn-primary btn-sm rounded-pill fw-bold py-2 shadow-sm" onclick="selectScannedEmpToFormAndOpenTransaction()">
+                    <i class="bi bi-file-earmark-plus me-1"></i> เปิดหน้าต่างเบิก-รับเข้า-ยืม-คืน (เลือกผู้ทำรายการนี้)
+                  </button>
+                  <button class="btn btn-outline-secondary btn-sm rounded-pill fw-bold py-1.5 fs-8" onclick="openEmpBorrowHistoryFromScannerModal()">
+                    <i class="bi bi-clock-history me-1"></i> ดูประวัติการเบิก-ยืมของผู้ทำรายการนี้
+                  </button>
+                </div>
+              </div>
+
               <!-- Item Not Found Card -->
               <div id="scannedItemNotFoundCard" class="card border-2 border-danger shadow-sm rounded-4 p-3 bg-white text-center d-none">
                 <i class="bi bi-exclamation-octagon-fill text-danger display-5 mb-2"></i>
-                <h6 class="fw-bold text-danger mb-1">ไม่พบสินค้าในระบบ</h6>
-                <p class="text-muted fs-8 mb-3">รหัสบาร์โค้ด: <span id="scannedUnknownCodeText" class="font-monospace fw-bold text-dark"></span></p>
+                <h6 class="fw-bold text-danger mb-1">ไม่พบสินค้าหรือผู้ทำรายการในระบบ</h6>
+                <p class="text-muted fs-8 mb-3">รหัสที่สแกน: <span id="scannedUnknownCodeText" class="font-monospace fw-bold text-dark"></span></p>
                 <button class="btn btn-success btn-sm rounded-pill fw-bold w-100 py-2" onclick="openAddEquipmentWithScannedCode()">
                   <i class="bi bi-plus-circle-fill me-1"></i> เพิ่มอุปกรณ์ใหม่ด้วยรหัสนี้
                 </button>
@@ -3337,8 +3661,7 @@
           <div class="d-flex align-items-center gap-2">
             <i class="bi bi-printer-fill fs-4 text-warning"></i>
             <div>
-              <h5 class="modal-title fw-bold mb-0">เครื่องมือสร้างฉลากบาร์โค้ด & คิวอาร์โค้ดสินค้า (Printable Label Generator)</h5>
-              <small class="text-white-50 fs-8">ออกแบบและพิมพ์ฉลากสติกเกอร์บาร์โค้ดสินค้า สำหรับติดบนอุปกรณ์ พืช หรือกระถาง</small>
+              <h5 class="modal-title fw-bold mb-0">สร้างบาร์โค้ด & คิวอาร์โค้ด</h5>
             </div>
           </div>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -3350,6 +3673,16 @@
               <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
                 <h6 class="fw-bold text-success mb-3 pb-2 border-bottom"><i class="bi bi-sliders me-1"></i> ตั้งค่ารูปแบบฉลาก</h6>
                 
+                <!-- Category Filter -->
+                <div class="mb-3">
+                  <label class="form-label fw-bold fs-7 text-dark mb-1" for="labelCategoryFilterSelect">
+                    <i class="bi bi-tags-fill me-1 text-success"></i> กรองตามหมวดหมู่อุปกรณ์:
+                  </label>
+                  <select id="labelCategoryFilterSelect" class="form-select rounded-3 fs-7 fw-semibold bg-light" onchange="onLabelCategoryFilterChange()">
+                    <option value="ALL">🏷️ ทุกหมวดหมู่</option>
+                  </select>
+                </div>
+
                 <!-- Item Select Scope -->
                 <div class="mb-3">
                   <label class="form-label fw-bold fs-7 text-dark" for="labelItemSelect">
@@ -3368,32 +3701,63 @@
                   </select>
                 </div>
 
-                <!-- Label Layout Columns -->
-                <div class="row g-2 mb-3">
+                <!-- Label Layout Columns & Rows (A4 Grid) -->
+                <div class="row g-2 mb-2">
                   <div class="col-6">
-                    <label class="form-label fw-bold fs-8 text-dark" for="labelColsSelect">คอลัมน์ต่อหน้า (A4):</label>
-                    <select id="labelColsSelect" class="form-select form-select-sm rounded-3" onchange="renderPrintableLabelsPreview()">
+                    <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelColsSelect">
+                      <i class="bi bi-layout-three-columns me-1 text-primary"></i> จำนวนคอลัมน์:
+                    </label>
+                    <select id="labelColsSelect" class="form-select form-select-sm rounded-3 fw-semibold" onchange="renderPrintableLabelsPreview()">
+                      <option value="1">1 คอลัมน์ (กว้างเต็มหน้า)</option>
                       <option value="2">2 คอลัมน์ (ใหญ่)</option>
                       <option value="3" selected>3 คอลัมน์ (มาตรฐาน)</option>
                       <option value="4">4 คอลัมน์ (เล็ก)</option>
                     </select>
                   </div>
                   <div class="col-6">
-                    <label class="form-label fw-bold fs-8 text-dark" for="labelCopiesInput">จำนวนสำเนา/ชิ้น:</label>
-                    <input type="number" id="labelCopiesInput" class="form-control form-control-sm rounded-3 text-center" value="1" min="1" max="50" onchange="renderPrintableLabelsPreview()" />
+                    <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelRowsSelect">
+                      <i class="bi bi-distribute-vertical me-1 text-success"></i> จำนวนแถว:
+                    </label>
+                    <select id="labelRowsSelect" class="form-select form-select-sm rounded-3 fw-semibold" onchange="renderPrintableLabelsPreview()">
+                      <option value="2">2 แถว (สูงพิเศษ ~13.5 ซม.)</option>
+                      <option value="3">3 แถว (สูงมาก ~9.0 ซม.)</option>
+                      <option value="4">4 แถว (สูง ~6.8 ซม.)</option>
+                      <option value="5">5 แถว (สูง ~5.4 ซม.)</option>
+                      <option value="6">6 แถว (กลาง ~4.5 ซม.)</option>
+                      <option value="7" selected>7 แถว (มาตรฐาน ~3.8 ซม.)</option>
+                      <option value="8">8 แถว (กะทัดรัด ~3.3 ซม.)</option>
+                      <option value="9">9 แถว (เล็ก ~3.0 ซม.)</option>
+                      <option value="10">10 แถว (จิ๋ว ~2.7 ซม.)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                  <div class="col-12">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                      <label class="form-label fw-bold fs-8 text-dark mb-0" for="labelCopiesInput">
+                        <i class="bi bi-files me-1 text-secondary"></i> จำนวนสำเนา/ชิ้น:
+                      </label>
+                      <span id="labelDimensionInfoBadge" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-9">3 x 7 = 21 ดวง/แผ่น</span>
+                    </div>
+                    <div class="input-group input-group-sm">
+                      <button type="button" class="btn btn-outline-secondary px-2.5" onclick="adjustLabelCopies(-1)">-</button>
+                      <input type="number" id="labelCopiesInput" class="form-control text-center fw-bold" value="1" min="1" max="100" onchange="renderPrintableLabelsPreview()" />
+                      <button type="button" class="btn btn-outline-secondary px-2.5" onclick="adjustLabelCopies(1)">+</button>
+                    </div>
                   </div>
                 </div>
 
                 <!-- Toggle Options -->
                 <div class="p-3 bg-light rounded-3 mb-3">
-                  <div class="fw-bold fs-8 text-secondary mb-2 text-uppercase">องค์ประกอบที่แสดงบนฉลาก:</div>
+                  <div class="fw-bold fs-8 text-secondary mb-2">องค์ประกอบที่แสดงบนฉลาก:</div>
                   <div class="form-check form-switch mb-1">
                     <input class="form-check-input" type="checkbox" id="chkShowBarcode" checked onchange="renderPrintableLabelsPreview()">
-                    <label class="form-check-label fs-7 fw-semibold" for="chkShowBarcode">แสดงบาร์โค้ด (1D Barcode)</label>
+                    <label class="form-check-label fs-7 fw-semibold" for="chkShowBarcode">แสดงบาร์โค้ด</label>
                   </div>
                   <div class="form-check form-switch mb-1">
                     <input class="form-check-input" type="checkbox" id="chkShowQr" checked onchange="renderPrintableLabelsPreview()">
-                    <label class="form-check-label fs-7 fw-semibold" for="chkShowQr">แสดงคิวอาร์โค้ด (2D QR Code)</label>
+                    <label class="form-check-label fs-7 fw-semibold" for="chkShowQr">แสดงคิวอาร์โค้ด</label>
                   </div>
                   <div class="form-check form-switch mb-1">
                     <input class="form-check-input" type="checkbox" id="chkShowName" checked onchange="renderPrintableLabelsPreview()">
@@ -3401,12 +3765,12 @@
                   </div>
                   <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="chkShowDetails" checked onchange="renderPrintableLabelsPreview()">
-                    <label class="form-check-label fs-7 fw-semibold" for="chkShowDetails">แสดงสถานที่จัดเก็บ & รหัสอุปกรณ์</label>
+                    <label class="form-check-label fs-7 fw-semibold" for="chkShowDetails">แสดงสถานที่จัดเก็บและรหัสอุปกรณ์</label>
                   </div>
                 </div>
 
                 <button class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow-sm mb-2" onclick="triggerPrintLabels()">
-                  <i class="bi bi-printer-fill me-2"></i> สั่งพิมพ์ฉลาก (Print)
+                  <i class="bi bi-printer-fill me-2"></i> สั่งพิมพ์ฉลาก
                 </button>
                 <button type="button" class="btn btn-outline-secondary w-100 rounded-pill fw-semibold" data-bs-dismiss="modal">
                   <i class="bi bi-x-circle me-1"></i> ปิดหน้าต่าง
@@ -3418,9 +3782,9 @@
             <div class="col-12 col-lg-8">
               <div class="card border-0 shadow-sm rounded-4 p-3 bg-white" style="min-height: 480px;">
                 <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
-                  <h6 class="fw-bold text-dark mb-0"><i class="bi bi-eye-fill me-1 text-primary"></i> ตัวอย่างแผ่นพิมพ์ฉลาก (Live Preview)</h6>
+                  <h6 class="fw-bold text-dark mb-0"><i class="bi bi-eye-fill me-1 text-primary"></i> ตัวอย่างแผ่นพิมพ์ฉลาก</h6>
                   <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8">
-                    พร้อมพิมพ์กระดาษ A4 / สติกเกอร์
+                    พร้อมพิมพ์กระดาษและสติกเกอร์
                   </span>
                 </div>
 
@@ -3794,7 +4158,7 @@
               </div>
 
               <div class="col-12 col-md-4">
-                <label class="form-label fw-bold" for="equipCodeInput">รหัสอุปกรณ์ <span class="badge bg-secondary bg-opacity-10 text-secondary fs-8 ms-1">ระบบออกให้อัตโนมัติ</span></label>
+                <label class="form-label fw-bold" for="equipCodeInput">รหัสอุปกรณ์ <span class="badge bg-secondary bg-opacity-10 text-secondary fs-8 ms-1" id="equipCodeBadge">ระบบออกให้อัตโนมัติ</span></label>
                 <input type="text" id="equipCodeInput" class="form-control bg-light text-success fw-bold font-monospace" placeholder="เลือกหมวดหมู่เพื่อออกรหัสอัตโนมัติ" readonly />
               </div>
 
@@ -3822,7 +4186,7 @@
               </div>
 
               <div class="col-6 col-md-3">
-                <label class="form-label fw-bold" for="equipMinQtyInput">จำนวนขั้นต่ำ <span class="text-muted fw-normal fs-8">(Default 3)</span></label>
+                <label class="form-label fw-bold" for="equipMinQtyInput">จำนวนขั้นต่ำ</label>
                 <input type="number" id="equipMinQtyInput" class="form-control" min="0" value="3" required />
               </div>
 
@@ -3852,21 +4216,21 @@
 
               <div class="col-12 col-md-6">
                 <label class="form-label fw-bold text-success mb-2">
-                  <i class="bi bi-camera-fill me-1"></i> รูปถ่ายอุปกรณ์การเกษตร <span class="badge bg-success ms-1 fs-8">Direct Storage</span>
+                  <i class="bi bi-camera-fill me-1"></i> รูปถ่ายอุปกรณ์การเกษตร
                 </label>
 
                 <!-- Image Compression Preset Selection -->
                 <div class="mb-2 p-2 bg-light rounded-3 border">
                   <div class="d-flex align-items-center justify-content-between mb-1">
                     <span class="fs-8 fw-bold text-dark"><i class="bi bi-file-zip-fill text-success me-1"></i> ขนาดการบีบอัดรูปถ่ายก่อนบันทึก:</span>
-                    <span class="badge bg-secondary bg-opacity-10 text-secondary fs-8">Default: กลาง</span>
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary fs-8">ค่าเริ่มต้น: กลาง</span>
                   </div>
                   <div class="btn-group w-100 btn-group-sm" role="group">
                     <input type="radio" class="btn-check" name="equipCompressPreset" id="equipCompressSmall" value="SMALL" autocomplete="off" onchange="recompressSelectedImage('equipImageFileInput', 'equipImgPreview', 'equipImgPreviewBox', 'equipCompressPreset')">
                     <label class="btn btn-outline-secondary fs-8" for="equipCompressSmall">เล็ก (600px)</label>
 
                     <input type="radio" class="btn-check" name="equipCompressPreset" id="equipCompressMedium" value="MEDIUM" checked autocomplete="off" onchange="recompressSelectedImage('equipImageFileInput', 'equipImgPreview', 'equipImgPreviewBox', 'equipCompressPreset')">
-                    <label class="btn btn-outline-success fw-bold fs-8" for="equipCompressMedium">กลาง (800px) ⭐ Default</label>
+                    <label class="btn btn-outline-success fw-bold fs-8" for="equipCompressMedium">กลาง (800px) ⭐ ค่าเริ่มต้น</label>
 
                     <input type="radio" class="btn-check" name="equipCompressPreset" id="equipCompressLarge" value="LARGE" autocomplete="off" onchange="recompressSelectedImage('equipImageFileInput', 'equipImgPreview', 'equipImgPreviewBox', 'equipCompressPreset')">
                     <label class="btn btn-outline-secondary fs-8" for="equipCompressLarge">ใหญ่ (1200px)</label>
@@ -3879,7 +4243,7 @@
                     <i class="bi bi-camera-fill me-1"></i> ถ่ายด้วยกล้องมือถือ
                   </button>
                   <button type="button" class="btn btn-outline-primary btn-sm rounded-pill fw-semibold" onclick="openLiveCameraModal('EQUIPMENT')">
-                    <i class="bi bi-webcam-fill me-1"></i> เปิดกล้องถ่ายสด (Live Stream)
+                    <i class="bi bi-webcam-fill me-1"></i> เปิดกล้องถ่ายสด
                   </button>
                 </div>
 
@@ -3891,10 +4255,12 @@
                 <div class="form-text fs-8 text-muted">กดปุ่มกล้องถ่ายรูปเพื่อถ่ายภาพอุปกรณ์สด หรือเลือกรุปภาพจากเครื่อง</div>
 
                 <div class="mt-2 text-center d-none" id="equipImgPreviewBox">
-                  <img id="equipImgPreview" src="" class="rounded-3 shadow-sm border border-2 border-success" style="max-height: 120px; object-fit: cover;" />
-                  <div class="mt-1">
-                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> รูปอุปกรณ์พร้อมบันทึก</span>
-                    <span id="equipImgCompressBadge" class="badge bg-primary ms-1 compress-info-badge d-none"></span>
+                  <div class="position-relative d-inline-block">
+                    <img id="equipImgPreview" src="" class="rounded-3 shadow-sm border border-2 border-success" style="max-height: 135px; max-width: 100%; object-fit: contain; background: #f8fafc;" />
+                  </div>
+                  <div class="mt-1.5 d-flex flex-wrap justify-content-center align-items-center gap-1.5">
+                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> แนวนอนพร้อมบันทึก</span>
+                    <span id="equipImgCompressBadge" class="badge bg-primary compress-info-badge d-none"></span>
                   </div>
                 </div>
               </div>
@@ -4035,7 +4401,9 @@
       <div class="modal-content border-0 shadow-lg rounded-4">
         <div class="modal-header bg-flora-green text-white">
           <h5 class="modal-title fw-bold mb-0"><i class="bi bi-tags-fill me-2"></i>จัดการหมวดหมู่อุปกรณ์การเกษตร</h5>
-          <button type="button" class="btn-close btn-close-white bg-danger rounded-circle p-2 opacity-100 shadow-2xs" data-bs-dismiss="modal" aria-label="Close" title="ปิดหน้าต่าง"></button>
+          <button type="button" class="btn btn-sm btn-danger rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; padding: 0;" data-bs-dismiss="modal" aria-label="Close" title="ปิดหน้าต่าง">
+            <i class="bi bi-x-lg fw-bold"></i>
+          </button>
         </div>
         <div class="modal-body p-4">
           <!-- Form to Add / Edit Category -->
@@ -4044,24 +4412,30 @@
             <form id="categoryForm" onsubmit="handleSaveCategory(event)">
               <input type="hidden" id="editCatId" value="" />
               <div class="row g-2">
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-3">
                   <label class="form-label fw-bold fs-7 mb-1" for="catNameInput">ชื่อหมวดหมู่ <span class="text-danger">*</span></label>
-                  <input type="text" id="catNameInput" class="form-control form-control-sm" placeholder="เช่น อุปกรณ์ระบบน้ำ" required />
+                  <input type="text" id="catNameInput" class="form-control form-control-sm" placeholder="เช่น อุปกรณ์ระบบน้ำ" oninput="handleCategoryNameInput(this.value)" required />
                 </div>
-                <div class="col-4 col-md-2">
+                <div class="col-6 col-md-2">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label fw-bold fs-7 mb-0" for="catPrefixInput">ตัวย่อรหัส <span class="text-danger">*</span></label>
+                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fs-8 text-success fw-bold" onclick="generateAutoCategoryPrefix(true)" title="คิดและออกตัวย่ออัตโนมัติที่ไม่ซ้ำ">
+                      <i class="bi bi-magic"></i> อัตโนมัติ
+                    </button>
+                  </div>
+                  <input type="text" id="catPrefixInput" class="form-control form-control-sm text-center font-monospace fw-bold text-success text-uppercase" placeholder="เช่น IR" maxlength="4" required />
+                </div>
+                <div class="col-6 col-md-2">
                   <label class="form-label fw-bold fs-7 mb-1" for="catIconInput">ไอคอน/อีโมจิ</label>
                   <input type="text" id="catIconInput" class="form-control form-control-sm text-center" placeholder="💧" maxLength="4" />
                 </div>
-                <div class="col-8 col-md-4">
+                <div class="col-12 col-md-3">
                   <label class="form-label fw-bold fs-7 mb-1" for="catLabelInput">คำอธิบายเพิ่มเติม</label>
                   <input type="text" id="catLabelInput" class="form-control form-control-sm" placeholder="เช่น ท่อ, สายยาง, สปรินเกอร์" />
                 </div>
-                <div class="col-12 col-md-2 d-flex align-items-end gap-1">
+                <div class="col-12 col-md-2 d-flex align-items-end">
                   <button type="submit" id="btnSaveCat" class="btn btn-success btn-sm w-100 rounded-pill fw-semibold">
                     <i class="bi bi-check-lg me-1"></i> บันทึก
-                  </button>
-                  <button type="button" id="btnCancelEditCat" class="btn btn-secondary btn-sm rounded-pill d-none" onclick="resetCategoryForm()">
-                    ยกเลิก
                   </button>
                 </div>
               </div>
@@ -4073,12 +4447,13 @@
             <table class="table table-hover align-middle mb-0 fs-7">
               <thead class="bg-light">
                 <tr>
-                  <th style="width: 100px;" class="text-center">รหัสหมวดหมู่</th>
+                  <th style="width: 100px;" class="text-center">จัดการ</th>
                   <th style="width: 50px;" class="text-center">ไอคอน</th>
                   <th>ชื่อหมวดหมู่</th>
+                  <th style="width: 110px;" class="text-center">ตัวย่อรหัสอุปกรณ์</th>
                   <th>คำอธิบายเพิ่มเติม</th>
-                  <th class="text-center" style="width: 120px;">รายการอุปกรณ์</th>
-                  <th class="text-end pe-3" style="width: 140px;">จัดการ</th>
+                  <th class="text-center" style="width: 110px;">รายการอุปกรณ์</th>
+                  <th style="width: 110px;" class="text-center">รหัสหมวดหมู่</th>
                 </tr>
               </thead>
               <tbody id="categoryTableBody">

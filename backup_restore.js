@@ -3338,7 +3338,7 @@ window.runHybridDailyBackup = async function(isManual = false) {
 
   try {
     // Wait briefly if initial data lists are still loading
-    if ((!window.equipmentList || window.equipmentList.length === 0) && (!window.employeeList || window.employeeList.length === 0)) {
+    if ((!Array.isArray(window.equipmentList) || window.equipmentList.length === 0) && (!Array.isArray(window.employeeList) || window.employeeList.length === 0)) {
       await new Promise(r => setTimeout(r, 1500));
     }
 

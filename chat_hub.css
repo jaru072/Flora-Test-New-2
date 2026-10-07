@@ -14,7 +14,7 @@
   color: #ffffff;
   border: 2px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 8px 24px rgba(5, 150, 105, 0.45), 0 2px 6px rgba(0, 0, 0, 0.15);
-  display: flex;
+  display: none !important; /* ซ่อนปุ่มแชทชั่วคราวเพื่อทดสอบการใช้งาน โดยยังคงโค้ดทั้งหมดไว้สมบูรณ์ */
   align-items: center;
   justify-content: center;
   cursor: pointer;

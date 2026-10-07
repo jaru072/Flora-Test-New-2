@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   --flora-green: #2e7d32;
   --flora-green-dark: #1b5e20;
   --flora-green-light: #e8f5e9;
@@ -11,11 +12,19 @@
   color: #ffffff !important;
 }
 
+html {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 body {
   font-family: 'Prompt', sans-serif;
   background-color: var(--flora-warm-bg);
   color: #2c3e50;
   padding-bottom: 60px;
+  overflow-x: hidden;
+  max-width: 100%;
+  width: 100%;
 }
 
 /* Navbar styling */
@@ -451,7 +460,7 @@ body {
     top: 0 !important;
     width: 100% !important;
     margin: 0 !important;
-    padding: 8mm 6mm 6mm 6mm !important;
+    padding: 0 !important;
     background: #ffffff !important;
     box-sizing: border-box !important;
     -webkit-print-color-adjust: exact !important;
@@ -460,12 +469,15 @@ body {
   .printable-area .row {
     display: flex !important;
     flex-wrap: wrap !important;
-    margin-top: 0 !important;
-    padding-top: 2px !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   .printable-area .row > * {
-    padding-top: 4px !important;
-    padding-bottom: 4px !important;
+    padding-left: 1mm !important;
+    padding-right: 1mm !important;
+    padding-top: 1mm !important;
+    padding-bottom: 1mm !important;
+    box-sizing: border-box !important;
   }
   .printable-area .col-3 {
     width: 25% !important;
@@ -535,19 +547,36 @@ body {
     print-color-adjust: exact !important;
   }
   .sticker-label-box {
-    border: 1.5px solid #000000 !important;
+    border: 1px solid #000000 !important;
     background: #ffffff !important;
     box-shadow: none !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     box-sizing: border-box !important;
-    margin-top: 2px !important;
+    margin: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  #printableLabelSheet .row > * {
+    padding: 0.6mm !important;
+    box-sizing: border-box !important;
+  }
+  #printableLabelSheet canvas,
+  #printableLabelSheet img {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  #printableLabelSheet svg {
+    max-width: 100% !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
   @page {
     size: A4 portrait;
-    margin: 8mm 6mm 6mm 6mm;
+    margin: 6mm 5mm 5mm 5mm;
   }
 }
 
@@ -871,19 +900,77 @@ body {
   z-index: 10;
 }
 
-/* High Contrast for Barcode and Yellow Action Buttons */
+/* Universal High Contrast: All yellow background buttons, badges, alerts, and containers must have solid black text on all devices (Desktop & Mobile) */
 .btn-warning,
 .btn-warning:hover,
 .btn-warning:focus,
-.btn-warning:active {
+.btn-warning:active,
+.btn-warning.active,
+.btn-warning.show,
+.btn-outline-warning:hover,
+.btn-outline-warning:focus,
+.btn-outline-warning:active,
+.badge.bg-warning,
+.badge[class*="bg-warning"],
+.badge.text-bg-warning,
+.alert-warning,
+.bg-warning,
+.bg-warning-subtle,
+.modal-header.bg-warning,
+.card.bg-warning,
+.table-warning,
+.table-warning > th,
+.table-warning > td,
+[class*="bg-warning"] {
   color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
+  color-scheme: light !important;
+  text-shadow: none !important;
 }
 
+.btn-warning *,
+.btn-warning:hover *,
+.btn-warning:focus *,
+.btn-warning:active *,
+.btn-outline-warning:hover *,
+.btn-outline-warning:focus *,
+.btn-outline-warning:active *,
+.badge.bg-warning *,
+.badge[class*="bg-warning"] *,
+.badge.text-bg-warning *,
+.alert-warning *,
+.bg-warning *,
+.bg-warning-subtle *,
+.modal-header.bg-warning *,
+.card.bg-warning *,
+[class*="bg-warning"] * {
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
+  fill: #111827 !important;
+  text-shadow: none !important;
+}
+
+/* Ensure strong visibility for icons inside yellow elements */
 .btn-warning i,
 .btn-warning span,
-.btn-warning .bi {
+.btn-warning .bi,
+.badge.bg-warning i,
+.badge.bg-warning span,
+.badge.bg-warning .bi,
+.alert-warning i,
+.alert-warning .bi {
   color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
   fill: #111827 !important;
+}
+
+/* Yellow Theme Information Boxes and Notification Helpers */
+#borrowDueDateBox,
+#borrowDueDateBox *,
+.yellow-theme-box,
+.yellow-theme-box * {
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
 }
 
 /* Hide Section 5 (Location) and Section 6 (Note) on Mobile until items added to cart */
@@ -920,6 +1007,82 @@ body {
     max-height: calc(85vh - 120px) !important;
     overflow-y: auto !important;
   }
+}
+
+/* Mobile & Touch Optimization for Flatpickr Thai Calendar & 24hr Time */
+.flatpickr-calendar {
+  font-family: inherit !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  z-index: 99999 !important;
+}
+
+.flatpickr-calendar .flatpickr-time {
+  border-top: 1px solid #e5e7eb !important;
+}
+
+.flatpickr-calendar .flatpickr-time input {
+  font-weight: 700 !important;
+}
+
+@media (max-width: 576px) {
+  .flatpickr-calendar {
+    max-width: calc(100vw - 24px) !important;
+    font-size: 15px !important;
+  }
+}
+
+/* Mobile Fullscreen Optimization for Transaction Modal */
+@media (max-width: 767.98px) {
+  #transactionModal.modal {
+    padding: 0 !important;
+  }
+  #transactionModal .modal-dialog {
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+  }
+  #transactionModal .modal-content {
+    height: 100% !important;
+    min-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+  }
+  #transactionModal .modal-header {
+    border-radius: 0 !important;
+    padding-top: max(12px, env(safe-area-inset-top)) !important;
+  }
+  #transactionModal .modal-body {
+    padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Single line note with horizontal scroll */
+.note-single-line-scroll {
+  white-space: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 rgba(0, 0, 0, 0.05);
+}
+.note-single-line-scroll::-webkit-scrollbar {
+  height: 5px;
+}
+.note-single-line-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+.note-single-line-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.note-single-line-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 

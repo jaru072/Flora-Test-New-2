@@ -564,7 +564,7 @@
     const select = $('payrollPeriodSelect');
     if (!select) return;
 
-    if (!payrollState.periods.length) {
+    if (!Array.isArray(payrollState.periods) || !payrollState.periods.length) {
       select.innerHTML = '<option value="">-- ยังไม่มีงวดเงินเดือน --</option>';
       return;
     }
@@ -635,7 +635,7 @@
       return;
     }
 
-    if (!payrollState.periods.length) {
+    if (!Array.isArray(payrollState.periods) || !payrollState.periods.length) {
       tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5">
         <div class="py-3">
           <i class="bi bi-calendar-plus text-primary fs-1 mb-2 d-block"></i>
@@ -935,7 +935,7 @@
 
   // Export CSV
   function exportPayrollCsv() {
-    if (!payrollState.records.length) {
+    if (!Array.isArray(payrollState.records) || !payrollState.records.length) {
       showToast('ไม่มีข้อมูลสำหรับส่งออก');
       return;
     }
@@ -1165,7 +1165,7 @@
 
     // Fallback retries for slow connections or shared preview environments
     setTimeout(() => {
-      if (!payrollState.periods.length && !payrollState.isLoading) {
+      if ((!Array.isArray(payrollState.periods) || !payrollState.periods.length) && !payrollState.isLoading) {
         loadPayrollPeriods();
       }
     }, 1200);
