@@ -90,7 +90,7 @@
   <link rel="stylesheet" href="global_logo.css">
   <link rel="stylesheet" href="chat_hub.css">
 </head>
-<body>
+<body class="is-catalog-active">
 
   <!-- ==================== MANDATORY LOGIN SCREEN OVERLAY ==================== -->
   <div id="mandatoryLoginScreenOverlay" class="position-fixed top-0 start-0 w-100 h-100 bg-flora-green text-white" style="z-index: 100000; overflow-y: auto;">
@@ -192,12 +192,6 @@
     </div>
 
     <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-      <!-- Fast Checkout Scan Button (ปุ่มสแกนเบิก ด้านบน) -->
-      <button id="btnTopFastCheckoutScan" class="btn btn-warning btn-sm rounded-pill px-2.5 px-md-3 py-1 fw-bold shadow-sm d-flex align-items-center gap-1.5 text-dark" onclick="openFastCheckoutScannerModal()" title="สแกนเบิกด่วน (สแกนผู้ทำรายการและอุปกรณ์ เพื่อเปิดหน้าต่างเบิกทันที)">
-        <i class="bi bi-qr-code-scan fs-6 text-dark"></i>
-        <span class="fs-7 fw-bold text-dark">สแกนเบิก</span>
-      </button>
-
       <!-- Compact Profile & Settings Dropdown Button -->
       <div class="dropdown" id="topNavSettingsDropdown">
         <button class="btn btn-outline-light btn-sm rounded-pill px-2.5 py-1 fw-semibold d-flex align-items-center gap-1.5 shadow-sm dropdown-toggle" type="button" id="settingsAccountDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="บัญชีผู้ใช้และการตั้งค่า">
@@ -241,28 +235,37 @@
   <!-- ==================== MAIN CONTAINER ==================== -->
   <div class="container-fluid px-3 px-md-4 mt-4">
 
-    <!-- Summary Overview Stats Cards Header & Toggle Button -->
+    <!-- Summary Overview Stats Cards Header & Action Buttons -->
     <div class="d-flex align-items-center justify-content-between gap-1.5 gap-md-2 mb-3 px-1 flex-wrap">
-      <div class="d-flex align-items-center gap-1.5 text-nowrap flex-shrink-0">
-        <i class="bi bi-bar-chart-line-fill text-success fs-5"></i>
-        <span class="fw-bold text-dark fs-7 d-none d-md-inline">สรุปสต๊อกอุปกรณ์</span>
-        <span class="fw-bold text-dark fs-7 d-inline d-md-none">สรุปสต๊อก</span>
-      </div>
+      <!-- Clickable Eye Icon + Summary Stats Title -->
+      <button type="button" class="btn btn-link text-decoration-none p-0 d-flex align-items-center gap-1.5 text-nowrap flex-shrink-0 border-0" id="btnToggleSummaryStatsHeader" onclick="toggleSummaryStats()" title="คลิกเพื่อแสดงหรือซ่อนสรุปข้อมูลสต๊อก">
+        <i class="bi bi-eye text-success fs-5" id="summaryStatsEyeIcon"></i>
+        <span class="fw-bold text-dark fs-7">สรุปสต๊อก</span>
+      </button>
+
       <div class="d-flex align-items-center gap-1.5 gap-md-2 flex-wrap justify-content-end">
-        <!-- Hardware Barcode/QR Scanner Auto-Detect Status Button -->
+        <!-- Fast Checkout Scan Button (ปุ่มสแกนเบิก) -->
+        <button id="btnFastCheckoutScan" class="btn btn-warning btn-sm rounded-pill px-2.5 px-md-3 py-1 py-md-1.5 fw-bold shadow-sm d-flex align-items-center gap-1.5 text-dark" onclick="openFastCheckoutScannerModal()" title="สแกนเบิก (สแกนผู้ทำรายการและอุปกรณ์ เพื่อเปิดหน้าต่างเบิกทันที)">
+          <i class="bi bi-qr-code-scan fs-7 text-dark"></i>
+          <span class="fs-8 fw-bold text-dark">สแกนเบิก</span>
+        </button>
+
+        <!-- Hardware Barcode/QR Scanner Auto-Detect Status Button (ยิงสแกน) -->
         <button id="btnHardwareScannerStatus" class="btn btn-outline-success btn-sm rounded-pill px-2.5 px-md-3 py-1 py-md-1.5 fw-bold shadow-sm d-flex align-items-center gap-1.5 text-nowrap" onclick="openHardwareScannerSettingsModal()" title="เปิดการตั้งค่าและทดสอบโหมดยิงสแกน QR Code / Barcode อัตโนมัติ">
           <i class="bi bi-upc-scan text-success fs-7"></i>
           <span id="scannerStatusBtnText" class="fs-8">ยิงสแกน</span>
+        </button>
+
+        <!-- Continuous Scan Multiple Items Button (สแกนหลายอัน) -->
+        <button id="btnContinuousScanMultiple" class="btn btn-outline-primary btn-sm rounded-pill px-2.5 px-md-3 py-1 py-md-1.5 fw-bold shadow-sm d-flex align-items-center gap-1.5 text-nowrap" onclick="openContinuousMultiScanModal()" title="สแกนหลายอัน (เปิดกล้องสแกนบาร์โค้ด/คิวอาร์โค้ดอุปกรณ์ได้ต่อเนื่องหลายรายการ)">
+          <i class="bi bi-collection-play text-primary fs-7"></i>
+          <span class="fs-8">สแกนหลายอัน</span>
         </button>
 
         <button id="btnHeaderOverdue" class="btn btn-danger btn-sm rounded-pill px-2.5 px-md-3 py-1 py-md-1.5 fw-bold shadow-sm d-none align-items-center gap-1 text-nowrap btn-overdue-blink" onclick="showOverdueBorrowingsModal()" title="เปิดระบบจัดการและแจ้งเตือนการยืมอุปกรณ์เกินกำหนด">
           <i class="bi bi-bell-fill text-warning bell-shake-overdue fs-7"></i>
           <span class="fs-8">ยืมเกินกำหนด</span>
           <span id="headerOverdueBadge" class="badge bg-white text-danger rounded-pill ms-0.5 d-none">0</span>
-        </button>
-        <button class="btn btn-outline-secondary btn-sm rounded-pill px-2.5 px-md-3 py-1 py-md-1.5 fw-semibold shadow-sm d-flex align-items-center gap-1.5 text-nowrap" id="btnToggleSummaryStats" onclick="toggleSummaryStats()">
-          <i class="bi bi-eye-fill text-primary" id="toggleSummaryStatsIcon"></i>
-          <span id="toggleSummaryStatsText" class="fs-8">สรุปข้อมูล</span>
         </button>
       </div>
     </div>
@@ -349,25 +352,18 @@
       </li>
     </ul>
 
-    <!-- Active Section Indicator Header -->
-    <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-        <div class="d-flex align-items-center gap-3">
-          <div class="bg-success bg-opacity-10 text-success p-2 rounded-circle fs-4 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; flex-shrink: 0;">
-            <i id="currentSectionIcon" class="bi bi-grid-fill"></i>
-          </div>
-          <div>
-            <div class="text-muted fs-8 fw-semibold text-uppercase">หน้าจอที่กำลังแสดงผล</div>
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-              <h5 id="currentSectionTitle" class="fw-bold mb-0 text-dark">คลังอุปกรณ์</h5>
-              <!-- Filter Low Stock Button with Shaking Red Bell & Pulse/Blink for Catalog Header -->
-              <button type="button" id="btnFilterLowStockCatalog" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-bold d-none align-items-center gap-1.5 shadow-sm flex-shrink-0 text-danger btn-low-stock-blink" onclick="toggleLowStockFilterCatalog()" title="แสดงสต๊อกต่ำกว่าขั้นต่ำ">
-                <i class="bi bi-bell-fill bell-shake-icon text-danger"></i>
-                <span id="btnCatalogLowStockText" class="text-danger fw-bold fs-8">แสดงสต๊อกต่ำ</span>
-                <span id="catalogLowStockBadgeCount" class="badge bg-danger text-white rounded-pill ms-0.5 fs-9">0</span>
-              </button>
-            </div>
-          </div>
+    <!-- Active Section Toolbar & Quick Actions -->
+    <div class="card border-0 shadow-sm rounded-4 p-2.5 px-3 mb-3 bg-white">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <!-- Filter Low Stock Button with Shaking Red Bell & Pulse/Blink for Catalog Header -->
+          <button type="button" id="btnFilterLowStockCatalog" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-bold d-none align-items-center gap-1.5 shadow-sm flex-shrink-0 text-danger btn-low-stock-blink" onclick="toggleLowStockFilterCatalog()" title="แสดงสต๊อกต่ำกว่าขั้นต่ำ">
+            <i class="bi bi-bell-fill bell-shake-icon text-danger"></i>
+            <span id="btnCatalogLowStockText" class="text-danger fw-bold fs-8">แสดงสต๊อกต่ำ</span>
+            <span id="catalogLowStockBadgeCount" class="badge bg-danger text-white rounded-pill ms-0.5 fs-9">0</span>
+          </button>
+          <span id="currentSectionTitle" class="d-none"></span>
+          <i id="currentSectionIcon" class="d-none"></i>
         </div>
 
         <div class="d-flex align-items-center gap-2">
@@ -2343,9 +2339,9 @@
                 <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
                 <input type="text" id="equipSearchInput" class="form-control border-start-0 bg-light fs-7" placeholder="🔍 พิมพ์ชื่ออุปกรณ์, รหัส หรือสถานที่เพื่อค้นหา..." oninput="filterEquipSelectDropdown(this.value)" onfocus="if(this.value.trim().length > 0) filterEquipSelectDropdown(this.value)" autocomplete="off" />
                 <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearEquipSearch()" title="ล้างคำค้นหา"><i class="bi bi-x-circle-fill"></i></button>
-                <button class="btn btn-warning fw-bold px-2.5 px-md-3 d-flex align-items-center gap-1 text-dark shadow-sm" type="button" onclick="openBarcodeQrScannerModal()" title="สแกนบาร์โค้ดอุปกรณ์เพื่อค้นชื่ออุปกรณ์">
+                <button class="btn btn-warning fw-bold px-2.5 px-md-3 d-flex align-items-center gap-1 text-dark shadow-sm" type="button" onclick="openBarcodeQrScannerModal()" title="สแกนอุปกรณ์">
                   <i class="bi bi-upc-scan text-dark fs-5"></i>
-                  <span class="d-none d-md-inline ms-1 text-dark">สแกนบาร์โค้ดอุปกรณ์</span>
+                  <span class="d-none d-md-inline ms-1 text-dark">สแกนอุปกรณ์</span>
                 </button>
               </div>
 
@@ -2390,7 +2386,7 @@
               <div class="input-group">
                 <input type="number" id="transQty" class="form-control fw-bold" min="1" value="1" oninput="validateTransQtyInputLive()" style="max-width: 120px;" />
                 <span id="transUnitSpan" class="input-group-text bg-light text-secondary fw-semibold">ชิ้น</span>
-                <button type="button" class="btn btn-outline-success fw-bold flex-grow-1 d-flex align-items-center justify-content-center gap-1 px-2.5 px-md-3 shadow-sm" onclick="addCurrentEquipToCart()" title="เพิ่มเข้าเอกสาร">
+                <button type="button" id="btnAddCurrentToCart" class="btn btn-outline-success fw-bold flex-grow-1 d-flex align-items-center justify-content-center gap-1 px-2.5 px-md-3 shadow-sm" onclick="addCurrentEquipToCart()" title="เพิ่มเข้าเอกสาร">
                   <i class="bi bi-plus-lg fs-6"></i>
                   <i class="bi bi-cart-plus-fill fs-5"></i>
                   <span id="btnAddCartSpan" class="d-none d-md-inline ms-1">เพิ่มเข้าเอกสาร</span>
@@ -2407,8 +2403,11 @@
                 <div class="d-flex align-items-center gap-2">
                   <span class="badge bg-success p-2 rounded-circle fs-6"><i class="bi bi-basket3-fill"></i></span>
                   <div>
-                    <h6 class="fw-bold text-dark mb-0" id="transCartTitleHeader">รายการอุปกรณ์ในเอกสารใบนี้</h6>
-                    <small class="text-muted fs-8">สามารถเพิ่มอุปกรณ์ได้หลายชนิดในเอกสารฉบับเดียวกัน</small>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                      <h6 class="fw-bold text-dark mb-0" id="transCartTitleHeader">รายการอุปกรณ์ในเอกสารใบนี้</h6>
+                      <span id="transCartTypeBadge" class="badge bg-danger fs-8">เอกสารเบิกจ่าย</span>
+                    </div>
+                    <small class="text-muted fs-8" id="transCartSubHeader">ต้องเป็นรายการประเภทเดียวกันเท่านั้น ห้ามนำประเภทอื่นมาปน</small>
                   </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
@@ -2778,6 +2777,17 @@
               <span id="eqBorrowersCountBadge" class="badge bg-warning text-dark rounded-pill fw-bold fs-8">0 พนักงาน</span>
             </div>
             
+            <!-- Filter Notice Banner for Returned Equipment Scan -->
+            <div id="eqBorrowersFilterNotice" class="alert alert-info border-0 rounded-3 py-2 px-3 fs-8 mb-2 d-none align-items-center justify-content-between flex-wrap gap-2">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-funnel-fill text-primary fs-6"></i>
+                <span id="eqBorrowersFilterNoticeText">กรองเฉพาะชื่อผู้ที่มาคืน</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill py-0.5 px-2.5 fs-8 ms-auto" onclick="clearBorrowersModalFilter()">
+                <i class="bi bi-people me-1"></i>แสดงผู้ยืมทั้งหมด
+              </button>
+            </div>
+
             <div class="table-responsive">
               <table class="table table-hover align-middle mb-0">
                 <thead class="table-light fs-8 text-secondary">
@@ -3369,8 +3379,7 @@
           <div class="d-flex align-items-center gap-2">
             <i class="bi bi-qr-code-scan fs-4 text-dark"></i>
             <div>
-              <h5 class="modal-title fw-bold mb-0 text-dark">ระบบสแกนเบิกด่วน (ผู้ทำรายการ & อุปกรณ์)</h5>
-              <small class="text-dark fs-8">สแกนบัตรผู้ทำรายการและอุปกรณ์ให้ครบทั้ง 2 รายการเพื่อเปิดหน้าต่างเบิกทันที</small>
+              <h5 class="modal-title fw-bold mb-0 text-dark">สแกนเบิก-รับเข้า-ยืม-คืน</h5>
             </div>
           </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopFastCheckoutScanner()"></button>
@@ -3395,7 +3404,6 @@
                   <img id="fastScanEmpPhoto" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" class="rounded-circle border d-none" style="width: 38px; height: 38px; object-fit: cover;" />
                   <div class="overflow-hidden flex-grow-1">
                     <div id="fastScanEmpName" class="fw-bold text-dark fs-7 text-truncate">ยังไม่ได้สแกนบัตรผู้ทำรายการ</div>
-                    <div id="fastScanEmpDetail" class="text-muted fs-8 text-truncate">ส่องกล้องไปที่ QR/บาร์โค้ด บัตรพนักงาน</div>
                   </div>
                   <button type="button" id="btnResetFastScanEmp" class="btn btn-outline-danger btn-sm rounded-circle p-1 d-none" onclick="resetFastScanEmp()" title="ล้างและสแกนใหม่">
                     <i class="bi bi-x-lg fs-8"></i>
@@ -3420,7 +3428,6 @@
                   <img id="fastScanEquipPhoto" src="" class="rounded-3 border d-none" style="width: 38px; height: 38px; object-fit: cover;" />
                   <div class="overflow-hidden flex-grow-1">
                     <div id="fastScanEquipName" class="fw-bold text-dark fs-7 text-truncate">ยังไม่ได้สแกนบาร์โค้ดอุปกรณ์</div>
-                    <div id="fastScanEquipDetail" class="text-muted fs-8 text-truncate">ส่องกล้องไปที่ QR/บาร์โค้ด บนอุปกรณ์</div>
                   </div>
                   <button type="button" id="btnResetFastScanEquip" class="btn btn-outline-danger btn-sm rounded-circle p-1 d-none" onclick="resetFastScanEquip()" title="ล้างและสแกนใหม่">
                     <i class="bi bi-x-lg fs-8"></i>
@@ -3459,9 +3466,9 @@
           </div>
 
           <!-- Alert / Status Guidance Banner -->
-          <div id="fastScanStatusBanner" class="alert alert-info border-0 rounded-3 py-2 px-3 fs-8 mb-0 d-flex align-items-center gap-2">
+          <div id="fastScanStatusBanner" class="alert alert-info border-0 rounded-3 py-2 px-3 fs-8 mb-0 d-none align-items-center gap-2">
             <i class="bi bi-info-circle-fill fs-6 text-info"></i>
-            <span id="fastScanStatusText">นำบาร์โค้ดหรือคิวอาร์โค้ดของบัตรผู้ทำรายการ หรืออุปกรณ์ มาส่องหน้ากล้อง (สามารถสแกนสิ่งใดก่อนก็ได้)</span>
+            <span id="fastScanStatusText"></span>
           </div>
         </div>
 
@@ -3479,175 +3486,116 @@
 
   <!-- ==================== MODAL: REAL CAMERA BARCODE SCANNER (EQUIPMENT) ==================== -->
   <div class="modal fade" id="barcodeQrScannerModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content border-0 shadow-lg rounded-4">
-        <div class="modal-header bg-dark text-white border-0 py-3">
+    <div class="modal-dialog modal-fullscreen m-0 p-0">
+      <div class="modal-content border-0 shadow-none d-flex flex-column h-100 vh-100 overflow-hidden rounded-0">
+        
+        <!-- ส่วนหัวของหน้าต่าง (Header): หัวข้อ "สแกนอุปกรณ์" และปุ่ม "เสร็จสิ้น" ไม่มีสัญลักษณ์ อยู่ในบรรทัดเดียวกัน -->
+        <div class="modal-header bg-dark text-white border-0 py-2.5 px-3 d-flex align-items-center justify-content-between flex-shrink-0">
           <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-qr-code-scan text-warning fs-4"></i>
-            <div>
-              <h5 class="modal-title fw-bold mb-0">ระบบสแกนบาร์โค้ด & คิวอาร์โค้ด (อุปกรณ์ & ผู้ทำรายการ)</h5>
-              <small class="text-white-50 fs-8">ส่องกล้องหรือยิงสแกนบาร์โค้ด 1D / QR Code ทั้งอุปกรณ์และบัตรผู้ทำรายการ เพื่อค้นหาและเปิดหน้าต่างเบิก-รับเข้า-ยืม-คืน อัตโนมัติ</small>
+            <i class="bi bi-upc-scan text-warning fs-5"></i>
+            <h5 class="modal-title fw-bold mb-0 text-white fs-5">สแกนอุปกรณ์</h5>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" id="btnHeaderFinishScanner" class="btn btn-success fw-bold rounded-pill px-3 py-1 fs-7 shadow-sm text-nowrap" data-bs-dismiss="modal" onclick="finishContinuousScanModal()">
+              เสร็จสิ้น
+            </button>
+            <button type="button" class="btn-close btn-close-white ms-1" data-bs-dismiss="modal" onclick="stopHtml5Scanner()" title="ปิดหน้าต่าง"></button>
+          </div>
+        </div>
+
+        <!-- ตัวหน้าต่าง (Body): มีการจัด flex ให้เลื่อนเฉพาะส่วนใน และปุ่มบันทึกด้านล่างตรึงอยู่เสมอ -->
+        <div class="modal-body p-2.5 p-md-3 bg-light overflow-y-auto flex-grow-1" style="min-height: 0;">
+          <!-- กรอบที่ 1: รายชื่อผู้ทำรายการ (ถ้ายังไม่ได้สแกนก็รอสแกน) -->
+          <div id="scannerOperatorCard" class="card border-0 shadow-sm rounded-3 mb-2 bg-white p-2.5">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="d-flex align-items-center gap-2 overflow-hidden">
+                <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2.5 py-1 fs-8 fw-bold text-nowrap">ผู้ทำรายการ</span>
+                <span id="scannerOperatorStatusText" class="text-muted fs-7 text-truncate">รอสแกนผู้ทำรายการ</span>
+              </div>
+              <span id="scannerOperatorBadge" class="badge bg-light text-muted border border-secondary border-opacity-25 fs-8 text-nowrap ms-2">ยังไม่ระบุ</span>
             </div>
           </div>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopHtml5Scanner()"></button>
-        </div>
-        <div class="modal-body p-3 p-md-4 bg-light">
-          <div class="row g-3">
-            <!-- Camera Reader Viewport -->
-            <div class="col-12 col-md-6">
-              <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-dark text-white">
-                <div class="p-2 bg-secondary bg-opacity-25 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
-                  <span class="fs-8 fw-semibold text-warning"><i class="bi bi-record-circle text-danger me-1 animate-pulse"></i> กล้องอ่านบาร์โค้ด & คิวอาร์โค้ด</span>
-                  <div class="d-flex align-items-center gap-2">
-                    <div class="form-check form-switch mb-0 d-flex align-items-center gap-1.5 bg-dark bg-opacity-50 px-2.5 py-1 rounded-pill border border-secondary border-opacity-25">
-                      <input class="form-check-input bg-warning border-warning cursor-pointer m-0" type="checkbox" id="autoSelectBarcodeScannerCheckbox" checked role="switch">
-                      <label class="form-check-label text-warning fw-bold fs-8 mb-0 cursor-pointer text-nowrap" for="autoSelectBarcodeScannerCheckbox">
-                        <i class="bi bi-lightning-charge-fill me-0.5"></i> เลือกอัตโนมัติเมื่อพบ
-                      </label>
-                    </div>
-                    <button type="button" class="btn btn-dark btn-sm rounded-circle p-1 px-2 fs-8" onclick="restartHtml5Scanner()" title="รีสตาร์ทกล้อง">
-                      <i class="bi bi-arrow-clockwise"></i> รีสตาร์ท
-                    </button>
-                  </div>
-                </div>
 
-                <!-- Scanner View Area -->
-                <div id="barcodeScannerReaderContainer" style="width: 100%; min-height: 280px;" class="bg-black"></div>
-                <div id="scannerLoadingText" class="p-3 text-center fs-7 text-white-50">
-                  <span class="spinner-border spinner-border-sm text-warning me-2"></span> กำลังเชื่อมต่อกล้องวิดีโอ...
-                </div>
-
-                <!-- Manual Code Input Fallback -->
-                <div class="p-2 bg-dark border-top">
-                  <div class="input-group input-group-sm">
-                    <input type="text" id="manualScannerBarcodeInput" class="form-control bg-secondary bg-opacity-25 text-white border-0" placeholder="พิมพ์ชื่ออุปกรณ์, รหัสสินค้า หรือชื่อ/รหัสผู้ทำรายการ..." />
-                    <button class="btn btn-warning fw-bold text-dark shadow-sm" type="button" onclick="handleManualBarcodeSearch()">
-                      <i class="bi bi-search text-dark"></i> ค้นหา / สแกน
-                    </button>
-                  </div>
-                </div>
+          <!-- กรอบที่ 2: รายการอุปกรณ์ (แสดงรายการอุปกรณ์ที่สแกน) -->
+          <div id="scannerEquipmentCard" class="card border-0 shadow-sm rounded-3 mb-2.5 bg-white p-2.5">
+            <div class="d-flex align-items-center justify-content-between mb-1.5">
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2.5 py-1 fs-8 fw-bold">รายการอุปกรณ์</span>
+                <span class="fs-8 text-muted">รวม <span id="continuousScanCartCountBadge" class="fw-bold text-dark">0</span> รายการ</span>
               </div>
+              <button type="button" id="scannerClearAllBtn" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fs-8 d-none" onclick="clearAllScannerItemsConfirm()" title="ลบรายการที่เลือกไว้ทั้งหมด">
+                <i class="bi bi-trash3 me-1"></i>ลบทั้งหมด
+              </button>
+            </div>
+            <!-- รายการอุปกรณ์ที่สแกน -->
+            <div id="scannerScannedItemsContainer" class="overflow-auto border border-light rounded-2 p-1.5 bg-light bg-opacity-50" style="min-height: 110px; max-height: 230px;">
+              <div id="scannerNoItemsPlaceholder" class="text-muted fs-8 py-3 text-center">
+                รอสแกนอุปกรณ์
+              </div>
+              <div id="scannerScannedItemsList" class="d-flex flex-column gap-1.5"></div>
+            </div>
+          </div>
+
+          <!-- กรอบที่ 3: กรอบหน้าต่างสแกน (Scanner View) -->
+          <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-dark text-white">
+            <div class="p-2 bg-secondary bg-opacity-25 border-bottom d-flex align-items-center justify-content-between">
+              <span class="fs-8 fw-semibold text-warning"><i class="bi bi-record-circle text-danger me-1 animate-pulse"></i> กล้องอ่านบาร์โค้ด & คิวอาร์โค้ด</span>
             </div>
 
-            <!-- Scan Results & Stock Control Panel -->
-            <div class="col-12 col-md-6">
-              <!-- Default Prompt State -->
-              <div id="scannedItemPromptState" class="card border-0 shadow-sm rounded-4 p-4 text-center h-100 d-flex flex-column justify-content-center align-items-center bg-white">
-                <div class="bg-warning bg-opacity-10 text-warning p-3 rounded-circle mb-3">
-                  <i class="bi bi-qr-code-scan display-5"></i>
-                </div>
-                <h6 class="fw-bold text-dark mb-1">พร้อมสแกนบาร์โค้ด & คิวอาร์โค้ด</h6>
-                <p class="text-muted fs-8 mb-0">นำบาร์โค้ดหรือคิวอาร์โค้ดของอุปกรณ์ หรือบัตรผู้ทำรายการส่องกล้อง ระบบจะค้นหาและเปิดหน้าต่างเบิก-รับเข้า-ยืม-คืน ให้อัตโนมัติ</p>
-              </div>
+            <!-- Scanner View Area -->
+            <div id="barcodeScannerReaderContainer" style="width: 100%; min-height: 260px;" class="bg-black"></div>
+            <div id="scannerLoadingText" class="p-3 text-center fs-7 text-white-50">
+              <span class="spinner-border spinner-border-sm text-warning me-2"></span> กำลังเชื่อมต่อกล้องวิดีโอ...
+            </div>
 
-              <!-- Item Found Result Card -->
-              <div id="scannedItemResultCard" class="card border-2 border-success shadow-sm rounded-4 p-3 bg-white d-none">
-                <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-3">
-                  <img id="scannedItemImg" src="" class="rounded-3 border" style="width: 70px; height: 70px; object-fit: cover;" />
-                  <div class="overflow-hidden">
-                    <span id="scannedItemCategory" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8 mb-1"></span>
-                    <h6 id="scannedItemName" class="fw-bold text-dark mb-0 text-truncate"></h6>
-                    <div id="scannedItemCode" class="font-monospace text-muted fs-8"></div>
-                    <div class="fs-8 text-secondary mt-1"><i class="bi bi-geo-alt-fill text-danger me-1"></i><span id="scannedItemLocation"></span></div>
-                  </div>
-                </div>
-
-                <div class="bg-light p-3 rounded-3 text-center mb-3">
-                  <small class="text-muted text-uppercase fw-bold fs-8">ยอดคงเหลือในสต็อกปัจจุบัน</small>
-                  <div id="scannedItemStock" class="display-6 fw-bold text-success mb-0"></div>
-                </div>
-
-                <!-- Instant Stock Adjustment Controls -->
-                <h6 class="fw-bold fs-7 text-dark mb-2"><i class="bi bi-lightning-charge-fill text-warning me-1"></i> ปรับปรุงสต็อกด่วนทันที:</h6>
-                <div class="row g-2 mb-3">
-                  <div class="col-6">
-                    <button class="btn btn-outline-success btn-sm w-100 rounded-pill fw-bold py-2" onclick="quickUpdateStockFromScanner(1)">
-                      <i class="bi bi-plus-lg me-1"></i> เติมสต็อก (+1)
-                    </button>
-                  </div>
-                  <div class="col-6">
-                    <button class="btn btn-outline-danger btn-sm w-100 rounded-pill fw-bold py-2" onclick="quickUpdateStockFromScanner(-1)">
-                      <i class="bi bi-dash-lg me-1"></i> ตัดเบิกใช้งาน (-1)
-                    </button>
-                  </div>
-                  <div class="col-6">
-                    <button class="btn btn-success btn-sm w-100 rounded-pill fw-bold py-1.5 fs-8" onclick="quickUpdateStockFromScanner(5)">
-                      <i class="bi bi-box-arrow-in-down me-1"></i> รับเข้า (+5)
-                    </button>
-                  </div>
-                  <div class="col-6">
-                    <button class="btn btn-danger btn-sm w-100 rounded-pill fw-bold py-1.5 fs-8" onclick="quickUpdateStockFromScanner(-5)">
-                      <i class="bi bi-box-arrow-up me-1"></i> ตัดจ่าย (-5)
-                    </button>
-                  </div>
-                </div>
-
-                <div class="d-flex flex-wrap gap-2">
-                  <button class="btn btn-primary btn-sm flex-fill rounded-pill fw-bold" onclick="selectFromScannerToForm()">
-                    <i class="bi bi-file-earmark-plus me-1"></i> เปิดหน้าต่างเบิก-รับเข้า-ยืม-คืน
-                  </button>
-                  <button class="btn btn-success btn-sm flex-fill rounded-pill fw-bold" onclick="addScannedItemToCart()">
-                    <i class="bi bi-cart-plus-fill me-1"></i> เพิ่มเข้าเอกสารเบิก/ยืม
-                  </button>
-                  <button class="btn btn-outline-dark btn-sm flex-fill rounded-pill fw-bold" onclick="printSingleLabelFromScanner()">
-                    <i class="bi bi-tag-fill me-1"></i> พิมพ์ฉลาก
-                  </button>
-                  <button class="btn btn-outline-success btn-sm flex-fill rounded-pill fw-bold" onclick="filterStaffTableWithScannedItem()">
-                    <i class="bi bi-funnel-fill me-1"></i> ค้นหาในตาราง
-                  </button>
-                </div>
-              </div>
-
-              <!-- Employee Found Result Card -->
-              <div id="scannedEmpResultCard" class="card border-2 border-primary shadow-sm rounded-4 p-3 bg-white d-none">
-                <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-3">
-                  <img id="scannedModalEmpImg" src="" class="rounded-circle border shadow-sm" style="width: 70px; height: 70px; object-fit: cover;" />
-                  <div class="overflow-hidden">
-                    <span id="scannedModalEmpRoleBadge" class="badge bg-primary fs-8 mb-1">ผู้ทำรายการ</span>
-                    <h6 id="scannedModalEmpName" class="fw-bold text-dark mb-0 text-truncate"></h6>
-                    <div id="scannedModalEmpIdCode" class="font-monospace text-muted fs-8"></div>
-                    <div class="fs-8 text-secondary mt-1"><i class="bi bi-building text-primary me-1"></i><span id="scannedModalEmpDept"></span></div>
-                  </div>
-                </div>
-
-                <div class="bg-light p-3 rounded-3 text-center mb-3">
-                  <small class="text-muted text-uppercase fw-bold fs-8">ข้อมูลผู้ทำรายการ</small>
-                  <div class="row g-2 mt-1">
-                    <div class="col-6 text-start ps-3">
-                      <span class="text-muted fs-8 d-block">เบอร์โทรศัพท์</span>
-                      <span id="scannedModalEmpPhone" class="fw-bold text-dark fs-7">-</span>
-                    </div>
-                    <div class="col-6 text-start ps-3">
-                      <span class="text-muted fs-8 d-block">ตำแหน่ง</span>
-                      <span id="scannedModalEmpPosition" class="fw-bold text-dark fs-7">-</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="d-flex flex-column gap-2">
-                  <button class="btn btn-primary btn-sm rounded-pill fw-bold py-2 shadow-sm" onclick="selectScannedEmpToFormAndOpenTransaction()">
-                    <i class="bi bi-file-earmark-plus me-1"></i> เปิดหน้าต่างเบิก-รับเข้า-ยืม-คืน (เลือกผู้ทำรายการนี้)
-                  </button>
-                  <button class="btn btn-outline-secondary btn-sm rounded-pill fw-bold py-1.5 fs-8" onclick="openEmpBorrowHistoryFromScannerModal()">
-                    <i class="bi bi-clock-history me-1"></i> ดูประวัติการเบิก-ยืมของผู้ทำรายการนี้
-                  </button>
-                </div>
-              </div>
-
-              <!-- Item Not Found Card -->
-              <div id="scannedItemNotFoundCard" class="card border-2 border-danger shadow-sm rounded-4 p-3 bg-white text-center d-none">
-                <i class="bi bi-exclamation-octagon-fill text-danger display-5 mb-2"></i>
-                <h6 class="fw-bold text-danger mb-1">ไม่พบสินค้าหรือผู้ทำรายการในระบบ</h6>
-                <p class="text-muted fs-8 mb-3">รหัสที่สแกน: <span id="scannedUnknownCodeText" class="font-monospace fw-bold text-dark"></span></p>
-                <button class="btn btn-success btn-sm rounded-pill fw-bold w-100 py-2" onclick="openAddEquipmentWithScannedCode()">
-                  <i class="bi bi-plus-circle-fill me-1"></i> เพิ่มอุปกรณ์ใหม่ด้วยรหัสนี้
+            <!-- Manual Code Input Fallback -->
+            <div class="p-2 bg-dark border-top">
+              <div class="input-group input-group-sm">
+                <input type="text" id="manualScannerBarcodeInput" class="form-control bg-secondary bg-opacity-25 text-white border-0" placeholder="พิมพ์ชื่ออุปกรณ์, รหัสสินค้า หรือชื่อ/รหัสผู้ทำรายการ..." onkeydown="if(event.key==='Enter'){event.preventDefault();handleManualBarcodeSearch();}" />
+                <button class="btn btn-warning fw-bold text-dark shadow-sm" type="button" onclick="handleManualBarcodeSearch()">
+                  ค้นหา / สแกน
                 </button>
               </div>
             </div>
           </div>
+
+          <!-- Compatibility containers for script.js (kept hidden so all JS operations execute cleanly) -->
+          <input type="checkbox" id="autoSelectBarcodeScannerCheckbox" class="d-none" />
+          <div id="continuousScanBanner" class="d-none" style="display: none !important;">
+            <span id="continuousScanLastItemText"></span>
+          </div>
+          <div id="scannedItemPromptState" class="d-none" style="display: none !important;"></div>
+          <div id="scannedItemResultCard" class="d-none" style="display: none !important;">
+            <img id="scannedItemImg" src="" />
+            <span id="scannedItemCategory"></span>
+            <span id="scannedItemName"></span>
+            <span id="scannedItemCode"></span>
+            <span id="scannedItemLocation"></span>
+            <span id="scannedItemStock"></span>
+          </div>
+          <div id="scannedEmpResultCard" class="d-none" style="display: none !important;">
+            <img id="scannedModalEmpImg" src="" />
+            <span id="scannedModalEmpRoleBadge"></span>
+            <span id="scannedModalEmpName"></span>
+            <span id="scannedModalEmpIdCode"></span>
+            <span id="scannedModalEmpDept"></span>
+            <span id="scannedModalEmpPhone"></span>
+            <span id="scannedModalEmpPosition"></span>
+          </div>
+          <div id="scannedItemNotFoundCard" class="d-none" style="display: none !important;">
+            <span id="scannedUnknownCodeText"></span>
+          </div>
         </div>
-        <div class="modal-footer bg-light border-0">
-          <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal" onclick="stopHtml5Scanner()">ปิดกล้องสแกน</button>
+
+        <!-- ปุ่มควบคุมด้านล่าง (Footer) ตรึงอยู่ล่างสุดตรงกลางเสมอ -->
+        <div class="modal-footer bg-white border-top d-flex justify-content-center align-items-center py-2.5 px-3 flex-shrink-0 shadow-sm" style="z-index: 1050;">
+          <div id="continuousScanFooterSummary" class="d-none">
+            <span id="continuousScanFooterCount" class="d-none">0</span>
+          </div>
+          <!-- ปุ่มบันทึกข้อมูลอัจฉริยะ (บันทึกเบิกตัดสต็อก / บันทึกยืมอุปกรณ์ ตามประเภทอุปกรณ์) อยู่ล่างสุดตรงกลาง -->
+          <button type="button" id="btnScannerSaveTransaction" class="btn btn-secondary fw-bold rounded-pill px-5 py-2 shadow-sm fs-6" style="min-width: 240px; max-width: 420px;" onclick="saveTransactionDirectlyFromScanner()" disabled>
+            บันทึกข้อมูล
+          </button>
         </div>
       </div>
     </div>

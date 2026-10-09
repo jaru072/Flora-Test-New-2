@@ -585,7 +585,7 @@ body {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  z-index: 9990;
+  z-index: 1040;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -593,6 +593,17 @@ body {
   visibility: hidden;
   transform: translateY(10px);
   transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+}
+
+/* แสดงที่หน้าต่างหลักของคลังอุปกรณ์เท่านั้น (ซ่อนเมื่อเปิดโมดอลหรือหน้าต่างป๊อปอัปใดๆ) */
+body.modal-open .floating-scroll-nav,
+body:has(.modal.show) .floating-scroll-nav,
+body:has(.modal[style*="display: block"]) .floating-scroll-nav,
+.modal.show ~ .floating-scroll-nav {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 /* Shaking Red Bell Animation for Low Stock Alert Filter */
@@ -1084,5 +1095,42 @@ body {
 .note-single-line-scroll::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* ==========================================================================
+   ปุ่มสแกนเบิก-รับเข้า-ยืม-คืน แบบปุ่มลอยบนสุดตรงกลาง (เฉพาะมือถือและแท็บเล็ต หน้าคลังอุปกรณ์)
+   ========================================================================== */
+@media (max-width: 991.98px) {
+  body.is-catalog-active #btnFastCheckoutScan {
+    position: fixed !important;
+    top: 60px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 1040 !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28), 0 0 0 2px rgba(255, 255, 255, 0.9) !important;
+    background: linear-gradient(135deg, #ffc107, #ffb300) !important;
+    color: #212529 !important;
+    border: 1px solid #d39e00 !important;
+    padding: 7px 18px !important;
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    border-radius: 9999px !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  body.is-catalog-active #btnFastCheckoutScan:active {
+    transform: translateX(-50%) scale(0.95) !important;
+  }
+
+  /* ซ่อนปุ่มลอยเมื่อไม่ได้อยู่ที่หน้าคลังอุปกรณ์ บนมือถือและแท็บเล็ต */
+  body:not(.is-catalog-active) #btnFastCheckoutScan {
+    display: none !important;
+  }
+}
+
 
 
