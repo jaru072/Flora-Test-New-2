@@ -557,8 +557,17 @@ body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+  #printableLabelSheet {
+    width: 200mm !important;
+    max-width: 200mm !important;
+    margin: 0 auto !important;
+  }
+  #printableLabelSheet .row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    box-sizing: border-box !important;
+  }
   #printableLabelSheet .row > * {
-    padding: 0.6mm !important;
     box-sizing: border-box !important;
   }
   #printableLabelSheet canvas,

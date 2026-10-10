@@ -4786,8 +4786,26 @@
       window.lastInteractedEquipmentId = item.id;
 
       // 2. Validate transaction type
-      const currentRadio = document.querySelector('input[name="transType"]:checked')?.value || 'เบิกจ่าย';
-      const type = currentTransCartType || currentRadio;
+      let type = currentTransCartType;
+      if (selectedTransItems.length === 0) {
+        // Cart is empty: ALWAYS adapt transaction type automatically based on the scanned equipment!
+        if (typeof window.isEquipmentBorrowType === 'function' && window.isEquipmentBorrowType(item)) {
+          type = 'ยืมอุปกรณ์';
+          const borrowRadio = document.getElementById('typeBorrow');
+          if (borrowRadio) borrowRadio.checked = true;
+        } else {
+          type = 'เบิกจ่าย';
+          const issueRadio = document.getElementById('typeIssue');
+          if (issueRadio) issueRadio.checked = true;
+        }
+        currentTransCartType = type;
+        if (typeof window.toggleTransTypeUI === 'function') {
+          window.toggleTransTypeUI();
+        }
+      } else if (!type) {
+        const currentRadio = document.querySelector('input[name="transType"]:checked')?.value || 'เบิกจ่าย';
+        type = currentRadio;
+      }
       const empId = document.getElementById('empSelect')?.value;
 
       // 2.1 Lock document transaction type (must be ONE type per document, never mixed!)
@@ -4807,14 +4825,34 @@
 
       // 2.2 Prevent adding "อุปกรณ์ประเภทยืมใช้" (ขึ้นต้นด้วย B / BA / BT) to "เบิกจ่าย" (เบิกตัดสต๊อก)
       if (type === 'เบิกจ่าย' && typeof window.isEquipmentBorrowType === 'function' && window.isEquipmentBorrowType(item)) {
-        alert(`❌ ไม่สามารถเพิ่ม "${item.name}" [${item.code || item.id}] เข้าเอกสารเบิกตัดสต๊อกได้!\n\nเนื่องจากอุปกรณ์นี้เป็น "ประเภทยืมใช้" (รหัสขึ้นต้นด้วย B เช่น หมวด BA งานเกษตร หรือ BT งานช่าง)\nจะนำมาเบิกตัดสต๊อกไม่ได้เด็ดขาด\n\nกรุณาทำรายการผ่านโหมด "ยืมอุปกรณ์" แทน`);
-        return false;
+        if (selectedTransItems.length === 0) {
+          type = 'ยืมอุปกรณ์';
+          currentTransCartType = 'ยืมอุปกรณ์';
+          const borrowRadio = document.getElementById('typeBorrow');
+          if (borrowRadio) borrowRadio.checked = true;
+          if (typeof window.toggleTransTypeUI === 'function') {
+            window.toggleTransTypeUI();
+          }
+        } else {
+          alert(`❌ ไม่สามารถเพิ่ม "${item.name}" [${item.code || item.id}] เข้าเอกสารเบิกตัดสต๊อกได้!\n\nเนื่องจากอุปกรณ์นี้เป็น "ประเภทยืมใช้" (รหัสขึ้นต้นด้วย B เช่น หมวด BA งานเกษตร หรือ BT งานช่าง)\nจะนำมาเบิกตัดสต๊อกไม่ได้เด็ดขาด\n\nกรุณาทำรายการผ่านโหมด "ยืมอุปกรณ์" แทน`);
+          return false;
+        }
       }
 
       // 2.2b Prevent adding "วัสดุสิ้นเปลือง" to "ยืมอุปกรณ์"
       if (type === 'ยืมอุปกรณ์' && typeof window.isEquipmentBorrowType === 'function' && !window.isEquipmentBorrowType(item)) {
-        alert(`❌ ไม่สามารถเพิ่ม "${item.name}" [${item.code || item.id}] เข้าเอกสารยืมอุปกรณ์ได้!\n\nเนื่องจากรายการนี้เป็น "วัสดุสิ้นเปลือง/ใช้แล้วหมดไป" (ไม่ใช่อุปกรณ์ประเภทยืมใช้ที่ขึ้นต้นด้วย B เช่น BA หรือ BT)\n\nกรุณาทำรายการผ่านโหมด "เบิกตัดสต็อก" แทน`);
-        return false;
+        if (selectedTransItems.length === 0) {
+          type = 'เบิกจ่าย';
+          currentTransCartType = 'เบิกจ่าย';
+          const issueRadio = document.getElementById('typeIssue');
+          if (issueRadio) issueRadio.checked = true;
+          if (typeof window.toggleTransTypeUI === 'function') {
+            window.toggleTransTypeUI();
+          }
+        } else {
+          alert(`❌ ไม่สามารถเพิ่ม "${item.name}" [${item.code || item.id}] เข้าเอกสารยืมอุปกรณ์ได้!\n\nเนื่องจากรายการนี้เป็น "วัสดุสิ้นเปลือง/ใช้แล้วหมดไป" (ไม่ใช่อุปกรณ์ประเภทยืมใช้ที่ขึ้นต้นด้วย B เช่น BA หรือ BT)\n\nกรุณาทำรายการผ่านโหมด "เบิกตัดสต็อก" แทน`);
+          return false;
+        }
       }
 
       const existingInCart = selectedTransItems.find(x => x.id === item.id);
@@ -5014,6 +5052,31 @@
       if (typeof window.hideTransStockOverPopup === 'function') {
         window.hideTransStockOverPopup();
       }
+
+      // เคลียร์ค่าอุปกรณ์ที่ค้างในแบบฟอร์ม เพื่อไม่ให้มีอุปกรณ์เดิมมาล็อคประเภท
+      const equipSelect = document.getElementById('equipSelect');
+      if (equipSelect) equipSelect.value = '';
+      const equipSearch = document.getElementById('equipSearchInput');
+      if (equipSearch) equipSearch.value = '';
+      const previewBox = document.getElementById('equipSelectPreviewBox');
+      if (previewBox) previewBox.classList.add('d-none');
+      const stockInfo = document.getElementById('equipStockInfo');
+      if (stockInfo) stockInfo.innerHTML = '';
+
+      // ปลดล็อกประเภทรายการที่จำไว้ ให้กลับเป็นค่าเริ่มต้น
+      const issueRadio = document.getElementById('typeIssue');
+      if (issueRadio) issueRadio.checked = true;
+      const borrowRadio = document.getElementById('typeBorrow');
+      if (borrowRadio) borrowRadio.checked = false;
+
+      currentTransCartType = null;
+
+      if (typeof window.toggleTransTypeUI === 'function') {
+        window.toggleTransTypeUI();
+      }
+
+      currentTransCartType = null;
+
       renderTransCartList();
     };
 
@@ -13508,24 +13571,23 @@
           return;
         }
       } else if (selectedTransItems.length === 0) {
-        // Enforce lock according to currently selected equipment in the form
+        currentTransCartType = null;
+        // If there was an equipment selected in form that doesn't match the new type, clear it gracefully
         const currentEquipId = document.getElementById('equipSelect')?.value;
         const currentEquipObj = currentEquipId ? (equipmentList || []).find(x => x.id === currentEquipId) : null;
         if (currentEquipObj) {
           const isBorrow = typeof window.isEquipmentBorrowType === 'function' && window.isEquipmentBorrowType(currentEquipObj);
-          if (selectedType === 'เบิกจ่าย' && isBorrow) {
-            alert(`❌ ไม่สามารถเลือกประเภท "เบิกตัดสต๊อก" ได้!\n\nอุปกรณ์ "${currentEquipObj.name}" [${currentEquipObj.code || currentEquipObj.id}] เป็นอุปกรณ์ประเภทยืมใช้ (รหัสขึ้นต้นด้วย B หมวด ${currentEquipObj.category || 'ยืมใช้'})\nไม่สามารถนำมาเบิกตัดสต๊อกได้\n\nระบบล็อคให้ทำรายการผ่านโหมด "ยืมอุปกรณ์" เท่านั้น`);
-            const el = document.getElementById('typeBorrow');
-            if (el) el.checked = true;
-            return;
-          } else if (selectedType === 'ยืมอุปกรณ์' && !isBorrow) {
-            alert(`❌ ไม่สามารถเลือกประเภท "ยืมอุปกรณ์" ได้!\n\nรายการ "${currentEquipObj.name}" [${currentEquipObj.code || currentEquipObj.id}] เป็นวัสดุสิ้นเปลือง/ใช้แล้วหมดไป (ไม่ใช่อุปกรณ์ประเภทยืมใช้ที่ขึ้นต้นด้วย B)\nไม่สามารถนำมาทำรายการยืมได้\n\nระบบล็อคให้ทำรายการผ่านโหมด "เบิกตัดสต๊อก" เท่านั้น`);
-            const el = document.getElementById('typeIssue');
-            if (el) el.checked = true;
-            return;
+          if ((selectedType === 'เบิกจ่าย' && isBorrow) || (selectedType === 'ยืมอุปกรณ์' && !isBorrow)) {
+            const el = document.getElementById('equipSelect');
+            if (el) el.value = '';
+            const searchEl = document.getElementById('equipSearchInput');
+            if (searchEl) searchEl.value = '';
+            const previewBox = document.getElementById('equipSelectPreviewBox');
+            if (previewBox) previewBox.classList.add('d-none');
+            const stockInfo = document.getElementById('equipStockInfo');
+            if (stockInfo) stockInfo.innerHTML = '';
           }
         }
-        currentTransCartType = selectedType;
       }
 
       const box = document.getElementById('borrowDueDateBox');
@@ -15522,13 +15584,26 @@
           window.clearTransCart();
         } else {
           selectedTransItems = [];
+          currentTransCartType = null;
           if (typeof renderTransCartList === 'function') renderTransCartList();
         }
+        // เคลียร์ค่าจำประเภทอุปกรณ์ยืมใช้ หรือ เบิกตัดสต็อกให้กลับเป็นค่าเริ่มต้น
+        currentTransCartType = null;
+        const issueRadio = document.getElementById('typeIssue');
+        if (issueRadio) issueRadio.checked = true;
+        const borrowRadio = document.getElementById('typeBorrow');
+        if (borrowRadio) borrowRadio.checked = false;
+
+        if (typeof window.toggleTransTypeUI === 'function') {
+          window.toggleTransTypeUI();
+        }
+        currentTransCartType = null;
+
         if (typeof window.updateScannerEquipmentListUI === 'function') {
           window.updateScannerEquipmentListUI();
         }
         if (typeof showToast === 'function') {
-          showToast('🗑️ ลบรายการอุปกรณ์ทั้งหมดเรียบร้อยแล้ว');
+          showToast('🗑️ ลบรายการอุปกรณ์และปลดล็อกประเภทเรียบร้อยแล้ว');
         }
       }
     };
@@ -15828,6 +15903,44 @@
         }, 150);
         const cartLen = (typeof selectedTransItems !== 'undefined' && Array.isArray(selectedTransItems)) ? selectedTransItems.length : 0;
         showToast(`🎉 สแกนครบเรียบร้อย! มีอุปกรณ์ในเอกสาร ${cartLen} รายการ พร้อมตรวจสอบ/แก้ไขจำนวนได้ทันที`);
+      }
+    };
+
+    // ปิดหน้าต่างสแกนด้วยปุ่มกากะบาท: ลบรายการทั้งหมดและปลดล็อกประเภท
+    window.closeBarcodeQrScannerModal = function() {
+      window.isContinuousCartScanning = false;
+      window.lastContinuousScannedCode = null;
+      if (typeof window.stopHtml5Scanner === 'function') {
+        window.stopHtml5Scanner();
+      }
+
+      if (typeof window.clearTransCart === 'function') {
+        window.clearTransCart();
+      } else {
+        selectedTransItems = [];
+        currentTransCartType = null;
+        if (typeof renderTransCartList === 'function') renderTransCartList();
+      }
+
+      currentTransCartType = null;
+      const issueRadio = document.getElementById('typeIssue');
+      if (issueRadio) issueRadio.checked = true;
+      const borrowRadio = document.getElementById('typeBorrow');
+      if (borrowRadio) borrowRadio.checked = false;
+
+      if (typeof window.toggleTransTypeUI === 'function') {
+        window.toggleTransTypeUI();
+      }
+      currentTransCartType = null;
+
+      if (typeof window.updateScannerEquipmentListUI === 'function') {
+        window.updateScannerEquipmentListUI();
+      }
+
+      const modalElem = document.getElementById('barcodeQrScannerModal');
+      if (modalElem) {
+        const modalInst = bootstrap.Modal.getInstance(modalElem);
+        if (modalInst) modalInst.hide();
       }
     };
 
@@ -16999,32 +17112,111 @@
       }
     };
 
-    window.renderPrintableLabelsPreview = function() {
+    window.onLabelGridSelectChange = function() {
+      window.lastLabelSizeMode = 'GRID';
+      if (typeof renderPrintableLabelsPreview === 'function') {
+        renderPrintableLabelsPreview(true);
+      }
+    };
+
+    window.onLabelItemDimensionChange = function() {
+      window.lastLabelSizeMode = 'CUSTOM';
+      const gapXMm = Math.max(0, parseFloat(document.getElementById('labelGapXMm')?.value) || 0);
+      const gapYMm = Math.max(0, parseFloat(document.getElementById('labelGapYMm')?.value) || 0);
+      const customW = Math.max(15, parseFloat(document.getElementById('labelItemWidthMm')?.value) || 64.7);
+      const customH = Math.max(15, parseFloat(document.getElementById('labelItemHeightMm')?.value) || 39.1);
+
+      const pageUsableW = 200.0;
+      const pageUsableH = 286.0;
+
+      // Auto-calculate matching columns and rows fitting on A4 sheet with gaps
+      const calcCols = Math.max(1, Math.min(6, Math.floor((pageUsableW + gapXMm) / (customW + gapXMm))));
+      const calcRows = Math.max(2, Math.min(16, Math.floor((pageUsableH + gapYMm) / (customH + gapYMm))));
+
+      const colSel = document.getElementById('labelColsSelect');
+      if (colSel) colSel.value = String(calcCols);
+      const rowSel = document.getElementById('labelRowsSelect');
+      if (rowSel) rowSel.value = String(calcRows);
+
+      if (typeof renderPrintableLabelsPreview === 'function') {
+        renderPrintableLabelsPreview(false);
+      }
+    };
+
+    window.onLabelGapChange = function() {
+      if (window.lastLabelSizeMode === 'CUSTOM') {
+        if (typeof window.onLabelItemDimensionChange === 'function') {
+          window.onLabelItemDimensionChange();
+        }
+      } else {
+        if (typeof renderPrintableLabelsPreview === 'function') {
+          renderPrintableLabelsPreview(true);
+        }
+      }
+    };
+
+    window.renderPrintableLabelsPreview = function(updateDimensionInputs = true) {
       const selectElem = document.getElementById('labelItemSelect');
       const selectedScope = selectElem ? selectElem.value : 'ALL';
       const catSelect = document.getElementById('labelCategoryFilterSelect');
       const selectedCat = catSelect ? catSelect.value : 'ALL';
-      const cols = parseInt(document.getElementById('labelColsSelect')?.value) || 3;
-      const rows = parseInt(document.getElementById('labelRowsSelect')?.value) || 7;
-      const copiesCount = parseInt(document.getElementById('labelCopiesInput')?.value) || 1;
+      const cols = Math.max(1, Math.min(6, parseInt(document.getElementById('labelColsSelect')?.value) || 3));
+      const rows = Math.max(2, Math.min(16, parseInt(document.getElementById('labelRowsSelect')?.value) || 7));
+      const copiesCount = Math.max(1, parseInt(document.getElementById('labelCopiesInput')?.value) || 1);
+
+      // Spacing between labels in mm (Default: X=3mm, Y=2mm)
+      const gapXMm = Math.max(0, Math.min(25, parseFloat(document.getElementById('labelGapXMm')?.value) || 0.0));
+      const gapYMm = Math.max(0, Math.min(25, parseFloat(document.getElementById('labelGapYMm')?.value) || 0.0));
+
+      // A4 Usable Area: Total A4 is 210mm x 297mm.
+      // Print page margins: Left 5mm, Right 5mm -> Usable Width = 200mm.
+      // Top 6mm, Bottom 5mm -> Usable Height = 286mm.
+      const pageUsableWidthMm = 200.0;
+      const pageUsableHeightMm = 286.0;
+
+      // Exact subtraction of horizontal and vertical gaps
+      const totalHorizontalGapMm = Math.max(0, (cols - 1) * gapXMm);
+      const totalVerticalGapMm = Math.max(0, (rows - 1) * gapYMm);
+
+      const usableWidthForLabelsMm = Math.max(20, pageUsableWidthMm - totalHorizontalGapMm);
+      const usableHeightForLabelsMm = Math.max(20, pageUsableHeightMm - totalVerticalGapMm);
+
+      const labelWidthMm = usableWidthForLabelsMm / cols;
+      const labelHeightMm = usableHeightForLabelsMm / rows;
+
+      const approxWidthCm = (labelWidthMm / 10).toFixed(1);
+      const approxHeightCm = (labelHeightMm / 10).toFixed(1);
+      const totalPerSheet = cols * rows;
+
+      // Sync custom dimension inputs if requested
+      if (updateDimensionInputs) {
+        const widthInput = document.getElementById('labelItemWidthMm');
+        if (widthInput && document.activeElement !== widthInput) {
+          widthInput.value = labelWidthMm.toFixed(1);
+        }
+        const heightInput = document.getElementById('labelItemHeightMm');
+        if (heightInput && document.activeElement !== heightInput) {
+          heightInput.value = labelHeightMm.toFixed(1);
+        }
+      }
 
       // Update dimension badge info
-      const approxWidthCm = (19.4 / cols).toFixed(1);
-      const approxHeightCm = (27.8 / rows).toFixed(1);
-      const totalPerSheet = cols * rows;
       const badgeElem = document.getElementById('labelDimensionInfoBadge');
       if (badgeElem) {
-        badgeElem.textContent = `${cols} x ${rows} = ${totalPerSheet} ดวง/แผ่น (~${approxWidthCm} x ${approxHeightCm} ซม.)`;
+        badgeElem.textContent = `${totalPerSheet} ดวง/แผ่น`;
+      }
+
+      // Clear or hide old calculated detail text if element exists
+      const detailTextElem = document.getElementById('labelCalculatedDetailText');
+      if (detailTextElem) {
+        detailTextElem.innerHTML = '';
+        detailTextElem.style.display = 'none';
       }
 
       const showBarcode = document.getElementById('chkShowBarcode')?.checked ?? false;
       const showQr = document.getElementById('chkShowQr')?.checked ?? true;
       const showName = document.getElementById('chkShowName')?.checked ?? true;
       const showDetails = document.getElementById('chkShowDetails')?.checked ?? true;
-
-      // Spacing between labels in mm (Default: X=3mm, Y=2mm)
-      const gapXMm = Math.max(0, parseFloat(document.getElementById('labelGapXMm')?.value) || 3.0);
-      const gapYMm = Math.max(0, parseFloat(document.getElementById('labelGapYMm')?.value) || 2.0);
 
       let itemsToPrint = [];
       if (selectedScope === 'ALL') {
@@ -17059,13 +17251,14 @@
         return;
       }
 
-      let gridClass = 'col-4';
-      if (cols === 1) gridClass = 'col-12';
-      else if (cols === 2) gridClass = 'col-6';
-      else if (cols === 3) gridClass = 'col-4';
-      else if (cols === 4) gridClass = 'col-3';
+      const totalLabelsToPrint = itemsToPrint.length * copiesCount;
+      const totalSheets = Math.ceil(totalLabelsToPrint / totalPerSheet);
+      const summaryBadge = document.getElementById('labelPrintSummaryBadge');
+      if (summaryBadge) {
+        summaryBadge.innerHTML = `<i class="bi bi-printer me-1"></i>พร้อมพิมพ์: ทั้งหมด <strong>${totalLabelsToPrint}</strong> ดวง (ใช้ <strong>${totalSheets}</strong> แผ่น A4)`;
+      }
 
-      // Dynamic typography & sizing based on rows (2..10) & cols (1..4)
+      // Dynamic typography & sizing based on rows (2..16) & cols (1..6)
       let nameFontSize = '12px';
       let titleFontSize = '10px';
       let badgeFontSize = '9.5px';
@@ -17073,13 +17266,10 @@
       let bcHeight = 24;
       let bcWidth = 1.1;
       let boxPadding = '6px';
-      let previewMinHeight = 130;
-      // Calculate usable print height: A4 total height ~287mm usable; minus total vertical gaps
-      const totalVerticalGapMm = (rows - 1) * gapYMm;
-      const printUsableTotalHeightMm = Math.max(200, 287 - totalVerticalGapMm);
-      let printHeightMm = (printUsableTotalHeightMm / rows).toFixed(1);
+      let previewMinHeight = Math.max(65, Math.round(580 / rows));
+      let printHeightMm = labelHeightMm.toFixed(1);
 
-      if (rows === 2) {
+      if (rows <= 2) {
         previewMinHeight = 280;
         boxPadding = '12px';
         titleFontSize = cols === 1 ? '16px' : (cols === 2 ? '14px' : '13px');
@@ -17151,8 +17341,7 @@
         nameFontSize = cols === 1 ? '12.5px' : (cols === 2 ? '11px' : (cols === 3 ? '10px' : '9px'));
         bcHeight = cols === 1 ? 18 : (cols === 2 ? 15 : 13);
         bcWidth = cols === 1 ? 1.1 : (cols === 2 ? 0.95 : 0.85);
-      } else {
-        // rows === 10 (จิ๋ว)
+      } else if (rows === 10) {
         previewMinHeight = 80;
         boxPadding = '3px';
         titleFontSize = cols <= 2 ? '8.5px' : '7.5px';
@@ -17161,26 +17350,36 @@
         nameFontSize = cols === 1 ? '11.5px' : (cols === 2 ? '10.5px' : (cols === 3 ? '9.5px' : '8.5px'));
         bcHeight = cols === 1 ? 15 : (cols === 2 ? 13 : 11);
         bcWidth = cols === 1 ? 1.0 : (cols === 2 ? 0.9 : 0.8);
+      } else {
+        // rows >= 11 (กะทัดรัดพิเศษ 11..16 แถว)
+        previewMinHeight = Math.max(65, Math.round(520 / rows));
+        boxPadding = '2.5px';
+        titleFontSize = '7px';
+        badgeFontSize = '6.5px';
+        detailFontSize = '6.5px';
+        nameFontSize = '8.5px';
+        bcHeight = 12;
+        bcWidth = 0.8;
       }
 
       // Dynamic calculation of QR code dimensions based on label box width and height
       // Print mode: in millimeters
-      const printHeaderFooterMm = rows <= 3 ? 18 : (rows <= 5 ? 14 : 11);
-      const printMiddleHeightMm = Math.max(14, parseFloat(printHeightMm) - printHeaderFooterMm);
-      const printLabelWidthMm = Math.max(20, (196 / cols) - (rows <= 3 ? 10 : 6));
-      const printVerticalMarginMm = rows <= 3 ? 4.5 : (rows <= 5 ? 3.0 : 2.0);
-      const printTargetMiddleHeightMm = Math.max(12, printMiddleHeightMm - (printVerticalMarginMm * 2));
+      const printHeaderFooterMm = rows <= 3 ? 18 : (rows <= 5 ? 14 : (rows <= 8 ? 11 : 8));
+      const printMiddleHeightMm = Math.max(10, parseFloat(printHeightMm) - printHeaderFooterMm);
+      const printLabelWidthMm = Math.max(15, labelWidthMm - (rows <= 3 ? 10 : 6));
+      const printVerticalMarginMm = rows <= 3 ? 4.5 : (rows <= 5 ? 3.0 : (rows <= 8 ? 1.5 : 0.8));
+      const printTargetMiddleHeightMm = Math.max(8, printMiddleHeightMm - (printVerticalMarginMm * 2));
 
       let printQrMm = 22;
       if (!showBarcode) {
         // Full label available for QR Code
-        printQrMm = Math.round(Math.min(printTargetMiddleHeightMm, printLabelWidthMm - 8));
+        printQrMm = Math.round(Math.min(printTargetMiddleHeightMm, printLabelWidthMm - 6));
       } else {
         // Shared with barcode
         const maxQrWidthMm = printLabelWidthMm * (cols === 1 ? 0.35 : (cols === 2 ? 0.40 : 0.44));
         printQrMm = Math.round(Math.min(printTargetMiddleHeightMm, maxQrWidthMm));
       }
-      printQrMm = Math.max(14, printQrMm);
+      printQrMm = Math.max(10, printQrMm);
 
       // Preview mode: in pixels
       const prevHeaderFooterPx = rows <= 3 ? 60 : (rows <= 5 ? 46 : 38);
@@ -17196,8 +17395,12 @@
       }
       previewQrPx = Math.max(38, previewQrPx);
 
-      let previewHtml = `<div class="row g-2">`;
-      let printHtml = `<div class="row" style="margin-left: -${gapXMm / 2}mm !important; margin-right: -${gapXMm / 2}mm !important;">`;
+      const prevGapXPx = Math.round(gapXMm * 1.5);
+      const prevGapYPx = Math.round(gapYMm * 1.5);
+      const colWidthPercent = (100 / cols).toFixed(4);
+
+      let previewHtml = `<div class="row" style="margin-left: -${prevGapXPx / 2}px; margin-right: -${prevGapXPx / 2}px; display: flex; flex-wrap: wrap;">`;
+      let printHtml = `<div class="row" style="margin-left: -${gapXMm / 2}mm !important; margin-right: -${gapXMm / 2}mm !important; margin-top: -${gapYMm / 2}mm !important; margin-bottom: -${gapYMm / 2}mm !important; display: flex !important; flex-wrap: wrap !important;">`;
       const renderTasks = [];
 
       itemsToPrint.forEach((item, itemIdx) => {
@@ -17217,11 +17420,11 @@
               ? `margin-top: ${printVerticalMarginMm}mm !important; margin-bottom: ${printVerticalMarginMm}mm !important;` 
               : `margin-top: ${prevVerticalMarginPx}px !important; margin-bottom: ${prevVerticalMarginPx}px !important;`;
             const wrapperStyle = isPrint 
-              ? `padding-left: ${gapXMm / 2}mm !important; padding-right: ${gapXMm / 2}mm !important; padding-top: ${gapYMm / 2}mm !important; padding-bottom: ${gapYMm / 2}mm !important;` 
-              : ``;
+              ? `width: ${colWidthPercent}% !important; flex: 0 0 ${colWidthPercent}% !important; max-width: ${colWidthPercent}% !important; padding-left: ${gapXMm / 2}mm !important; padding-right: ${gapXMm / 2}mm !important; padding-top: ${gapYMm / 2}mm !important; padding-bottom: ${gapYMm / 2}mm !important; box-sizing: border-box !important;` 
+              : `width: ${colWidthPercent}%; flex: 0 0 ${colWidthPercent}%; max-width: ${colWidthPercent}%; padding: ${prevGapYPx / 2}px ${prevGapXPx / 2}px; box-sizing: border-box;`;
 
             return `
-            <div class="${gridClass}" style="${wrapperStyle}">
+            <div style="${wrapperStyle}">
               <div class="sticker-label-box border rounded-2 bg-white text-dark d-flex flex-column justify-content-between position-relative" style="${heightStyle} font-size: ${detailFontSize}; padding: ${currentPadding}; page-break-inside: avoid; break-inside: avoid; overflow: hidden; box-sizing: border-box;">
                 <div>
                   <div class="d-flex align-items-center justify-content-between mb-0.5 border-bottom pb-0.5" style="font-size: ${titleFontSize}; line-height: 1.1;">

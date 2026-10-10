@@ -3481,7 +3481,7 @@
             <button type="button" id="btnHeaderFinishScanner" class="btn btn-success fw-bold rounded-pill px-3 py-1 fs-7 shadow-sm text-nowrap" data-bs-dismiss="modal" onclick="finishContinuousScanModal()">
               เสร็จสิ้น
             </button>
-            <button type="button" class="btn-close btn-close-white ms-1" data-bs-dismiss="modal" onclick="stopHtml5Scanner()" title="ปิดหน้าต่าง"></button>
+            <button type="button" class="btn-close btn-close-white ms-1" data-bs-dismiss="modal" onclick="closeBarcodeQrScannerModal()" title="ปิดหน้าต่าง"></button>
           </div>
         </div>
 
@@ -3637,39 +3637,45 @@
                     <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelColsSelect">
                       <i class="bi bi-layout-three-columns me-1 text-primary"></i> จำนวนคอลัมน์:
                     </label>
-                    <select id="labelColsSelect" class="form-select form-select-sm rounded-3 fw-semibold" onchange="renderPrintableLabelsPreview()">
+                    <select id="labelColsSelect" class="form-select form-select-sm rounded-3 fw-semibold" onchange="onLabelGridSelectChange()">
                       <option value="1">1 คอลัมน์ (กว้างเต็มหน้า)</option>
                       <option value="2">2 คอลัมน์ (ใหญ่)</option>
                       <option value="3" selected>3 คอลัมน์ (มาตรฐาน)</option>
                       <option value="4">4 คอลัมน์ (เล็ก)</option>
+                      <option value="5">5 คอลัมน์ (กะทัดรัด)</option>
+                      <option value="6">6 คอลัมน์ (จิ๋ว)</option>
                     </select>
                   </div>
                   <div class="col-6">
                     <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelRowsSelect">
                       <i class="bi bi-distribute-vertical me-1 text-success"></i> จำนวนแถว:
                     </label>
-                    <select id="labelRowsSelect" class="form-select form-select-sm rounded-3 fw-semibold" onchange="renderPrintableLabelsPreview()">
-                      <option value="2">2 แถว (สูงพิเศษ ~13.5 ซม.)</option>
-                      <option value="3">3 แถว (สูงมาก ~9.0 ซม.)</option>
-                      <option value="4">4 แถว (สูง ~6.8 ซม.)</option>
-                      <option value="5">5 แถว (สูง ~5.4 ซม.)</option>
-                      <option value="6">6 แถว (กลาง ~4.5 ซม.)</option>
-                      <option value="7" selected>7 แถว (มาตรฐาน ~3.8 ซม.)</option>
-                      <option value="8">8 แถว (กะทัดรัด ~3.3 ซม.)</option>
-                      <option value="9">9 แถว (เล็ก ~3.0 ซม.)</option>
-                      <option value="10">10 แถว (จิ๋ว ~2.7 ซม.)</option>
+                    <select id="labelRowsSelect" class="form-select form-select-sm rounded-3 fw-semibold" onchange="onLabelGridSelectChange()">
+                      <option value="2">2 แถว</option>
+                      <option value="3">3 แถว</option>
+                      <option value="4">4 แถว</option>
+                      <option value="5">5 แถว</option>
+                      <option value="6">6 แถว</option>
+                      <option value="7" selected>7 แถว (มาตรฐาน)</option>
+                      <option value="8">8 แถว</option>
+                      <option value="9">9 แถว</option>
+                      <option value="10">10 แถว</option>
+                      <option value="11">11 แถว</option>
+                      <option value="12">12 แถว</option>
+                      <option value="14">14 แถว</option>
+                      <option value="16">16 แถว</option>
                     </select>
                   </div>
                 </div>
 
                 <!-- ระยะห่างระหว่างฉลาก (มิลลิเมตร) -->
-                <div class="row g-2 mb-3">
+                <div class="row g-2 mb-2">
                   <div class="col-6">
                     <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelGapXMm">
                       <i class="bi bi-arrows-expand-vertical me-1 text-primary rotate-90" style="transform: rotate(90deg); display: inline-block;"></i> ห่างแนวนอน (มม.):
                     </label>
                     <div class="input-group input-group-sm">
-                      <input type="number" id="labelGapXMm" class="form-control text-center fw-bold" value="3" min="0" max="25" step="0.5" onchange="renderPrintableLabelsPreview()" oninput="renderPrintableLabelsPreview()" />
+                      <input type="number" id="labelGapXMm" class="form-control text-center fw-bold" value="3" min="0" max="25" step="0.5" onchange="onLabelGapChange()" oninput="onLabelGapChange()" />
                       <span class="input-group-text fs-8 text-muted">มม.</span>
                     </div>
                   </div>
@@ -3678,9 +3684,39 @@
                       <i class="bi bi-arrows-expand-vertical me-1 text-primary"></i> ห่างแนวตั้ง (มม.):
                     </label>
                     <div class="input-group input-group-sm">
-                      <input type="number" id="labelGapYMm" class="form-control text-center fw-bold" value="2" min="0" max="25" step="0.5" onchange="renderPrintableLabelsPreview()" oninput="renderPrintableLabelsPreview()" />
+                      <input type="number" id="labelGapYMm" class="form-control text-center fw-bold" value="2" min="0" max="25" step="0.5" onchange="onLabelGapChange()" oninput="onLabelGapChange()" />
                       <span class="input-group-text fs-8 text-muted">มม.</span>
                     </div>
+                  </div>
+                </div>
+
+                <!-- กำหนดขนาดดวงฉลาก (กว้าง x สูง มม.) หรือคำนวณอัตโนมัติ -->
+                <div class="row g-2 mb-2">
+                  <div class="col-6">
+                    <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelItemWidthMm">
+                      <i class="bi bi-arrows-expand me-1 text-success"></i> กว้างต่อดวง (มม.):
+                    </label>
+                    <div class="input-group input-group-sm">
+                      <input type="number" id="labelItemWidthMm" class="form-control text-center fw-bold" value="64.7" min="15" max="200" step="0.5" onchange="onLabelItemDimensionChange()" oninput="onLabelItemDimensionChange()" />
+                      <span class="input-group-text fs-8 text-muted">มม.</span>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelItemHeightMm">
+                      <i class="bi bi-arrows-vertical me-1 text-success"></i> สูงต่อดวง (มม.):
+                    </label>
+                    <div class="input-group input-group-sm">
+                      <input type="number" id="labelItemHeightMm" class="form-control text-center fw-bold" value="39.1" min="15" max="280" step="0.5" onchange="onLabelItemDimensionChange()" oninput="onLabelItemDimensionChange()" />
+                      <span class="input-group-text fs-8 text-muted">มม.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- กล่องสรุปผลการคำนวณจำนวนดวง/แผ่น -->
+                <div id="labelCalculatedSizeSummary" class="p-2.5 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25 mb-3">
+                  <div class="d-flex align-items-center justify-content-between">
+                    <span class="fs-8 fw-bold text-success"><i class="bi bi-calculator me-1"></i>ผลการคำนวณ:</span>
+                    <span id="labelDimensionInfoBadge" class="badge bg-success text-white fs-7 px-3 py-1.5 fw-bold">21 ดวง/แผ่น</span>
                   </div>
                 </div>
 
@@ -3690,7 +3726,6 @@
                       <label class="form-label fw-bold fs-8 text-dark mb-0" for="labelCopiesInput">
                         <i class="bi bi-files me-1 text-secondary"></i> จำนวนสำเนา/ชิ้น:
                       </label>
-                      <span id="labelDimensionInfoBadge" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-9">3 x 7 = 21 ดวง/แผ่น</span>
                     </div>
                     <div class="input-group input-group-sm">
                       <button type="button" class="btn btn-outline-secondary px-2.5" onclick="adjustLabelCopies(-1)">-</button>
@@ -3735,7 +3770,7 @@
               <div class="card border-0 shadow-sm rounded-4 p-3 bg-white" style="min-height: 480px;">
                 <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
                   <h6 class="fw-bold text-dark mb-0"><i class="bi bi-eye-fill me-1 text-primary"></i> ตัวอย่างแผ่นพิมพ์ฉลาก</h6>
-                  <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8">
+                  <span id="labelPrintSummaryBadge" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8">
                     พร้อมพิมพ์กระดาษและสติกเกอร์
                   </span>
                 </div>
