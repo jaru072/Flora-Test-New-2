@@ -873,17 +873,33 @@ window.downloadDatabaseBackup = async function() {
 
     const clonedEquipment = safeJsonClone(window.equipmentList);
     const clonedEmployees = safeJsonClone(window.employeeList);
+    const jsonImagesMap = {};
 
-    clonedEquipment.forEach(eq => {
-      delete eq.imageBase64;
-      delete eq.photoBase64;
-    });
-    clonedEmployees.forEach(emp => {
-      delete emp.imageBase64;
-      delete emp.photoBase64;
+    clonedEquipment.forEach((eq, idx) => {
+      const code = (eq.code || eq.id || `eq_${idx + 1}`).trim();
+      const safeCode = code.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const img = eq.imageUrl || eq.imageBase64 || eq.photoUrl || eq.image || eq.photo;
+      if (img) {
+        eq.imageUrl = img;
+        jsonImagesMap[code] = img;
+        jsonImagesMap[safeCode] = img;
+        jsonImagesMap[`equipment_${safeCode}.jpg`] = img;
+      }
     });
 
-    window.updateBackupProgress(70, "กำลังสร้างไฟล์ JSON สำรองข้อมูล...", "รวมข้อมูลอุปกรณ์ บุคลากร ประวัติ หมวดหมู่ แผนก", true, "bg-primary");
+    clonedEmployees.forEach((emp, idx) => {
+      const code = (emp.code || emp.id || `emp_${idx + 1}`).trim();
+      const safeCode = code.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const photo = emp.photoUrl || emp.photoBase64 || emp.photoURL || emp.image || emp.imageUrl || emp.photo;
+      if (photo) {
+        emp.photoUrl = photo;
+        jsonImagesMap[code] = photo;
+        jsonImagesMap[safeCode] = photo;
+        jsonImagesMap[`employee_${safeCode}.jpg`] = photo;
+      }
+    });
+
+    window.updateBackupProgress(70, "กำลังสร้างไฟล์ JSON สำรองข้อมูล...", "รวมข้อมูลอุปกรณ์ บุคลากร ประวัติ รูปภาพ หมวดหมู่ แผนก", true, "bg-primary");
 
     const backupData = {
       version: "2.0",
@@ -908,7 +924,7 @@ window.downloadDatabaseBackup = async function() {
       departmentsList: getComprehensiveDepartmentsList(),
       positionsList: getComprehensivePositionsList(),
       locationsList: getComprehensiveLocationsList(),
-      imagesBase64Map: {}
+      imagesBase64Map: jsonImagesMap
     };
 
     const jsonString = JSON.stringify(backupData, null, 2);
@@ -1676,10 +1692,93 @@ window.executeRestoreDatabase = async function() {
       });
     }
 
+    const imgMap = (tempParsedRestoreData && tempParsedRestoreData.imagesBase64Map) ? tempParsedRestoreData.imagesBase64Map : {};
+
+    const resolveEquipmentImage = (item) => {
+      if (!item) return '';
+      const code = String(item.code || item.id || '').trim();
+      const safeCode = code.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const safeId = String(item.id || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+
+      const matched = imgMap[code] || 
+                      imgMap[code.toLowerCase()] || 
+                      imgMap[safeCode] || 
+                      imgMap[safeCode.toLowerCase()] || 
+                      imgMap[`equipment_${safeCode}.jpg`] || 
+                      imgMap[`equipment_${safeCode}.jpeg`] || 
+                      imgMap[`equipment_${safeCode}.png`] || 
+                      imgMap[`equipment_${safeCode}`] ||
+                      imgMap[`equipment_${safeId}.jpg`] ||
+                      imgMap[`equipment_${safeId}.jpeg`] ||
+                      imgMap[`equipment_${safeId}.png`] ||
+                      imgMap[`equipment_${safeId}`] ||
+                      imgMap[safeId];
+
+      if (matched) return matched;
+
+      return item.imageUrl || 
+             item.photoUrl || 
+             item.image || 
+             item.photo || 
+             item.picture || 
+             item.thumbnail || 
+             item.imageBase64 || 
+             item.photoBase64 || 
+             item.imgUrl || 
+             (Array.isArray(item.photos) && item.photos[0]) || 
+             (Array.isArray(item.images) && item.images[0]) || 
+             '';
+    };
+
+    const resolveEmployeePhoto = (emp) => {
+      if (!emp) return '';
+      const code = String(emp.code || emp.id || '').trim();
+      const safeCode = code.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const safeId = String(emp.id || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+
+      const matched = imgMap[code] || 
+                      imgMap[code.toLowerCase()] || 
+                      imgMap[safeCode] || 
+                      imgMap[safeCode.toLowerCase()] || 
+                      imgMap[`employee_${safeCode}.jpg`] || 
+                      imgMap[`employee_${safeCode}.jpeg`] || 
+                      imgMap[`employee_${safeCode}.png`] || 
+                      imgMap[`employee_${safeCode}`] ||
+                      imgMap[`employee_${safeId}.jpg`] ||
+                      imgMap[`employee_${safeId}.jpeg`] ||
+                      imgMap[`employee_${safeId}.png`] ||
+                      imgMap[`employee_${safeId}`] ||
+                      imgMap[safeId];
+
+      if (matched) return matched;
+
+      return emp.photoUrl || 
+             emp.photoURL || 
+             emp.photo || 
+             emp.image || 
+             emp.imageUrl || 
+             emp.avatar || 
+             emp.photoBase64 || 
+             emp.imageBase64 || 
+             '';
+    };
+
     if (mode === 'REPLACE') {
-      equipmentList = (tempParsedRestoreData.equipmentList || []).map(item => ({ ...item }));
-      employeeList = (tempParsedRestoreData.employeeList || []).map(emp => ({ ...emp }));
-      deletedEmployees = (tempParsedRestoreData.deletedEmployees || []).map(emp => ({ ...emp }));
+      equipmentList = (tempParsedRestoreData.equipmentList || []).map(item => {
+        const cloned = { ...item };
+        cloned.imageUrl = resolveEquipmentImage(cloned);
+        return cloned;
+      });
+      employeeList = (tempParsedRestoreData.employeeList || []).map(emp => {
+        const cloned = { ...emp };
+        cloned.photoUrl = resolveEmployeePhoto(cloned);
+        return cloned;
+      });
+      deletedEmployees = (tempParsedRestoreData.deletedEmployees || []).map(emp => {
+        const cloned = { ...emp };
+        cloned.photoUrl = resolveEmployeePhoto(cloned);
+        return cloned;
+      });
       transactionHistory = tempParsedRestoreData.transactionHistory || [];
       attendanceLogs = tempParsedRestoreData.attendanceLogs || [];
       auditLogs = tempParsedRestoreData.auditLogs || [];
@@ -1690,32 +1789,46 @@ window.executeRestoreDatabase = async function() {
     } else {
       const newEquip = tempParsedRestoreData.equipmentList || [];
       newEquip.forEach(item => {
+        const resolvedImg = resolveEquipmentImage(item);
         const idx = equipmentList.findIndex(e => e.id === item.id || e.code === item.code);
         if (idx >= 0) {
           const merged = { ...equipmentList[idx], ...item };
-          if (!item.imageUrl && equipmentList[idx].imageUrl) merged.imageUrl = equipmentList[idx].imageUrl;
+          merged.imageUrl = resolvedImg || merged.imageUrl || equipmentList[idx].imageUrl || '';
           equipmentList[idx] = merged;
         } else {
-          equipmentList.push({ ...item });
+          const newItem = { ...item };
+          newItem.imageUrl = resolvedImg;
+          equipmentList.push(newItem);
         }
       });
 
       const newEmp = tempParsedRestoreData.employeeList || [];
       newEmp.forEach(emp => {
+        const resolvedPhoto = resolveEmployeePhoto(emp);
         const idx = employeeList.findIndex(e => e.id === emp.id || e.code === emp.code);
         if (idx >= 0) {
           const merged = { ...employeeList[idx], ...emp };
-          if (!emp.photoUrl && employeeList[idx].photoUrl) merged.photoUrl = employeeList[idx].photoUrl;
+          merged.photoUrl = resolvedPhoto || merged.photoUrl || employeeList[idx].photoUrl || '';
           employeeList[idx] = merged;
         } else {
-          employeeList.push({ ...emp });
+          const newE = { ...emp };
+          newE.photoUrl = resolvedPhoto;
+          employeeList.push(newE);
         }
       });
       const newDeleted = tempParsedRestoreData.deletedEmployees || [];
       newDeleted.forEach(emp => {
+        const resolvedPhoto = resolveEmployeePhoto(emp);
         const idx = deletedEmployees.findIndex(e => (e.originalId || e.id || e.code) === (emp.originalId || emp.id || emp.code));
-        if (idx >= 0) deletedEmployees[idx] = { ...deletedEmployees[idx], ...emp };
-        else deletedEmployees.push({ ...emp });
+        if (idx >= 0) {
+          const merged = { ...deletedEmployees[idx], ...emp };
+          merged.photoUrl = resolvedPhoto || merged.photoUrl || deletedEmployees[idx].photoUrl || '';
+          deletedEmployees[idx] = merged;
+        } else {
+          const newD = { ...emp };
+          newD.photoUrl = resolvedPhoto;
+          deletedEmployees.push(newD);
+        }
       });
 
       const newTxs = tempParsedRestoreData.transactionHistory || [];

@@ -14773,24 +14773,45 @@
       }
 
       let explicitType = null;
+      let stripped = clean;
       if (/^(EMPLOYEE|EE|EMP|PERSONNEL|STAFF)\s*[:=\-_\/]\s*/i.test(clean)) {
         explicitType = 'EMPLOYEE';
-        clean = clean.replace(/^(EMPLOYEE|EE|EMP|PERSONNEL|STAFF)\s*[:=\-_\/]\s*/i, '').trim();
+        stripped = clean.replace(/^(EMPLOYEE|EE|EMP|PERSONNEL|STAFF)\s*[:=\-_\/]\s*/i, '').trim();
       } else if (/^(EQUIPMENT|EQ|TOOL|ASSET)\s*[:=\-_\/]\s*/i.test(clean)) {
         explicitType = 'EQUIPMENT';
-        clean = clean.replace(/^(EQUIPMENT|EQ|TOOL|ASSET)\s*[:=\-_\/]\s*/i, '').trim();
+        stripped = clean.replace(/^(EQUIPMENT|EQ|TOOL|ASSET)\s*[:=\-_\/]\s*/i, '').trim();
       }
 
-      const lower = clean.toLowerCase();
+      const lowerOriginal = clean.toLowerCase();
+      const lower = stripped.toLowerCase();
 
       // 1. Match Employee
       if (explicitType === 'EMPLOYEE' || !explicitType) {
-        const emp = (employeeList || []).find(e => 
-          (e.id && e.id.toLowerCase() === lower) ||
-          (e.code && e.code.toLowerCase() === lower) ||
-          (e.name && e.name.toLowerCase() === lower) ||
-          (e.phone && e.phone.replace(/[^0-9]/g, '') === clean.replace(/[^0-9]/g, '') && clean.length >= 9)
-        );
+        const emp = (employeeList || []).find(e => {
+          const eId = String(e.id || '').trim().toLowerCase();
+          const eCode = String(e.code || '').trim().toLowerCase();
+          const eName = String(e.name || '').trim().toLowerCase();
+          const ePhone = String(e.phone || '').replace(/[^0-9]/g, '');
+          const cleanPhone = clean.replace(/[^0-9]/g, '');
+
+          // Direct match against raw/original full code (e.g. EMP-038, SF-01)
+          if (eId === lowerOriginal || eCode === lowerOriginal) return true;
+          // Match against stripped code (e.g. 038)
+          if (eId === lower || eCode === lower) return true;
+          // Exact name match
+          if (eName === lowerOriginal || eName === lower) return true;
+          if (eName.includes(lowerOriginal) || (lower.length >= 3 && eName.includes(lower))) return true;
+          // Phone match
+          if (cleanPhone && cleanPhone.length >= 9 && ePhone === cleanPhone) return true;
+
+          // Strip prefixes from stored employee code/id (e.g. stored as EMP-038, scanned as 038 or EMP-038)
+          const strippedEId = eId.replace(/^(employee|ee|emp|personnel|staff|id|code)\s*[:=\-_\/]\s*/i, '');
+          const strippedECode = eCode.replace(/^(employee|ee|emp|personnel|staff|id|code)\s*[:=\-_\/]\s*/i, '');
+          if (strippedEId === lower || strippedECode === lower) return true;
+          if (strippedEId === lowerOriginal || strippedECode === lowerOriginal) return true;
+
+          return false;
+        });
         if (emp) {
           return {
             type: 'EMPLOYEE',
@@ -14808,11 +14829,21 @@
 
       // 2. Match Equipment
       if (explicitType === 'EQUIPMENT' || !explicitType) {
-        const item = (equipmentList || []).find(x => 
-          (x.code && x.code.toLowerCase() === lower) ||
-          (x.id && x.id.toLowerCase() === lower) ||
-          (x.name && x.name.toLowerCase() === lower)
-        );
+        const item = (equipmentList || []).find(x => {
+          const xId = String(x.id || '').trim().toLowerCase();
+          const xCode = String(x.code || '').trim().toLowerCase();
+          const xName = String(x.name || '').trim().toLowerCase();
+
+          if (xId === lowerOriginal || xCode === lowerOriginal || xName === lowerOriginal) return true;
+          if (xId === lower || xCode === lower || xName === lower) return true;
+
+          const strippedXId = xId.replace(/^(equipment|eq|tool|asset)\s*[:=\-_\/]\s*/i, '');
+          const strippedXCode = xCode.replace(/^(equipment|eq|tool|asset)\s*[:=\-_\/]\s*/i, '');
+          if (strippedXId === lower || strippedXCode === lower) return true;
+          if (strippedXId === lowerOriginal || strippedXCode === lowerOriginal) return true;
+
+          return false;
+        });
         if (item) {
           return {
             type: 'EQUIPMENT',
@@ -15449,7 +15480,7 @@
       if (saveBtn) {
         if (items.length === 0) {
           saveBtn.disabled = true;
-          saveBtn.className = 'btn btn-secondary fw-bold rounded-pill px-5 py-2 shadow-sm fs-6';
+          saveBtn.className = 'btn btn-secondary fw-bold rounded-pill px-4 py-2.5 shadow-sm fs-6 w-100';
           saveBtn.innerHTML = 'บันทึกข้อมูล';
         } else {
           saveBtn.disabled = false;
@@ -15460,10 +15491,10 @@
           });
 
           if (hasBorrowItem || currentTransCartType === 'ยืมอุปกรณ์') {
-            saveBtn.className = 'btn btn-warning fw-bold rounded-pill px-5 py-2 shadow-sm text-dark fs-6';
+            saveBtn.className = 'btn btn-warning fw-bold rounded-pill px-4 py-2.5 shadow-sm text-dark fs-6 w-100';
             saveBtn.innerHTML = '<i class="bi bi-arrow-repeat me-1.5"></i> บันทึกยืมอุปกรณ์';
           } else {
-            saveBtn.className = 'btn btn-danger fw-bold rounded-pill px-5 py-2 shadow-sm text-white fs-6';
+            saveBtn.className = 'btn btn-danger fw-bold rounded-pill px-4 py-2.5 shadow-sm text-white fs-6 w-100';
             saveBtn.innerHTML = '<i class="bi bi-box-arrow-up me-1.5"></i> บันทึกเบิกตัดสต็อก';
           }
         }
@@ -15819,7 +15850,8 @@
       } else if (res && res.type === 'EQUIPMENT' && res.entity) {
         item = res.entity;
       } else {
-        // Fallback resolution with prefix stripping
+        // Fallback resolution with both original and prefix-stripped matching
+        const lowerRaw = cleanCode.toLowerCase();
         let lookupCode = cleanCode;
         if (/^(EQUIPMENT|EQ|TOOL|ASSET)\s*[:=\-_\/]\s*/i.test(lookupCode)) {
           lookupCode = lookupCode.replace(/^(EQUIPMENT|EQ|TOOL|ASSET)\s*[:=\-_\/]\s*/i, '').trim();
@@ -15830,20 +15862,31 @@
 
         const lowerLookup = lookupCode.toLowerCase();
         // Check equipment list first
-        item = (equipmentList || []).find(x => 
-          (x.code && x.code.toLowerCase() === lowerLookup) || 
-          (x.id && x.id.toLowerCase() === lowerLookup) ||
-          (x.name && x.name.toLowerCase().includes(lowerLookup))
-        );
+        item = (equipmentList || []).find(x => {
+          const xId = String(x.id || '').trim().toLowerCase();
+          const xCode = String(x.code || '').trim().toLowerCase();
+          const xName = String(x.name || '').trim().toLowerCase();
+          return xCode === lowerRaw || xId === lowerRaw || xName === lowerRaw ||
+                 xCode === lowerLookup || xId === lowerLookup || xName.includes(lowerLookup);
+        });
 
         // Check employee list
         if (!item) {
-          emp = (employeeList || []).find(e => 
-            (e.id && e.id.toLowerCase() === lowerLookup) || 
-            (e.code && e.code.toLowerCase() === lowerLookup) ||
-            (e.name && e.name.toLowerCase().includes(lowerLookup)) ||
-            (e.phone && e.phone.replace(/[^0-9]/g, '') === lookupCode.replace(/[^0-9]/g, '') && lookupCode.length >= 9)
-          );
+          emp = (employeeList || []).find(e => {
+            const eId = String(e.id || '').trim().toLowerCase();
+            const eCode = String(e.code || '').trim().toLowerCase();
+            const eName = String(e.name || '').trim().toLowerCase();
+            const ePhone = String(e.phone || '').replace(/[^0-9]/g, '');
+            const cleanPhone = lookupCode.replace(/[^0-9]/g, '');
+
+            if (eId === lowerRaw || eCode === lowerRaw || eName === lowerRaw) return true;
+            if (eId === lowerLookup || eCode === lowerLookup || eName.includes(lowerLookup)) return true;
+            if (cleanPhone && cleanPhone.length >= 9 && ePhone === cleanPhone) return true;
+
+            const strippedEId = eId.replace(/^(employee|ee|emp|personnel|staff|id|code)\s*[:=\-_\/]\s*/i, '');
+            const strippedECode = eCode.replace(/^(employee|ee|emp|personnel|staff|id|code)\s*[:=\-_\/]\s*/i, '');
+            return strippedEId === lowerLookup || strippedECode === lowerLookup || strippedEId === lowerRaw || strippedECode === lowerRaw;
+          });
         }
       }
 
@@ -16494,6 +16537,7 @@
       } else if (res && res.type === 'EQUIPMENT' && res.entity) {
         item = res.entity;
       } else {
+        const lowerRaw = cleanCode.toLowerCase();
         let lookupCode = cleanCode;
         if (/^(EQUIPMENT|EQ|TOOL|ASSET)\s*[:=\-_\/]\s*/i.test(lookupCode)) {
           lookupCode = lookupCode.replace(/^(EQUIPMENT|EQ|TOOL|ASSET)\s*[:=\-_\/]\s*/i, '').trim();
@@ -16503,19 +16547,30 @@
         }
 
         const lower = lookupCode.toLowerCase();
-        item = (equipmentList || []).find(x => 
-          (x.code && x.code.toLowerCase() === lower) || 
-          (x.id && x.id.toLowerCase() === lower) ||
-          (x.name && x.name.toLowerCase().includes(lower))
-        );
+        item = (equipmentList || []).find(x => {
+          const xId = String(x.id || '').trim().toLowerCase();
+          const xCode = String(x.code || '').trim().toLowerCase();
+          const xName = String(x.name || '').trim().toLowerCase();
+          return xCode === lowerRaw || xId === lowerRaw || xName === lowerRaw ||
+                 xCode === lower || xId === lower || xName.includes(lower);
+        });
 
         if (!item) {
-          emp = (employeeList || []).find(e => 
-            (e.id && e.id.toLowerCase() === lower) || 
-            (e.code && e.code.toLowerCase() === lower) ||
-            (e.name && e.name.toLowerCase().includes(lower)) ||
-            (e.phone && e.phone.replace(/[^0-9]/g, '') === lookupCode.replace(/[^0-9]/g, '') && lookupCode.length >= 9)
-          );
+          emp = (employeeList || []).find(e => {
+            const eId = String(e.id || '').trim().toLowerCase();
+            const eCode = String(e.code || '').trim().toLowerCase();
+            const eName = String(e.name || '').trim().toLowerCase();
+            const ePhone = String(e.phone || '').replace(/[^0-9]/g, '');
+            const cleanPhone = lookupCode.replace(/[^0-9]/g, '');
+
+            if (eId === lowerRaw || eCode === lowerRaw || eName === lowerRaw) return true;
+            if (eId === lower || eCode === lower || eName.includes(lower)) return true;
+            if (cleanPhone && cleanPhone.length >= 9 && ePhone === cleanPhone) return true;
+
+            const strippedEId = eId.replace(/^(employee|ee|emp|personnel|staff|id|code)\s*[:=\-_\/]\s*/i, '');
+            const strippedECode = eCode.replace(/^(employee|ee|emp|personnel|staff|id|code)\s*[:=\-_\/]\s*/i, '');
+            return strippedEId === lower || strippedECode === lower || strippedEId === lowerRaw || strippedECode === lowerRaw;
+          });
         }
       }
 
@@ -17268,28 +17323,62 @@
 
     window.openPrintEmployeeBadgeModal = function(empId = 'ALL') {
       activePrintEmpId = empId;
-      const select = document.getElementById('badgeEmpSelect');
-      if (select) {
-        select.innerHTML = `
-          <option value="ALL">👥 บุคลากรทั้งหมดในระบบ (${employeeList.length} ท่าน)</option>
-          <option value="WORKER">👨‍🌾 เฉพาะพนักงานทำเกษตร (Worker)</option>
-          <option value="STAFF">💼 เฉพาะเจ้าหน้าที่สำนักงาน (Staff)</option>
-        `;
-        employeeList.forEach(emp => {
-          const opt = document.createElement('option');
-          opt.value = emp.id;
-          opt.textContent = `🪪 [${emp.id}] ${emp.name} (${emp.department})`;
-          if (empId && empId === emp.id) opt.selected = true;
-          select.appendChild(opt);
-        });
-        if (empId) select.value = empId;
+      
+      const deptSelect = document.getElementById('badgeQuickDeptSelect');
+      if (deptSelect) {
+        const depts = [...new Set(employeeList.map(e => e.department).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'th'));
+        deptSelect.innerHTML = '<option value="ALL">ทุกแผนก</option>' + depts.map(d => `<option value="${d}">${d}</option>`).join('');
+        deptSelect.value = 'ALL';
       }
+      const searchInput = document.getElementById('badgeQuickSearchInput');
+      if (searchInput) searchInput.value = '';
+
+      filterBadgeEmployeeSelectOptions();
 
       renderPrintableEmployeeBadgesPreview();
 
       const modalElem = document.getElementById('printableEmployeeBadgeModal');
       const modalInst = new bootstrap.Modal(modalElem);
       modalInst.show();
+    };
+
+    window.filterBadgeEmployeeSelectOptions = function() {
+      const select = document.getElementById('badgeEmpSelect');
+      if (!select) return;
+
+      const q = (document.getElementById('badgeQuickSearchInput')?.value || '').trim().toLowerCase();
+      const dept = document.getElementById('badgeQuickDeptSelect')?.value || 'ALL';
+
+      const filtered = employeeList.filter(e => {
+        const hay = [e.name, e.nickname, e.id, e.code, e.department, e.role].join(' ').toLowerCase();
+        const matchQ = !q || hay.includes(q);
+        const matchDept = dept === 'ALL' || e.department === dept;
+        return matchQ && matchDept;
+      });
+
+      const currentVal = select.value || activePrintEmpId || 'ALL';
+
+      select.innerHTML = `
+        <option value="ALL">👥 บุคลากรตามผลค้นหา/กรองทั้งหมด (${filtered.length} ท่าน)</option>
+        <option value="WORKER">👨‍🌾 เฉพาะพนักงานทำเกษตร (Worker)</option>
+        <option value="STAFF">💼 เฉพาะเจ้าหน้าที่สำนักงาน (Staff)</option>
+      `;
+
+      filtered.forEach(emp => {
+        const opt = document.createElement('option');
+        opt.value = emp.id;
+        const nick = emp.nickname ? ` (${emp.nickname})` : '';
+        opt.textContent = `🪪 [${emp.id}] ${emp.name}${nick} - ${emp.department || '-'}`;
+        select.appendChild(opt);
+      });
+
+      if (filtered.some(e => e.id === currentVal) || currentVal === 'ALL' || currentVal === 'WORKER' || currentVal === 'STAFF') {
+        select.value = currentVal;
+      } else {
+        select.value = 'ALL';
+      }
+
+      renderPrintableEmployeeBadgesPreview();
     };
 
     window.updateBadgeMarginTopDisplay = function() {
@@ -17410,12 +17499,25 @@
       const showDetails = document.getElementById('chkEmpShowDetails')?.checked;
 
       let employeesToPrint = [];
+      const q = (document.getElementById('badgeQuickSearchInput')?.value || '').trim().toLowerCase();
+      const dept = document.getElementById('badgeQuickDeptSelect')?.value || 'ALL';
+
+      let baseList = employeeList;
+      if (q || dept !== 'ALL') {
+        baseList = employeeList.filter(e => {
+          const hay = [e.name, e.nickname, e.id, e.code, e.department, e.role].join(' ').toLowerCase();
+          const matchQ = !q || hay.includes(q);
+          const matchDept = dept === 'ALL' || e.department === dept;
+          return matchQ && matchDept;
+        });
+      }
+
       if (selectedScope === 'ALL') {
-        employeesToPrint = [...employeeList];
+        employeesToPrint = [...baseList];
       } else if (selectedScope === 'WORKER') {
-        employeesToPrint = employeeList.filter(x => x.role === 'WORKER');
+        employeesToPrint = baseList.filter(x => x.role === 'WORKER');
       } else if (selectedScope === 'STAFF') {
-        employeesToPrint = employeeList.filter(x => x.role === 'STAFF');
+        employeesToPrint = baseList.filter(x => x.role === 'STAFF');
       } else {
         const found = employeeList.find(x => x.id === selectedScope);
         if (found) employeesToPrint = [found];
@@ -17756,17 +17858,29 @@
     };
 
     window.handleScannedEmpQrCode = function(rawCode) {
-      let cleanCode = rawCode.trim();
-      if (cleanCode.startsWith('EMPLOYEE:')) {
-        cleanCode = cleanCode.replace('EMPLOYEE:', '').trim();
-      }
+      if (!rawCode) return;
+      const rawTrim = String(rawCode).trim();
+      const lowerRaw = rawTrim.toLowerCase();
+      let cleanCode = rawTrim.replace(/^(EMPLOYEE|EE|EMP|PERSONNEL|STAFF)\s*[:=\-_\/]\s*/i, '').trim();
+      const lowerClean = cleanCode.toLowerCase();
 
       // Find in employeeList
-      const emp = employeeList.find(x => 
-        (x.id && x.id.toLowerCase() === cleanCode.toLowerCase()) || 
-        (x.code && x.code.toLowerCase() === cleanCode.toLowerCase()) ||
-        (x.name && x.name.toLowerCase().includes(cleanCode.toLowerCase()))
-      );
+      const emp = (employeeList || []).find(x => {
+        const xId = String(x.id || '').trim().toLowerCase();
+        const xCode = String(x.code || '').trim().toLowerCase();
+        const xName = String(x.name || '').trim().toLowerCase();
+
+        if (xId === lowerRaw || xCode === lowerRaw || xName === lowerRaw) return true;
+        if (xId === lowerClean || xCode === lowerClean || xName === lowerClean) return true;
+        if (xName.includes(lowerRaw) || (lowerClean.length >= 3 && xName.includes(lowerClean))) return true;
+
+        const strippedId = xId.replace(/^(employee|ee|emp|personnel|staff|id|code)\s*[:=\-_\/]\s*/i, '');
+        const strippedCode = xCode.replace(/^(employee|ee|emp|personnel|staff|id|code)\s*[:=\-_\/]\s*/i, '');
+        if (strippedId === lowerClean || strippedCode === lowerClean) return true;
+        if (strippedId === lowerRaw || strippedCode === lowerRaw) return true;
+
+        return false;
+      });
 
       const promptState = document.getElementById('scannedEmpPromptState');
       const foundCard = document.getElementById('scannedEmpResultCard');
@@ -21960,19 +22074,26 @@
 
         const collectionsToMigrate = [
           "equipment",
+          "equipments",
           "employees",
+          "deleted_employees",
           "attendance",
           "categories",
           "transactions",
           "departments",
           "locations",
+          "positions",
           "users",
           "audit_logs",
           "user_login_logs",
           "items",
           "borrowings",
           "system_settings",
-          "activity_logs"
+          "activity_logs",
+          "equipment_images",
+          "employee_photos",
+          "images",
+          "photos"
         ];
 
         if (showFeedback) {
@@ -22129,11 +22250,53 @@
               detailedCounts[colName] = (detailedCounts[colName] || 0) + restResult.docs.length;
               for (const docObj of restResult.docs) {
                 const rawData = docObj.data || {};
-                const officialCode = (rawData.code || (colName === 'equipment' ? rawData.equipmentCode : '') || rawData.id || docObj.id || '').trim();
+                const officialCode = (rawData.code || (colName === 'equipment' || colName === 'equipments' ? rawData.equipmentCode : '') || rawData.id || docObj.id || '').trim();
                 const cleanData = { ...rawData, id: officialCode || docObj.id, code: officialCode || docObj.id };
                 const targetId = officialCode || docObj.id;
 
+                // Normalize equipment image
+                if (colName === 'equipment' || colName === 'equipments' || colName === 'items') {
+                  const detectedImg = cleanData.imageUrl || 
+                                     cleanData.photoUrl || 
+                                     cleanData.image || 
+                                     cleanData.photo || 
+                                     cleanData.picture || 
+                                     cleanData.thumbnail || 
+                                     cleanData.imageBase64 || 
+                                     cleanData.photoBase64 || 
+                                     cleanData.imgUrl || 
+                                     cleanData.picUrl || 
+                                     (Array.isArray(cleanData.photos) && cleanData.photos[0]) || 
+                                     (Array.isArray(cleanData.images) && cleanData.images[0]) || 
+                                     '';
+                  if (detectedImg) {
+                    cleanData.imageUrl = detectedImg;
+                  }
+                }
+
+                // Normalize employee photo
+                if (colName === 'employees' || colName === 'deleted_employees') {
+                  const detectedPhoto = cleanData.photoUrl || 
+                                       cleanData.photoURL || 
+                                       cleanData.photo || 
+                                       cleanData.image || 
+                                       cleanData.imageUrl || 
+                                       cleanData.avatar || 
+                                       cleanData.photoBase64 || 
+                                       cleanData.imageBase64 || 
+                                       '';
+                  if (detectedPhoto) {
+                    cleanData.photoUrl = detectedPhoto;
+                  }
+                }
+
                 await setDoc(doc(db, colName, targetId), cleanData, { merge: true });
+                if (colName === 'equipments') {
+                  try { await setDoc(doc(db, 'equipment', targetId), cleanData, { merge: true }); } catch(e){}
+                } else if (colName === 'equipment') {
+                  try { await setDoc(doc(db, 'equipments', targetId), cleanData, { merge: true }); } catch(e){}
+                }
+
                 if (docObj.id !== targetId) {
                   try { await deleteDoc(doc(db, colName, docObj.id)); } catch(e){}
                 }
@@ -22162,11 +22325,53 @@
                   detailedCounts[colName] = (detailedCounts[colName] || 0) + snap.docs.length;
                   for (const docSnap of snap.docs) {
                     const rawData = docSnap.data() || {};
-                    const officialCode = (rawData.code || (colName === 'equipment' ? rawData.equipmentCode : '') || rawData.id || docSnap.id || '').trim();
+                    const officialCode = (rawData.code || (colName === 'equipment' || colName === 'equipments' ? rawData.equipmentCode : '') || rawData.id || docSnap.id || '').trim();
                     const cleanData = { ...rawData, id: officialCode || docSnap.id, code: officialCode || docSnap.id };
                     const targetId = officialCode || docSnap.id;
 
+                    // Normalize equipment image
+                    if (colName === 'equipment' || colName === 'equipments' || colName === 'items') {
+                      const detectedImg = cleanData.imageUrl || 
+                                         cleanData.photoUrl || 
+                                         cleanData.image || 
+                                         cleanData.photo || 
+                                         cleanData.picture || 
+                                         cleanData.thumbnail || 
+                                         cleanData.imageBase64 || 
+                                         cleanData.photoBase64 || 
+                                         cleanData.imgUrl || 
+                                         cleanData.picUrl || 
+                                         (Array.isArray(cleanData.photos) && cleanData.photos[0]) || 
+                                         (Array.isArray(cleanData.images) && cleanData.images[0]) || 
+                                         '';
+                      if (detectedImg) {
+                        cleanData.imageUrl = detectedImg;
+                      }
+                    }
+
+                    // Normalize employee photo
+                    if (colName === 'employees' || colName === 'deleted_employees') {
+                      const detectedPhoto = cleanData.photoUrl || 
+                                           cleanData.photoURL || 
+                                           cleanData.photo || 
+                                           cleanData.image || 
+                                           cleanData.imageUrl || 
+                                           cleanData.avatar || 
+                                           cleanData.photoBase64 || 
+                                           cleanData.imageBase64 || 
+                                           '';
+                      if (detectedPhoto) {
+                        cleanData.photoUrl = detectedPhoto;
+                      }
+                    }
+
                     await setDoc(doc(db, colName, targetId), cleanData, { merge: true });
+                    if (colName === 'equipments') {
+                      try { await setDoc(doc(db, 'equipment', targetId), cleanData, { merge: true }); } catch(e){}
+                    } else if (colName === 'equipment') {
+                      try { await setDoc(doc(db, 'equipments', targetId), cleanData, { merge: true }); } catch(e){}
+                    }
+
                     if (docSnap.id !== targetId) {
                       try { await deleteDoc(doc(db, colName, docSnap.id)); } catch(e){}
                     }
@@ -22237,6 +22442,22 @@
             alert(diagnosticMsg);
             showToast(`ℹ️ ไม่พบข้อมูลในฐานข้อมูลต้นทาง`);
           }
+        }
+
+        if (totalDocsCopied > 0) {
+          try {
+            const eqSnap = await getDocs(collection(db, "equipment"));
+            if (!eqSnap.empty) {
+              window.equipmentList = eqSnap.docs.map(d => ({ ...d.data(), id: d.id }));
+            }
+            const empSnap = await getDocs(collection(db, "employees"));
+            if (!empSnap.empty) {
+              window.employeeList = empSnap.docs.map(d => ({ ...d.data(), id: d.id }));
+            }
+          } catch(e) {
+            console.warn("Reloading data notice:", e);
+          }
+          if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
         }
 
         if (typeof renderCatalogGrid === 'function') renderCatalogGrid();

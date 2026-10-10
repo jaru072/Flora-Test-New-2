@@ -399,25 +399,7 @@
                   <span>พิมพ์ฉลากสินค้า</span>
                 </button>
               </li>
-              <li>
-                <button class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center gap-2 fw-semibold" onclick="openHardwareScannerSettingsModal()">
-                  <i class="bi bi-upc-scan text-success fs-6"></i>
-                  <div>
-                    <div class="lh-1 text-dark fw-bold">โหมดยิงสแกนอัตโนมัติ</div>
-                    <small class="text-muted fs-8 fw-normal">ตั้งค่า & ทดสอบเครื่องยิงสแกน QR/บาร์โค้ด</small>
-                  </div>
-                </button>
-              </li>
-              <li><hr class="dropdown-divider my-1"></li>
-              <li id="globalLogoMenuItem">
-                <button class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center gap-2 fw-semibold text-warning" onclick="openGlobalLogoModal()" title="จัดการและเลือกไฟล์รูปภาพโลโก้องค์กร (4 มุมผังองค์กร และเมนูหลัก)">
-                  <i class="bi bi-flower1 text-warning fs-6"></i>
-                  <div>
-                    <div class="lh-1 text-dark fw-bold">จัดการโลโก้องค์กร</div>
-                    <small class="text-muted fs-8 fw-normal">เลือกไฟล์รูปภาพโลโก้ใหม่ หรือใช้ทานตะวัน</small>
-                  </div>
-                </button>
-              </li>
+              <li class="super-admin-only-element d-none"><hr class="dropdown-divider my-1"></li>
               <li class="super-admin-only-element d-none" id="imageOptimizerMenuItem">
                 <button class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center gap-2 fw-semibold text-warning" onclick="openImageOptimizerModal()" title="ตั้งค่าการย่อและบีบอัดรูปภาพก่อนอัปโหลด Storage (เฉพาะ Admin jaru072@gmail.com)">
                   <i class="bi bi-lightning-charge-fill text-warning fs-6"></i>
@@ -3486,8 +3468,8 @@
 
   <!-- ==================== MODAL: REAL CAMERA BARCODE SCANNER (EQUIPMENT) ==================== -->
   <div class="modal fade" id="barcodeQrScannerModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-fullscreen m-0 p-0">
-      <div class="modal-content border-0 shadow-none d-flex flex-column h-100 vh-100 overflow-hidden rounded-0">
+    <div class="modal-dialog modal-fullscreen m-0 p-0" style="height: 100dvh; max-height: 100dvh;">
+      <div class="modal-content border-0 shadow-none d-flex flex-column rounded-0" style="height: 100%; height: 100dvh; max-height: 100dvh; overflow: hidden; position: relative;">
         
         <!-- ส่วนหัวของหน้าต่าง (Header): หัวข้อ "สแกนอุปกรณ์" และปุ่ม "เสร็จสิ้น" ไม่มีสัญลักษณ์ อยู่ในบรรทัดเดียวกัน -->
         <div class="modal-header bg-dark text-white border-0 py-2.5 px-3 d-flex align-items-center justify-content-between flex-shrink-0">
@@ -3503,8 +3485,8 @@
           </div>
         </div>
 
-        <!-- ตัวหน้าต่าง (Body): มีการจัด flex ให้เลื่อนเฉพาะส่วนใน และปุ่มบันทึกด้านล่างตรึงอยู่เสมอ -->
-        <div class="modal-body p-2.5 p-md-3 bg-light overflow-y-auto flex-grow-1" style="min-height: 0;">
+        <!-- ตัวหน้าต่าง (Body): มีการจัด flex ให้เลื่อนเฉพาะส่วนใน และมีระยะห่างด้านล่างไม่ให้ปุ่มบันทึกบังเนื้อหา -->
+        <div class="modal-body p-2.5 p-md-3 bg-light overflow-y-auto flex-grow-1" style="min-height: 0; padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important; -webkit-overflow-scrolling: touch;">
           <!-- กรอบที่ 1: รายชื่อผู้ทำรายการ (ถ้ายังไม่ได้สแกนก็รอสแกน) -->
           <div id="scannerOperatorCard" class="card border-0 shadow-sm rounded-3 mb-2 bg-white p-2.5">
             <div class="d-flex align-items-center justify-content-between">
@@ -3587,13 +3569,13 @@
           </div>
         </div>
 
-        <!-- ปุ่มควบคุมด้านล่าง (Footer) ตรึงอยู่ล่างสุดตรงกลางเสมอ -->
-        <div class="modal-footer bg-white border-top d-flex justify-content-center align-items-center py-2.5 px-3 flex-shrink-0 shadow-sm" style="z-index: 1050;">
+        <!-- ปุ่มควบคุมด้านล่าง (Footer) ตรึงอยู่ล่างสุดของหน้าจอเสมอ (Fixed Bottom) -->
+        <div class="modal-footer bg-white border-top d-flex justify-content-center align-items-center py-2.5 px-3 flex-shrink-0 shadow-lg" style="position: absolute; bottom: 0; left: 0; right: 0; width: 100%; z-index: 1060; padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));">
           <div id="continuousScanFooterSummary" class="d-none">
             <span id="continuousScanFooterCount" class="d-none">0</span>
           </div>
-          <!-- ปุ่มบันทึกข้อมูลอัจฉริยะ (บันทึกเบิกตัดสต็อก / บันทึกยืมอุปกรณ์ ตามประเภทอุปกรณ์) อยู่ล่างสุดตรงกลาง -->
-          <button type="button" id="btnScannerSaveTransaction" class="btn btn-secondary fw-bold rounded-pill px-5 py-2 shadow-sm fs-6" style="min-width: 240px; max-width: 420px;" onclick="saveTransactionDirectlyFromScanner()" disabled>
+          <!-- ปุ่มบันทึกข้อมูลอัจฉริยะ (บันทึกเบิกตัดสต็อก / บันทึกยืมอุปกรณ์ ตามประเภทอุปกรณ์) ตรึงอยู่ล่างสุดตรงกลาง -->
+          <button type="button" id="btnScannerSaveTransaction" class="btn btn-secondary fw-bold rounded-pill px-4 py-2.5 shadow-sm fs-6 w-100" style="min-width: 220px; max-width: 480px;" onclick="saveTransactionDirectlyFromScanner()" disabled>
             บันทึกข้อมูล
           </button>
         </div>
@@ -3758,8 +3740,8 @@
           <div class="d-flex align-items-center gap-2">
             <i class="bi bi-person-badge-fill fs-4 text-warning"></i>
             <div>
-              <h5 class="modal-title fw-bold mb-0">เครื่องมือสั่งพิมพ์บัตรพนักงาน พร้อม QR Code </h5>
-              <small class="text-white-50 fs-8">ออกแบบ พรีวิวสด และสั่งพิมพ์บัตรประจำตัวพนักงานพร้อม QR Code ออกกระดาษ A4 หรือการ์ด PVC</small>
+              <h5 class="modal-title fw-bold mb-0">เครื่องมือสั่งพิมพ์บัตรพนักงาน</h5>
+              <small class="text-white-50 fs-8">ออกแบบ พรีวิวสด และสั่งพิมพ์บัตรประจำตัวพนักงานออกกระดาษ A4 หรือการ์ด PVC</small>
             </div>
           </div>
           <button type="button" class="btn btn-danger btn-sm rounded-circle d-inline-flex align-items-center justify-content-center p-0 shadow-sm" style="width: 32px; height: 32px;" data-bs-dismiss="modal" aria-label="ปิดหน้าต่าง" title="ปิดหน้าต่าง">
@@ -3788,11 +3770,21 @@
                   </div>
                 </div>
 
-                <!-- Scope Select -->
+                <!-- Scope Select and Filters -->
                 <div class="mb-3">
-                  <label class="form-label fw-bold fs-7 text-dark" for="badgeEmpSelect">
-                    <i class="bi bi-people me-1 text-success"></i> เลือกบุคลากรที่ต้องการพิมพ์:
+                  <label class="form-label fw-bold fs-7 text-dark mb-1">
+                    <i class="bi bi-people me-1 text-success"></i> ค้นหาและเลือกบุคลากรที่ต้องการพิมพ์:
                   </label>
+                  <div class="row g-1 mb-1.5">
+                    <div class="col-7">
+                      <input type="text" id="badgeQuickSearchInput" class="form-control form-control-sm rounded-3 fs-8" placeholder="🔍 ค้นชื่อ, ชื่อเล่น, รหัส..." oninput="filterBadgeEmployeeSelectOptions()">
+                    </div>
+                    <div class="col-5">
+                      <select id="badgeQuickDeptSelect" class="form-select form-select-sm rounded-3 fs-8" onchange="filterBadgeEmployeeSelectOptions()">
+                        <option value="ALL">ทุกแผนก</option>
+                      </select>
+                    </div>
+                  </div>
                   <select id="badgeEmpSelect" class="form-select rounded-3 fs-7" onchange="renderPrintableEmployeeBadgesPreview()">
                     <option value="ALL">👥 บุคลากรทั้งหมดในระบบ</option>
                   </select>

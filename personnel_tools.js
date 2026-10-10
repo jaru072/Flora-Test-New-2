@@ -68,14 +68,42 @@
   }
 
   function modalMarkup(){return `
-    <div class="modal fade" id="personnelBadgeModal" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content border-0 rounded-4 overflow-hidden"><div class="modal-header bg-success text-white"><div><h5 class="modal-title fw-bold"><i class="bi bi-person-badge-fill me-2"></i>พิมพ์บัตรบุคลากรพร้อม QR Code</h5><small class="text-white-50">รายบุคคล รายการที่เลือก หรือทั้งหมด</small></div><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-0"><div class="row g-0"><div class="col-12 col-lg-3 p-3 border-end bg-light">
-      <label class="form-label fw-bold">รูปแบบกระดาษ</label><select id="badgePaper" class="form-select mb-2" onchange="renderPersonnelBadgePreview()"><option value="A4">A4</option><option value="PVC">ขนาดบัตร PVC</option></select>
-      <label class="form-label fw-bold">แนวกระดาษ</label><select id="badgeOrientation" class="form-select mb-2" onchange="renderPersonnelBadgePreview()"><option value="landscape">แนวนอน</option><option value="portrait">แนวตั้ง</option></select>
-      <label class="form-label fw-bold">จำนวนบัตรต่อแถว</label><select id="badgeColumns" class="form-select mb-2" onchange="renderPersonnelBadgePreview()"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4" selected>4</option></select>
-      <label class="form-label fw-bold">จำนวนสำเนาต่อคน</label><input id="badgeCopies" type="number" min="1" max="20" value="1" class="form-control mb-2" oninput="renderPersonnelBadgePreview()">
-      <label class="form-label fw-bold">สีบัตร</label><select id="badgeTheme" class="form-select mb-3" onchange="renderPersonnelBadgePreview()"><option value="#176e4c">เขียว Flora</option><option value="#0d2258">น้ำเงิน</option><option value="#9a6700">ทอง</option><option value="#1f2937">ดำ</option></select>
-      <div class="form-check"><input id="badgeShowPhoto" class="form-check-input" type="checkbox" checked onchange="renderPersonnelBadgePreview()"><label class="form-check-label">แสดงรูป</label></div><div class="form-check"><input id="badgeShowQr" class="form-check-input" type="checkbox" checked onchange="renderPersonnelBadgePreview()"><label class="form-check-label">แสดง QR Code</label></div><div class="form-check"><input id="badgeShowRole" class="form-check-input" type="checkbox" checked onchange="renderPersonnelBadgePreview()"><label class="form-check-label">แสดงแผนก/ตำแหน่ง</label></div><div class="form-check"><input id="badgeShowDetails" class="form-check-input" type="checkbox" onchange="renderPersonnelBadgePreview()"><label class="form-check-label">แสดงรายละเอียด/โทรศัพท์</label></div>
-    </div><div class="col-12 col-lg-9 personnel-modal-paper"><div id="personnelBadgePreview"></div></div></div></div><div class="modal-footer"><button class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">ปิด</button><button class="btn btn-success rounded-pill px-4 fw-bold" onclick="printPersonnelBadges()"><i class="bi bi-printer-fill me-1"></i>สั่งพิมพ์</button></div></div></div></div>
+    <div class="modal fade" id="personnelBadgeModal" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content border-0 rounded-4 overflow-hidden"><div class="modal-header bg-success text-white"><div><h5 class="modal-title fw-bold"><i class="bi bi-person-badge-fill me-2"></i>พิมพ์บัตรบุคลากร</h5><small class="text-white-50">ค้นหา กรองรายแผนก เลือกรายบุคคล หรือสั่งพิมพ์ทั้งหมด</small></div><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-0"><div class="row g-0"><div class="col-12 col-lg-4 p-3 border-end bg-light" style="max-height:75vh;overflow-y:auto">
+      <div class="p-2.5 bg-white rounded-3 mb-3 border shadow-xs">
+        <div class="fw-bold fs-7 text-success mb-2 border-bottom pb-1"><i class="bi bi-funnel-fill me-1"></i>ค้นหาและกรองบุคลากร</div>
+        <div class="mb-2 position-relative">
+          <input type="text" id="badgeModalSearchInput" class="form-control form-control-sm rounded-3 pe-4" placeholder="🔍 ค้นชื่อ, ชื่อเล่น, รหัส, แผนก..." oninput="onBadgeModalFilterChange()">
+          <button type="button" id="badgeModalSearchClearBtn" class="btn btn-link text-secondary p-1 position-absolute end-0 top-50 translate-middle-y me-1 d-none" style="text-decoration:none;font-size:15px;line-height:1;border:0;cursor:pointer" onclick="clearBadgeModalSearch()" title="ล้างคำที่ค้นหา">
+            <i class="bi bi-x-circle-fill"></i>
+          </button>
+        </div>
+        <div class="mb-2">
+          <select id="badgeModalDeptSelect" class="form-select form-select-sm rounded-3" onchange="onBadgeModalFilterChange(true)">
+            <option value="ALL">ทุกแผนก</option>
+          </select>
+        </div>
+        <div class="d-flex align-items-center justify-content-between mb-1.5 px-1">
+          <span id="badgeModalSelectedFilterBtn" class="badge-selected-filter-btn fs-8 text-muted user-select-none" style="cursor:pointer" onclick="toggleBadgeModalOnlySelected()" title="คลิกเพื่อสลับกรองเฉพาะที่เลือกแล้ว">เลือกแล้ว: <b id="badgeModalSelectedCount" class="text-success">0</b> / <span id="badgeModalTotalCount">0</span><span id="badgeModalOnlySelectedIndicator" class="ms-1 badge bg-success text-white fs-9 d-none">เฉพาะที่เลือก</span></span>
+          <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2 py-0.5 fs-8" onclick="badgeModalSelectAll(true)">เลือกทั้งหมด</button>
+            <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-0.5 fs-8 ms-1" onclick="badgeModalSelectAll(false)">ล้างการเลือก</button>
+          </div>
+        </div>
+        <div id="badgeModalEmpList" class="d-flex flex-column gap-1 border rounded-3 p-1.5 bg-light" style="max-height:180px;overflow-y:auto"></div>
+      </div>
+      <label class="form-label fw-bold fs-8 text-dark mb-1">รูปแบบกระดาษ</label><select id="badgePaper" class="form-select form-select-sm mb-2 rounded-3" onchange="renderPersonnelBadgePreview()"><option value="A4">A4</option><option value="PVC">ขนาดบัตร PVC</option></select>
+      <label class="form-label fw-bold fs-8 text-dark mb-1">แนวกระดาษ</label><select id="badgeOrientation" class="form-select form-select-sm mb-2 rounded-3" onchange="renderPersonnelBadgePreview()"><option value="landscape">แนวนอน</option><option value="portrait">แนวตั้ง</option></select>
+      <label class="form-label fw-bold fs-8 text-dark mb-1">จำนวนบัตรต่อแถว</label><select id="badgeColumns" class="form-select form-select-sm mb-2 rounded-3" onchange="renderPersonnelBadgePreview()"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4" selected>4</option></select>
+      <label class="form-label fw-bold fs-8 text-dark mb-1">จำนวนสำเนาต่อคน</label><input id="badgeCopies" type="number" min="1" max="20" value="1" class="form-control form-control-sm mb-2 rounded-3" oninput="renderPersonnelBadgePreview()">
+      <label class="form-label fw-bold fs-8 text-dark mb-1">สีบัตร</label><select id="badgeTheme" class="form-select form-select-sm mb-3 rounded-3" onchange="renderPersonnelBadgePreview()"><option value="#176e4c">เขียว Flora</option><option value="#0d2258">น้ำเงิน</option><option value="#9a6700">ทอง</option><option value="#1f2937">ดำ</option></select>
+      <div class="p-2 bg-white rounded-3 border shadow-xs mb-2">
+        <div class="fw-bold fs-8 text-muted mb-1.5 border-bottom pb-1">แสดงองค์ประกอบบนบัตร</div>
+        <div class="form-check form-switch mb-1"><input id="badgeShowPhoto" class="form-check-input" type="checkbox" checked onchange="renderPersonnelBadgePreview()"><label class="form-check-label fs-8 fw-semibold" for="badgeShowPhoto">แสดงรูปถ่าย</label></div>
+        <div class="form-check form-switch mb-1"><input id="badgeShowQr" class="form-check-input" type="checkbox" checked onchange="renderPersonnelBadgePreview()"><label class="form-check-label fs-8 fw-semibold" for="badgeShowQr">แสดงคิวอาร์โค้ด</label></div>
+        <div class="form-check form-switch mb-1"><input id="badgeShowRole" class="form-check-input" type="checkbox" checked onchange="renderPersonnelBadgePreview()"><label class="form-check-label fs-8 fw-semibold" for="badgeShowRole">แสดงแผนก/ตำแหน่ง</label></div>
+        <div class="form-check form-switch mb-0"><input id="badgeShowDetails" class="form-check-input" type="checkbox" onchange="renderPersonnelBadgePreview()"><label class="form-check-label fs-8 fw-semibold" for="badgeShowDetails">แสดงรายละเอียด/โทรศัพท์</label></div>
+      </div>
+    </div><div class="col-12 col-lg-8 personnel-modal-paper"><div id="personnelBadgePreview"></div></div></div></div><div class="modal-footer"><button class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">ปิด</button><button class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" onclick="printPersonnelBadges()"><i class="bi bi-printer-fill me-1"></i>สั่งพิมพ์</button></div></div></div></div>
 
     <div class="modal fade" id="personnelHistoryModal" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content border-0 rounded-4"><div class="modal-header bg-primary text-white"><div><h5 id="personnelHistoryTitle" class="modal-title fw-bold">ประวัติรายบุคคล</h5><small class="text-white-50">ประวัติเบิก–จ่าย–ยืม–คืนจากฐานหลัก</small></div><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="personnel-history-summary mb-3"><div><small>เบิกจ่าย</small><b id="histWithdraw" class="d-block fs-4 text-danger">0</b></div><div><small>ยืม</small><b id="histBorrow" class="d-block fs-4 text-warning">0</b></div><div><small>คืน</small><b id="histReturn" class="d-block fs-4 text-info">0</b></div><div><small>รวม</small><b id="histTotal" class="d-block fs-4 text-success">0</b></div></div><div class="row g-2 mb-3"><div class="col-md-8"><input id="personnelHistorySearch" class="form-control" placeholder="ค้นหาอุปกรณ์ สถานที่ หมายเหตุ..." oninput="renderPersonnelHistory()"></div><div class="col-md-4"><select id="personnelHistoryType" class="form-select" onchange="renderPersonnelHistory()"><option value="ALL">ทุกประเภท</option><option>เบิกจ่าย</option><option>ยืมอุปกรณ์</option><option>คืนอุปกรณ์</option></select></div></div><div class="table-responsive"><table class="table table-hover align-middle small"><thead class="table-light"><tr><th>วันเวลา</th><th>ประเภท</th><th>อุปกรณ์</th><th>จำนวน</th><th>สถานที่/หมายเหตุ</th></tr></thead><tbody id="personnelHistoryBody"></tbody></table></div></div><div class="modal-footer"><button class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">ปิด</button><button class="btn btn-primary rounded-pill" onclick="printPersonnelHistory()"><i class="bi bi-printer-fill me-1"></i>พิมพ์รายงาน</button></div></div></div></div>
 
@@ -206,16 +234,197 @@
   };
 
   window.openPersonnelBadgePrint=function(scope){
-    let ids=[];if(scope==='ALL')ids=(window.employees||[]).map(empId);else if(scope==='SELECTED')ids=[...state.selected];else if(Array.isArray(scope))ids=scope;else if(scope)ids=[scope];
-    if(!ids.length){toast('กรุณาเลือกบุคลากร');return}state.printIds=ids;bootstrap.Modal.getOrCreateInstance($('personnelBadgeModal')).show();renderPersonnelBadgePreview();
+    const allEmps = window.employees || [];
+    if(!allEmps.length){toast('ไม่มีรายชื่อบุคลากรในระบบ');return}
+    let ids=[];
+    if(Array.isArray(scope)) ids=[...scope];
+    else if(scope && scope!=='ALL' && scope!=='SELECTED') ids=[scope];
+    else if(scope==='SELECTED') ids=[...state.selected];
+    else ids=[];
+    
+    state.printIds=ids;
+    state.badgeFilterOnlySelected=false;
+    populateBadgeModalDepartments();
+    if($('badgeModalSearchInput')) $('badgeModalSearchInput').value='';
+    if($('badgeModalSearchClearBtn')) $('badgeModalSearchClearBtn').classList.add('d-none');
+    renderBadgeModalEmployeePicker();
+    bootstrap.Modal.getOrCreateInstance($('personnelBadgeModal')).show();
+    renderPersonnelBadgePreview();
   };
-  function badgeEmployees(){const map=new Map((window.employees||[]).map(e=>[empId(e),e]));return state.printIds.map(id=>map.get(id)).filter(Boolean)}
+
+  function populateBadgeModalDepartments(){
+    const deptSel=$('badgeModalDeptSelect');
+    if(!deptSel) return;
+    const all=window.employees||[];
+    const depts=[...new Set(all.map(e=>e.department).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'th'));
+    deptSel.innerHTML='<option value="ALL">ทุกแผนก</option>'+depts.map(d=>`<option value="${esc(d)}">${esc(strip(d))}</option>`).join('');
+    deptSel.value='ALL';
+  }
+
+  function getBadgeFilteredEmployees(){
+    const all=window.employees||[];
+    const q=($('badgeModalSearchInput')?.value||'').trim().toLowerCase();
+    const dept=($('badgeModalDeptSelect')?.value||'ALL').trim();
+    const onlySelected=Boolean(state.badgeFilterOnlySelected);
+    const printSet=new Set(state.printIds||[]);
+    return all.filter(e=>{
+      const id=empId(e);
+      if(onlySelected && !printSet.has(id)) return false;
+      const hay=[e.name,e.nickname,e.code,e.id,e.department,e.position].join(' ').toLowerCase();
+      const matchQ=!q || hay.includes(q);
+      const eDept=String(e.department||'').trim();
+      const matchDept=(dept==='ALL' || eDept===dept || strip(eDept)===strip(dept));
+      return matchQ && matchDept;
+    });
+  }
+
+  window.toggleBadgeModalOnlySelected=function(){
+    state.badgeFilterOnlySelected=!state.badgeFilterOnlySelected;
+    renderBadgeModalEmployeePicker();
+  };
+
+  window.clearBadgeModalSearch=function(){
+    const input=$('badgeModalSearchInput');
+    if(input){
+      input.value='';
+      input.focus();
+    }
+    onBadgeModalFilterChange();
+  };
+
+  window.onBadgeModalFilterChange=function(){
+    const input=$('badgeModalSearchInput');
+    const clearBtn=$('badgeModalSearchClearBtn');
+    if(clearBtn){
+      clearBtn.classList.toggle('d-none', !input || !input.value.trim());
+    }
+    renderBadgeModalEmployeePicker();
+  };
+
+  function renderBadgeModalEmployeePicker(){
+    const listElem=$('badgeModalEmpList');
+    if(!listElem) return;
+    const filtered=getBadgeFilteredEmployees();
+    const selCountElem=$('badgeModalSelectedCount');
+    const totalCountElem=$('badgeModalTotalCount');
+    const allEmps=window.employees||[];
+    if(totalCountElem) totalCountElem.textContent=allEmps.length;
+    if(selCountElem) selCountElem.textContent=state.printIds.length;
+    
+    const filterBtn=$('badgeModalSelectedFilterBtn');
+    const indicator=$('badgeModalOnlySelectedIndicator');
+    const isOnlySelected=Boolean(state.badgeFilterOnlySelected);
+    if(filterBtn) filterBtn.classList.toggle('active-filter', isOnlySelected);
+    if(indicator) indicator.classList.toggle('d-none', !isOnlySelected);
+
+    const printSet=new Set(state.printIds);
+    const hasSearch=Boolean($('badgeModalSearchInput')?.value?.trim());
+    
+    if(!filtered.length){
+      if(isOnlySelected){
+        listElem.innerHTML='<div class="text-center text-muted py-3 fs-8"><i class="bi bi-funnel text-success d-block mb-1 fs-5"></i>ไม่มีบุคลากรที่ถูกเลือก หรือไม่ตรงกับการค้นหา<br><button type="button" class="btn btn-xs btn-link text-success p-0 mt-1" onclick="toggleBadgeModalOnlySelected()">คลิกเพื่อแสดงทั้งหมด</button></div>';
+      }else{
+        listElem.innerHTML='<div class="text-center text-muted py-3 fs-8">ไม่พบรายชื่อตามเงื่อนไขที่ค้นหา</div>';
+      }
+      return;
+    }
+
+    listElem.innerHTML=filtered.map((e, idx)=>{
+      const id=empId(e);
+      const isChecked=printSet.has(id);
+      const code=e.code||id;
+      const nickText=e.nickname?` <span class="text-secondary">(ชื่อเล่น: ${esc(e.nickname)})</span>`:'';
+      const isFocused=hasSearch && idx===0;
+      return `<label class="badge-picker-item ${isChecked?'selected':''} ${isFocused?'border-success bg-success-subtle shadow-xs':''}" style="cursor:pointer">
+        <input type="checkbox" class="form-check-input flex-shrink-0" value="${esc(id)}" ${isChecked?'checked':''} onchange="toggleBadgePrintEmp('${esc(id)}',this.checked)">
+        <div class="d-flex flex-column min-width-0 flex-grow-1 ms-1">
+          <div class="d-flex align-items-center justify-content-between gap-1">
+            <span class="fw-bold fs-8 text-dark text-truncate">${esc(e.name||'-')}${nickText}</span>
+            <span class="badge text-bg-light border font-monospace fs-9 flex-shrink-0">${esc(code)}</span>
+          </div>
+          <span class="fs-9 text-muted text-truncate">${esc(strip(e.department||'-'))} · ${esc(strip(e.position||'-'))}</span>
+        </div>
+      </label>`;
+    }).join('');
+    listElem.scrollTop=0;
+  }
+
+  window.toggleBadgePrintEmp=function(id, checked){
+    const set=new Set(state.printIds);
+    if(checked) set.add(id);
+    else set.delete(id);
+    state.printIds=[...set];
+    renderBadgeModalEmployeePicker();
+    renderPersonnelBadgePreview();
+  };
+
+  window.badgeModalSelectAll=function(select){
+    const filtered=getBadgeFilteredEmployees();
+    const set=new Set(state.printIds);
+    filtered.forEach(e=>{
+      const id=empId(e);
+      if(select) set.add(id);
+      else set.delete(id);
+    });
+    state.printIds=[...set];
+    renderBadgeModalEmployeePicker();
+    renderPersonnelBadgePreview();
+  };
+
+  function cleanPersonName(name){
+    if(!name) return '-';
+    let n = String(name).trim();
+    return n.replace(/^(คุณ|นางสาว|น\.ส\.|นาย|นาง|ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง|ว่าที่ร้อยตรี|ว่าที่\s*ร\.ต\.|ดร\.|นพ\.|พญ\.|ทพ\.)\s*/, '').trim() || n;
+  }
+
+  function badgeEmployees(){
+    const map=new Map((window.employees||[]).map(e=>[empId(e),e]));
+    return state.printIds.map(id=>map.get(id)).filter(Boolean);
+  }
   window.renderPersonnelBadgePreview=async function(){
     const target=$('personnelBadgePreview');if(!target)return;const people=badgeEmployees(),copies=Math.max(1,Math.min(20,Number($('badgeCopies')?.value)||1)),cols=Math.max(1,Math.min(4,Number($('badgeColumns')?.value)||4)),theme=$('badgeTheme')?.value||'#176e4c';
+    if(!people.length){
+      target.innerHTML='<div class="text-center text-muted py-5"><i class="bi bi-person-badge fs-1 d-block mb-2 text-secondary opacity-50"></i><div class="fw-bold">ยังไม่ได้เลือกบุคลากรเพื่อพิมพ์บัตร</div><div class="small text-muted mt-1">กรุณาพิมพ์ค้นหา หรือคลิกเลือกรายชื่อบุคลากรจากรายการด้านซ้าย</div></div>';
+      return;
+    }
     const opts={photo:$('badgeShowPhoto')?.checked,qr:$('badgeShowQr')?.checked,role:$('badgeShowRole')?.checked,details:$('badgeShowDetails')?.checked};
     const projectTitle = typeof window.getFloraProjectTitle === 'function' ? window.getFloraProjectTitle() : 'โครงการรัตนบุปผา';
-    const cards=[];people.forEach(e=>{const code=e.code||empId(e);const qrData=code;for(let i=0;i<copies;i++)cards.push(`<div class="personnel-id-card" style="--badge-color:${theme}"><div class="personnel-id-card-header">${esc(projectTitle)}<div style="font-size:10px;opacity:.85">บัตรบุคลากร</div></div>${opts.photo?`<img class="personnel-id-card-photo" src="${esc(e.photoUrl||'favicon.png')}" onerror="this.src='favicon.png'">`:''}<b>${esc(e.name||'-')}</b><small class="font-monospace text-dark fw-bold">${esc(code)}</small>${opts.role?`<small class="text-success fw-bold">${esc(strip(e.position||'-'))}</small><small>${esc(strip(e.department||'-'))}</small>`:''}${opts.details?`<small>${esc(e.details||e.note||'')}</small><small>${esc(e.phone||'')}</small>`:''}${opts.qr?`<img class="personnel-id-card-qr" data-personnel-qr="${esc(qrData)}" alt="QR ${esc(code)}" title="QR ${esc(code)}">`:''}</div>`)});
-    const width=$('badgePaper')?.value==='PVC'?'86mm':'100%';target.innerHTML=`<div class="personnel-badge-sheet" style="grid-template-columns:repeat(${cols},minmax(0,1fr));max-width:${width}">${cards.join('')}</div>`;await hydrateQr(target);
+    const cards=[];
+    people.forEach(e=>{
+      const code=e.code||empId(e);
+      const qrData=code;
+      const cleanName=cleanPersonName(e.name);
+      const deptName=strip(e.department||'ไม่ระบุแผนก');
+      const posName=strip(e.position||'-');
+      for(let i=0;i<copies;i++){
+        cards.push(`<div class="personnel-id-card" style="--badge-color:${theme}">
+          <div class="personnel-id-card-header">
+            <div class="badge-header-title">${esc(projectTitle)}</div>
+            <div class="badge-header-dept">${esc(deptName)}</div>
+          </div>
+          <div class="personnel-id-card-body">
+            ${opts.photo?`
+              <div class="personnel-id-card-photo-box">
+                <img class="personnel-id-card-photo" src="${esc(e.photoUrl||'favicon.png')}" onerror="this.src='favicon.png'">
+              </div>
+            `:''}
+            <b class="personnel-id-card-name">${esc(cleanName)}</b>
+            ${opts.role?`<div class="personnel-id-card-pos">${esc(posName)}</div>`:''}
+            ${opts.details?`<div class="personnel-id-card-meta">${esc(e.phone?'โทร '+e.phone:(e.details||e.note||''))}</div>`:''}
+            <div class="personnel-id-card-bottom-row">
+              <div class="personnel-id-card-code-badge">
+                <span class="personnel-code-label">รหัสบุคลากร</span>
+                <span class="personnel-code-val">${esc(code)}</span>
+              </div>
+              ${opts.qr?`<div class="personnel-id-card-qr-box"><img class="personnel-id-card-qr" data-personnel-qr="${esc(qrData)}" alt="QR ${esc(code)}" title="QR ${esc(code)}"></div>`:''}
+            </div>
+          </div>
+        </div>`);
+      }
+    });
+    const width=$('badgePaper')?.value==='PVC'?'86mm':'100%';
+    target.innerHTML=`<div class="personnel-badge-sheet" style="grid-template-columns:repeat(${cols},minmax(0,1fr));max-width:${width}">${cards.join('')}</div>`;
+    await hydrateQr(target);
   };
   async function hydrateQr(root){
     for(const img of root.querySelectorAll('[data-personnel-qr]')){
@@ -238,23 +447,41 @@
     }
   }
   window.printPersonnelBadges=async function(){
+    if(!state.printIds.length){
+      toast('กรุณาเลือกบุคลากรอย่างน้อย 1 คนเพื่อพิมพ์บัตร');
+      return;
+    }
     await renderPersonnelBadgePreview();
     const preview=$('personnelBadgePreview');if(!preview)return;
     const orientation=$('badgeOrientation')?.value||'landscape',paper=$('badgePaper')?.value||'A4',theme=$('badgeTheme')?.value||'#176e4c',cols=Math.max(1,Math.min(4,Number($('badgeColumns')?.value)||4));
+    const isA4Land = paper==='A4' && orientation==='landscape';
+    const cardHeight = isA4Land ? '90mm' : (paper==='PVC' ? '52mm' : '58mm');
+    const photoSize = isA4Land ? '31mm' : (paper==='PVC' ? '24mm' : '26mm');
+    const qrSize = isA4Land ? '22mm' : '18mm';
+    const pageMargin = paper==='PVC' ? '0' : (isA4Land ? '5mm' : '6mm');
+    const gridGap = paper==='PVC' ? '0' : (isA4Land ? '3mm' : '4mm');
     const w=window.open('','_blank');if(!w){alert('กรุณาอนุญาต Pop-up เพื่อพิมพ์บัตร');return}
-    w.document.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>บัตรบุคลากรพร้อม QR Code</title><style>
-      @page{size:${paper==='PVC'?'86mm 54mm':'A4 '+orientation};margin:${paper==='PVC'?'0':'8mm'}}
+    w.document.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>บัตรบุคลากร</title><style>
+      @page{size:${paper==='PVC'?'86mm 54mm':'A4 '+orientation};margin:${pageMargin}}
       *{box-sizing:border-box}
-      body{font-family:Arial,'Sarabun',sans-serif;margin:0;padding:${paper==='PVC'?'0':'4mm'};background:#fff;color:#1e293b;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      .personnel-badge-sheet{display:grid;grid-template-columns:repeat(${paper==='PVC'?'1':cols},minmax(0,1fr));gap:${paper==='PVC'?'0':'4mm'};max-width:100%;justify-content:center}
-      .personnel-id-card{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;padding:3mm 2.5mm;border:2px solid ${theme};border-radius:3.5mm;break-inside:avoid;page-break-inside:avoid;min-height:${paper==='PVC'?'52mm':'56mm'};background:#fff}
-      .personnel-id-card-header{width:100%;padding:1.8mm 1mm;background:${theme};color:#fff;border-radius:2.5mm;font-weight:bold;font-size:10.5pt;line-height:1.2}
-      .personnel-id-card-photo{width:20mm;height:20mm;object-fit:cover;border-radius:2.5mm;margin:2mm 0 1mm;border:1.5px solid ${theme}}
-      .personnel-id-card b{font-size:10.5pt;margin-top:0.8mm;color:#0f172a;line-height:1.2}
-      .personnel-id-card .font-monospace{font-size:8.5pt;background:#f1f5f9;padding:1px 6px;border-radius:3px;margin:0.8mm 0;font-weight:bold}
-      .personnel-id-card-qr{width:22mm;height:22mm;object-fit:contain;margin-top:1.5mm;image-rendering:pixelated}
-      .text-success{color:${theme}!important}
-      small{display:block;font-size:8pt;line-height:1.3}
+      body{font-family:'Sarabun',Arial,sans-serif;margin:0;padding:${paper==='PVC'?'0':'2mm'};background:#fff;color:#1e293b;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .personnel-badge-sheet{display:grid;grid-template-columns:repeat(${paper==='PVC'?'1':cols},minmax(0,1fr));gap:${gridGap};max-width:100%;justify-content:center}
+      .personnel-id-card{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;padding:2.5mm 3mm;border:2px solid ${theme};border-radius:3.5mm;break-inside:avoid;page-break-inside:avoid;height:${cardHeight};max-height:${cardHeight};background:#fff;overflow:hidden;box-sizing:border-box}
+      .personnel-id-card-header{width:100%;padding:2mm 1.2mm;background:${theme};color:#fff;border-radius:2.5mm;text-align:center;flex-shrink:0}
+      .badge-header-title{font-size:10pt;font-weight:bold;line-height:1.2;letter-spacing:0.2px}
+      .badge-header-dept{font-size:8pt;font-weight:600;opacity:0.95;margin-top:0.4mm;line-height:1.15}
+      .personnel-id-card-body{display:flex;flex-direction:column;align-items:center;width:100%;flex:1;justify-content:space-between;padding:1mm 0 0.5mm;min-height:0;overflow:hidden}
+      .personnel-id-card-photo-box{width:100%;display:flex;justify-content:center;align-items:center;margin:1.5mm 0 1mm;flex-shrink:0}
+      .personnel-id-card-photo{width:${photoSize};height:${photoSize};object-fit:cover;border-radius:3mm;border:1.8px solid ${theme};display:block}
+      .personnel-id-card-bottom-row{display:flex;align-items:center;justify-content:center;gap:3.5mm;width:100%;margin-top:auto;padding-top:1.5mm;margin-bottom:0.5mm;flex-shrink:0}
+      .personnel-id-card-code-badge{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f8fafc;border:1.2px solid #94a3b8;border-radius:2.2mm;padding:1.2mm 2.5mm;min-width:20mm}
+      .personnel-code-label{font-size:6.8pt;color:#475569;font-weight:bold;line-height:1;margin-bottom:0.6mm}
+      .personnel-code-val{font-size:9.5pt;font-weight:bold;font-family:monospace;color:#0f172a;line-height:1.15;word-break:break-all}
+      .personnel-id-card-name{font-size:11.5pt;font-weight:bold;color:#0f172a;margin-top:1mm;line-height:1.2;text-align:center;word-break:break-word}
+      .personnel-id-card-pos{font-size:8.5pt;font-weight:bold;color:${theme};margin-top:0.6mm;text-align:center;line-height:1.2}
+      .personnel-id-card-meta{font-size:7.5pt;color:#64748b;margin-top:0.4mm;text-align:center}
+      .personnel-id-card-qr-box{display:flex;align-items:center;justify-content:center}
+      .personnel-id-card-qr{width:${qrSize};height:${qrSize};object-fit:contain;image-rendering:pixelated}
     </style></head><body>${preview.innerHTML}<script>window.onload=()=>{setTimeout(()=>{window.print();},300);}<\/script></body></html>`);
     w.document.close();
   };
@@ -274,7 +501,38 @@
   window.openPersonnelQrScanner=function(){const sel=$('personnelQrSelect');if(sel)sel.innerHTML='<option value="">-- เลือกจากรายชื่อ --</option>'+[...(window.employees||[])].sort((a,b)=>(a.name||'').localeCompare(b.name||'','th')).map(e=>`<option value="${esc(empId(e))}">${esc(e.name||'-')} [${esc(e.code||empId(e))}]</option>`).join('');$('personnelQrResult').innerHTML='';bootstrap.Modal.getOrCreateInstance($('personnelQrModal')).show();setTimeout(startPersonnelQrScanner,350)};
   async function startPersonnelQrScanner(){if(!window.Html5Qrcode||state.scanner)return;try{state.scanner=new Html5Qrcode('personnelQrReader');await state.scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:220,height:220}},text=>findPersonnelFromQr(text),()=>{})}catch(e){console.warn('QR scanner',e)}}
   window.stopPersonnelQrScanner=async function(){if(!state.scanner)return;try{await state.scanner.stop();await state.scanner.clear()}catch(e){}state.scanner=null};
-  window.findPersonnelFromQr=function(raw){const clean=String(raw||'').trim().replace(/^(EMPLOYEE|EE|EMP|PERSONNEL|STAFF|ID|CODE)\s*[:=\-_\/]\s*/i,'');const q=clean.toLowerCase();const e=(window.employees||[]).find(x=>[x.id,x.code,x.name].some(v=>String(v||'').toLowerCase()===q))||(window.employees||[]).find(x=>String(x.name||'').toLowerCase().includes(q));const out=$('personnelQrResult');if(!e){out.innerHTML='<div class="alert alert-warning">ไม่พบข้อมูลบุคลากร</div>';return}const id=empId(e);out.innerHTML=`<div class="card border-success"><div class="card-body d-flex flex-wrap align-items-center gap-3"><img class="personnel-avatar" style="width:80px;height:80px" src="${esc(e.photoUrl||'favicon.png')}"><div class="flex-grow-1"><h5 class="fw-bold mb-1">${esc(e.name||'-')}</h5><div>${esc(e.code||id)} · ${esc(strip(e.department||'-'))} · ${esc(strip(e.position||'-'))}</div></div><div class="d-flex flex-wrap gap-1"><button class="btn btn-primary btn-sm personnel-admin-only" onclick="openEditModal('${esc(id)}')">แก้ไข</button><button class="btn btn-success btn-sm" onclick="openPersonnelBadgePrint(['${esc(id)}'])">พิมพ์บัตร</button><button class="btn btn-info btn-sm" onclick="openPersonnelHistory('${esc(id)}')">ประวัติ</button><button class="btn btn-warning btn-sm personnel-admin-only" onclick="selectPersonnelForAttendance('${esc(id)}')">ลงเวลา</button></div></div></div>`;updateAccessUi()};
+  window.findPersonnelFromQr=function(raw){
+    if(!raw) return;
+    const rawTrim=String(raw).trim();
+    const rawLower=rawTrim.toLowerCase();
+    const clean=rawTrim.replace(/^(EMPLOYEE|EE|EMP|PERSONNEL|STAFF|ID|CODE)\s*[:=\-_\/]\s*/i,'').trim();
+    const q=clean.toLowerCase();
+
+    const e=(window.employees||[]).find(x=>{
+      const xId=String(x.id||'').trim().toLowerCase();
+      const xCode=String(x.code||'').trim().toLowerCase();
+      const xName=String(x.name||'').trim().toLowerCase();
+
+      // Check full raw code first (e.g. EMP-038, SF-01)
+      if(xId===rawLower || xCode===rawLower || xName===rawLower) return true;
+      // Check stripped code (e.g. 038)
+      if(xId===q || xCode===q || xName===q) return true;
+      if(xName.includes(rawLower) || (q.length>=3 && xName.includes(q))) return true;
+
+      // Check if stored employee code has prefix that can be stripped
+      const strippedId=xId.replace(/^(employee|ee|emp|personnel|staff|id|code)\s*[:=\-_\/]\s*/i,'');
+      const strippedCode=xCode.replace(/^(employee|ee|emp|personnel|staff|id|code)\s*[:=\-_\/]\s*/i,'');
+      if(strippedId===q || strippedCode===q) return true;
+      if(strippedId===rawLower || strippedCode===rawLower) return true;
+
+      return false;
+    });
+    const out=$('personnelQrResult');
+    if(!e){out.innerHTML='<div class="alert alert-warning">ไม่พบข้อมูลบุคลากร</div>';return}
+    const id=empId(e);
+    out.innerHTML=`<div class="card border-success"><div class="card-body d-flex flex-wrap align-items-center gap-3"><img class="personnel-avatar" style="width:80px;height:80px" src="${esc(e.photoUrl||'favicon.png')}"><div class="flex-grow-1"><h5 class="fw-bold mb-1">${esc(e.name||'-')}</h5><div>${esc(e.code||id)} · ${esc(strip(e.department||'-'))} · ${esc(strip(e.position||'-'))}</div></div><div class="d-flex flex-wrap gap-1"><button class="btn btn-primary btn-sm personnel-admin-only" onclick="openEditModal('${esc(id)}')">แก้ไข</button><button class="btn btn-success btn-sm" onclick="openPersonnelBadgePrint(['${esc(id)}'])">พิมพ์บัตร</button><button class="btn btn-info btn-sm" onclick="openPersonnelHistory('${esc(id)}')">ประวัติ</button><button class="btn btn-warning btn-sm personnel-admin-only" onclick="selectPersonnelForAttendance('${esc(id)}')">ลงเวลา</button></div></div></div>`;
+    updateAccessUi();
+  };
   window.selectPersonnelForAttendance=function(id){if(!window.requirePersonnelAdmin('ลงเวลา'))return;bootstrap.Modal.getInstance($('personnelQrModal'))?.hide();window.switchWorkspaceTab?.('attendance');setTimeout(()=>{if($('personnelAttendanceEmployee'))$('personnelAttendanceEmployee').value=id},100)};
 
   window.openPersonnelExcelImport=function(){if(!window.requirePersonnelAdmin('นำเข้าบุคลากร'))return;state.parsedExcel=[];$('personnelExcelPreview').innerHTML='<tr><td colspan="7" class="text-center text-muted py-4">ยังไม่ได้เลือกไฟล์</td></tr>';$('personnelExcelCount').textContent='0 รายการ';bootstrap.Modal.getOrCreateInstance($('personnelExcelModal')).show()};

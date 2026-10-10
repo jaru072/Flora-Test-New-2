@@ -320,19 +320,24 @@ window.executeEquipmentRestore = async function() {
       
       if (!isAppend) {
         // Clear existing equipments in Firestore
-        const oldEqSnap = await getDocs(collection(window.db, 'equipments'));
+        const oldEqSnap = await getDocs(collection(window.db, 'equipment'));
         const newIds = new Set(equipments.map(e => e.id || e.code).filter(Boolean));
         for (const docSnap of oldEqSnap.docs) {
           if (!newIds.has(docSnap.id)) {
-            await deleteDoc(doc(window.db, 'equipments', docSnap.id));
+            await deleteDoc(doc(window.db, 'equipment', docSnap.id));
+            try { await deleteDoc(doc(window.db, 'equipments', docSnap.id)); } catch(e){}
           }
         }
       }
 
       for (let i = 0; i < equipments.length; i++) {
         const item = equipments[i];
+        if (!item.imageUrl) {
+          item.imageUrl = item.photoUrl || item.image || item.photo || item.imageBase64 || '';
+        }
         const docId = String(item.id || item.code || `eq_${i + 1}`);
-        await setDoc(doc(window.db, 'equipments', docId), item, { merge: true });
+        await setDoc(doc(window.db, 'equipment', docId), item, { merge: true });
+        try { await setDoc(doc(window.db, 'equipments', docId), item, { merge: true }); } catch(e){}
         
         if (i % 5 === 0 || i === equipments.length - 1) {
           const progress = 25 + Math.round((i / equipments.length) * 35);

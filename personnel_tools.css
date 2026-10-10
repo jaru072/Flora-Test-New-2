@@ -23,10 +23,22 @@
 .personnel-empty{padding:55px 20px;text-align:center;color:#7d8c85}
 .personnel-modal-paper{background:#eef2f0;padding:14px;max-height:65vh;overflow:auto}
 .personnel-badge-sheet{display:grid;gap:8px;background:#fff;padding:10px;margin:0 auto;box-shadow:0 3px 16px rgba(0,0,0,.08)}
-.personnel-id-card{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;min-height:210px;padding:9px;border:2px solid var(--badge-color,#176e4c);border-radius:12px;background:#fff;break-inside:avoid;overflow:hidden}
-.personnel-id-card-header{width:100%;padding:6px;border-radius:8px;background:var(--badge-color,#176e4c);color:#fff;font-weight:800}
-.personnel-id-card-photo{width:72px;height:72px;border-radius:10px;object-fit:cover;margin:7px 0 4px;border:2px solid var(--badge-color,#176e4c)}
-.personnel-id-card-qr{width:62px;height:62px;object-fit:contain;margin-top:4px}
+.personnel-id-card{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;height:340px;padding:9px 10px;border:2px solid var(--badge-color,#176e4c);border-radius:12px;background:#fff;break-inside:avoid;overflow:hidden;box-sizing:border-box}
+.personnel-id-card-header{width:100%;padding:6px 8px;border-radius:8px;background:var(--badge-color,#176e4c);color:#fff;text-align:center;flex-shrink:0}
+.badge-header-title{font-size:13px;font-weight:800;line-height:1.2;letter-spacing:0.2px}
+.badge-header-dept{font-size:10.5px;font-weight:600;opacity:0.92;margin-top:2px;line-height:1.15}
+.personnel-id-card-body{display:flex;flex-direction:column;align-items:center;width:100%;flex:1;justify-content:space-between;padding:4px 0 2px}
+.personnel-id-card-photo-box{width:100%;display:flex;justify-content:center;align-items:center;margin:6px 0 4px}
+.personnel-id-card-photo{width:110px;height:110px;border-radius:12px;object-fit:cover;border:2px solid var(--badge-color,#176e4c);display:block}
+.personnel-id-card-bottom-row{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;margin-top:auto;padding-top:4px;margin-bottom:2px}
+.personnel-id-card-code-badge{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:8px;padding:5px 9px;min-width:70px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.personnel-code-label{font-size:9.5px;color:#64748b;font-weight:700;line-height:1;margin-bottom:2px}
+.personnel-code-val{font-size:12px;font-weight:800;font-family:monospace;color:#0f172a;line-height:1.15;word-break:break-all}
+.personnel-id-card-name{font-size:14px;font-weight:800;color:#0f172a;margin-top:4px;line-height:1.25;text-align:center;word-break:break-word}
+.personnel-id-card-pos{font-size:11px;font-weight:700;color:var(--badge-color,#176e4c);margin-top:2px;text-align:center;line-height:1.2}
+.personnel-id-card-meta{font-size:9.5px;color:#64748b;margin-top:1px;text-align:center}
+.personnel-id-card-qr-box{display:flex;align-items:center;justify-content:center}
+.personnel-id-card-qr{width:62px;height:62px;object-fit:contain;image-rendering:pixelated}
 .personnel-history-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .personnel-history-summary>div{padding:10px;border-radius:12px;text-align:center;background:#f5f8f6;border:1px solid #e1e9e5}
 .personnel-scan-reader{min-height:230px;border:2px dashed #aac9ba;border-radius:14px;background:#f4f9f6;overflow:hidden}
@@ -36,3 +48,12 @@
 @media(max-width:900px){.personnel-filter-grid{grid-template-columns:1fr 1fr}.personnel-history-summary{grid-template-columns:1fr 1fr}.personnel-directory-toolbar{padding:12px}}
 @media(max-width:575px){.personnel-filter-grid{grid-template-columns:1fr}.personnel-directory-panel{padding:10px 7px 40px}.personnel-tool-actions .btn{flex:1 1 calc(50% - 5px)}.personnel-card-grid{grid-template-columns:1fr;padding:9px}.personnel-bulk-bar.show{flex-direction:column}.personnel-history-summary{grid-template-columns:1fr 1fr}}
 @media print{body.personnel-badge-printing>*:not(#personnelBadgePrintRoot){display:none!important}#personnelBadgePrintRoot{display:block!important}.personnel-id-card{box-shadow:none}.personnel-badge-sheet{box-shadow:none;page-break-after:always}}
+
+.badge-picker-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;background:#ffffff;border:1px solid #e2e8f0;cursor:pointer;user-select:none;transition:background 0.15s, border-color 0.15s;}
+.badge-picker-item:hover{background:#f0fdf4;border-color:#86efac;}
+.badge-picker-item input[type="checkbox"]{cursor:pointer;}
+.badge-picker-item.selected{background:#ecfdf5;border-color:#10b981;}
+
+.badge-selected-filter-btn{cursor:pointer;padding:2px 8px;border-radius:6px;transition:all .15s;border:1px solid transparent;display:inline-flex;align-items:center}
+.badge-selected-filter-btn:hover{background:#e8f5e9;border-color:#a5d6a7}
+.badge-selected-filter-btn.active-filter{background:#d1fae5;border-color:#10b981;font-weight:700;color:#065f46!important}
