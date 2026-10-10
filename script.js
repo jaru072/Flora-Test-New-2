@@ -400,6 +400,15 @@
           if (typeof window.hideMandatoryLoginScreen === 'function') {
             window.hideMandatoryLoginScreen();
           }
+
+          // Trigger automatic daily cloud snapshot for Admin (quiet background, 1 time per day)
+          if (user.email === 'jaru072@gmail.com' || currentRole === 'ADMIN') {
+            setTimeout(() => {
+              if (typeof window.checkAndRunDailyCloudSnapshot === 'function') {
+                window.checkAndRunDailyCloudSnapshot();
+              }
+            }, 5500);
+          }
         } else {
           console.log("Firebase Auth: No active user session detected.");
           if (lastKnownUserForLogout) {
@@ -12165,9 +12174,11 @@
         } else if (actionType === 'LABEL') {
           if (typeof openPrintLabelModal === 'function') openPrintLabelModal(equipId);
         } else if (actionType === 'EDIT') {
-          if (typeof openEditModal === 'function') openEditModal(equipId);
+          const fn = window.openEditModal || (typeof openEditModal === 'function' ? openEditModal : null);
+          if (typeof fn === 'function') fn(equipId);
         } else if (actionType === 'DELETE') {
-          if (typeof deleteEquipment === 'function') deleteEquipment(equipId);
+          const fn = window.deleteEquipment || (typeof deleteEquipment === 'function' ? deleteEquipment : null);
+          if (typeof fn === 'function') fn(equipId);
         }
       }, 250);
     };

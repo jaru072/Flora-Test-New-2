@@ -7,7 +7,11 @@ import {
   deleteDoc, 
   getDoc, 
   onSnapshot, 
-  serverTimestamp 
+  serverTimestamp,
+  query,
+  orderBy,
+  limit,
+  where
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { 
   ref, 
@@ -3372,17 +3376,24 @@ window.setBackupStatusToFirestore = async function(statusData) {
 
 // 2. Admin Check Helper
 function isCurrentUserAdmin() {
+  let cachedAccess = null;
+  try {
+    cachedAccess = JSON.parse(sessionStorage.getItem('flora_personnel_access') || localStorage.getItem('flora_saved_user_profile') || 'null');
+  } catch(e) {}
+
   const currentEmail = (window.currentAuthUser && window.currentAuthUser.email) ||
                        (window.currentUserProfile && window.currentUserProfile.email) ||
                        (window.currentUser && window.currentUser.email) ||
+                       (cachedAccess && cachedAccess.email) ||
                        '';
-  const currentRole = window.currentRole || '';
+  const currentRole = window.currentRole || (cachedAccess && cachedAccess.role) || '';
   const isEmailAdmin = currentEmail.toLowerCase() === 'jaru072@gmail.com';
-  const isRoleAdmin = currentRole === 'ADMIN';
+  const isRoleAdmin = currentRole === 'ADMIN' || (cachedAccess && cachedAccess.role === 'ADMIN');
   const isSuperAdminStrict = typeof window.isThammaSrithongAdminStrict === 'function' && window.isThammaSrithongAdminStrict();
   const isDbEditor = typeof window.canAccessDatabaseEditor === 'function' && window.canAccessDatabaseEditor();
-  return isEmailAdmin || isRoleAdmin || isSuperAdminStrict || isDbEditor;
+  return Boolean(isEmailAdmin || isRoleAdmin || isSuperAdminStrict || isDbEditor);
 }
+window.isCurrentUserAdmin = isCurrentUserAdmin;
 
 // 3. Main Hybrid Daily Backup Process
 window.runHybridDailyBackup = async function(isManual = false) {
@@ -3593,6 +3604,430 @@ function initBackupRestore() {
   if (typeof window.refreshFolderUIDisplay === 'function') {
     window.refreshFolderUIDisplay();
   }
+// ==========================================
+// CLOUD RESTORE POINTS (จุดกู้คืนบนคลาวด์ FIRESTORE)
+// ==========================================
+
+function formatThaiBuddhistDateTime(date = new Date()) {
+  try {
+    const d = date instanceof Date ? date : new Date(date);
+    const day = d.getDate();
+    const monthsThai = [
+      "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+      "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ];
+    const month = monthsThai[d.getMonth()];
+    const yearBE = d.getFullYear() + 543;
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    return `${day} ${month} ${yearBE} เวลา ${hours}:${minutes}:${seconds} น.`;
+  } catch (e) {
+    return new Date().toLocaleString('th-TH');
+  }
+}
+
+function cleanDataForSnapshot(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map(item => {
+    if (!item || typeof item !== 'object') return item;
+    const copy = { ...item };
+    if (copy.imageUrl && typeof copy.imageUrl === 'string' && copy.imageUrl.startsWith('data:image/') && copy.imageUrl.length > 500) {
+      delete copy.imageUrl;
+    }
+    if (copy.photoUrl && typeof copy.photoUrl === 'string' && copy.photoUrl.startsWith('data:image/') && copy.photoUrl.length > 500) {
+      delete copy.photoUrl;
+    }
+    delete copy.imageBase64;
+    delete copy.photoBase64;
+    return copy;
+  });
+}
+
+async function pruneOldCloudRestorePoints() {
+  if (!window.db || !window.isFirebaseReady) return;
+  try {
+    const q = query(collection(window.db, "cloud_restore_points"), orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+    if (snap.size > 10) {
+      const docsToDelete = snap.docs.slice(10);
+      for (const d of docsToDelete) {
+        await deleteDoc(d.ref);
+      }
+    }
+  } catch (err) {
+    console.warn("Prune old restore points notice:", err);
+  }
+}
+
+window.saveCloudRestorePoint = async function(customNote = '', type = 'MANUAL', isSilent = false) {
+  if (!window.db || !window.isFirebaseReady) {
+    if (!isSilent) alert("⚠️ ระบบฐานข้อมูลคลาวด์ยังไม่พร้อมใช้งาน กรุณาลองใหม่อีกครั้ง");
+    return null;
+  }
+
+  const isAdmin = (typeof window.isCurrentUserAdmin === 'function') 
+    ? window.isCurrentUserAdmin() 
+    : ((window.currentAuthUser?.email === 'jaru072@gmail.com') || (window.currentRole === 'ADMIN'));
+
+  if (!isAdmin && !isSilent) {
+    alert("⚠️ สงวนสิทธิ์เฉพาะผู้ดูแลระบบสูงสุดเท่านั้น");
+    return null;
+  }
+
+  const now = new Date();
+  const pointId = `rp_${Date.now()}`;
+  const todayKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(now);
+  const createdAtBE = formatThaiBuddhistDateTime(now);
+  const createdBy = window.currentAuthUser?.email || window.currentUserProfile?.email || 'ผู้ดูแลระบบ';
+
+  let note = (customNote || '').trim();
+  if (!note) {
+    note = type === 'AUTO_DAILY' ? `สำรองอัตโนมัติประจำวัน` : `จุดกู้คืนโดยผู้ดูแลระบบ`;
+  }
+
+  const equipments = cleanDataForSnapshot(window.equipmentList || []);
+  const employees = cleanDataForSnapshot(window.employeeList || []);
+  const transactions = Array.isArray(window.transactionHistory) ? window.transactionHistory.slice(0, 500) : [];
+  const attendance = Array.isArray(window.attendanceLogs) ? window.attendanceLogs.slice(0, 500) : [];
+  const categories = Array.isArray(window.categoriesList) ? window.categoriesList : [];
+  const departments = Array.isArray(window.departmentsList) ? window.departmentsList : [];
+  const positions = Array.isArray(window.positionsList) ? window.positionsList : [];
+  const locations = Array.isArray(window.locationsList) ? window.locationsList : [];
+
+  const pointPayload = {
+    id: pointId,
+    note: note,
+    type: type,
+    dateKey: todayKey,
+    createdAt: now.toISOString(),
+    createdAtBE: createdAtBE,
+    createdBy: createdBy,
+    stats: {
+      equipmentsCount: equipments.length,
+      employeesCount: employees.length,
+      transactionsCount: transactions.length,
+      attendanceCount: attendance.length,
+      categoriesCount: categories.length,
+      departmentsCount: departments.length
+    },
+    data: {
+      equipments,
+      employees,
+      transactions,
+      attendance,
+      categories,
+      departments,
+      positions,
+      locations
+    }
+  };
+
+  try {
+    if (!isSilent) {
+      const toast = getGlobalToast();
+      toast("⏳ กำลังบันทึกจุดกู้คืนลงบนคลาวด์...");
+    }
+
+    await setDoc(doc(window.db, "cloud_restore_points", pointId), pointPayload);
+    await pruneOldCloudRestorePoints();
+
+    if (!isSilent) {
+      const toast = getGlobalToast();
+      toast(`✅ บันทึกจุดกู้คืนบนคลาวด์สำเร็จ: "${note}"`);
+      const noteInput = document.getElementById('cloudSnapshotNoteInput');
+      if (noteInput) noteInput.value = '';
+    }
+
+    if (typeof window.loadCloudRestorePointsList === 'function') {
+      window.loadCloudRestorePointsList();
+    }
+    return pointPayload;
+  } catch (err) {
+    console.error("Save cloud restore point error:", err);
+    if (!isSilent) {
+      alert("เกิดข้อผิดพลาดในการบันทึกจุดกู้คืน: " + err.message);
+    }
+    return null;
+  }
+};
+
+window.handleCreateManualCloudRestorePoint = async function() {
+  const noteInput = document.getElementById('cloudSnapshotNoteInput');
+  const note = noteInput ? noteInput.value.trim() : '';
+  const btn = document.getElementById('btnCreateCloudRestorePoint');
+  const originalHtml = btn ? btn.innerHTML : '➕ บันทึกจุดนี้';
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> กำลังบันทึก...';
+  }
+
+  try {
+    await window.saveCloudRestorePoint(note, "MANUAL", false);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  }
+};
+
+window.loadCloudRestorePointsList = async function() {
+  const container = document.getElementById('cloudRestorePointsListContainer');
+  const countBadge = document.getElementById('cloudSnapshotsCountBadge');
+  if (!container) return;
+
+  if (!window.db || !window.isFirebaseReady) {
+    container.innerHTML = `
+      <div class="text-center py-4 text-muted fs-8">
+        <i class="bi bi-cloud-slash text-secondary fs-4 d-block mb-1"></i>
+        <span>ระบบฐานข้อมูลคลาวด์กำลังเชื่อมต่อ กรุณารอสักครู่...</span>
+      </div>`;
+    return;
+  }
+
+  try {
+    const q = query(collection(window.db, "cloud_restore_points"), orderBy("createdAt", "desc"), limit(10));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      if (countBadge) countBadge.textContent = '0 จุด';
+      container.innerHTML = `
+        <div class="text-center py-4 text-muted fs-8 bg-light rounded-4 border border-dashed p-3">
+          <i class="bi bi-cloud-arrow-up text-primary fs-3 d-block mb-2 opacity-50"></i>
+          <div class="fw-semibold text-dark mb-1">ยังไม่มีจุดกู้คืนบนคลาวด์ในขณะนี้</div>
+          <div>คุณสามารถกดปุ่ม "➕ บันทึกจุดนี้" ด้านบนเพื่อสร้างจุดกู้คืนจุดแรกได้ทันที</div>
+        </div>`;
+      return;
+    }
+
+    const points = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (countBadge) countBadge.textContent = `${points.length} จุด`;
+
+    container.innerHTML = points.map((p, idx) => {
+      const isAuto = p.type === 'AUTO_DAILY';
+      const typeBadge = isAuto 
+        ? `<span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill px-2 py-0.5 fs-9 fw-semibold"><i class="bi bi-lightning-charge-fill me-1"></i>อัตโนมัติประจำวัน</span>`
+        : `<span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0.5 fs-9 fw-semibold"><i class="bi bi-hand-index-thumb-fill me-1"></i>บันทึกด้วยตนเอง</span>`;
+      
+      const stats = p.stats || {};
+      const safeNote = typeof escapeHtml === 'function' ? escapeHtml(p.note || 'จุดกู้คืน') : (p.note || 'จุดกู้คืน');
+      const safeBy = typeof escapeHtml === 'function' ? escapeHtml(p.createdBy || 'ผู้ดูแลระบบ') : (p.createdBy || 'ผู้ดูแลระบบ');
+
+      return `
+        <div class="p-3 bg-white rounded-3 border shadow-2xs hover-shadow transition-all">
+          <div class="d-flex align-items-start justify-content-between gap-2 mb-2 flex-wrap">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="fs-5">${isAuto ? '⚡' : '☁️'}</span>
+              <span class="fw-bold text-dark fs-7">${safeNote}</span>
+              ${typeBadge}
+              ${idx === 0 ? '<span class="badge bg-success text-white rounded-pill px-2 py-0.5 fs-9 fw-bold">ล่าสุด</span>' : ''}
+            </div>
+            <div class="d-flex align-items-center gap-1.5 flex-shrink-0">
+              <button type="button" class="btn btn-success btn-sm rounded-pill px-3 py-1 fw-bold fs-8 d-flex align-items-center gap-1 shadow-2xs" onclick="restoreCloudSnapshot('${p.id}')" title="กู้คืนข้อมูลกลับมาที่จุดนี้">
+                <i class="bi bi-arrow-counterclockwise fs-7"></i>
+                <span>กู้คืนจุดนี้</span>
+              </button>
+              <button type="button" class="btn btn-outline-danger btn-sm rounded-circle p-1 d-flex align-items-center justify-content-center shadow-2xs" style="width: 28px; height: 28px;" onclick="deleteCloudSnapshot('${p.id}')" title="ลบจุดกู้คืนนี้">
+                <i class="bi bi-trash3-fill fs-8"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center gap-3 text-muted fs-8 mb-2 flex-wrap">
+            <span><i class="bi bi-calendar-event me-1 text-primary"></i>${p.createdAtBE || p.createdAt || '-'}</span>
+            <span><i class="bi bi-person-fill me-1 text-secondary"></i>โดย: ${safeBy}</span>
+          </div>
+
+          <div class="d-flex align-items-center gap-2 flex-wrap fs-8 pt-2 border-top border-light">
+            <span class="badge bg-light text-dark border"><i class="bi bi-box-seam me-1 text-success"></i>พัสดุ: ${stats.equipmentsCount || 0} รายการ</span>
+            <span class="badge bg-light text-dark border"><i class="bi bi-people me-1 text-primary"></i>บุคลากร: ${stats.employeesCount || 0} คน</span>
+            <span class="badge bg-light text-dark border"><i class="bi bi-journal-text me-1 text-warning"></i>ประวัติรายการ: ${stats.transactionsCount || 0} รายการ</span>
+            <span class="badge bg-light text-dark border"><i class="bi bi-clock me-1 text-info"></i>บันทึกเวลา: ${stats.attendanceCount || 0} รายการ</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error("Load cloud restore points error:", err);
+    container.innerHTML = `
+      <div class="text-center py-3 text-danger fs-8">
+        <i class="bi bi-exclamation-triangle me-1"></i>ไม่สามารถโหลดรายการจุดกู้คืนได้: ${err.message}
+      </div>`;
+  }
+};
+
+window.restoreCloudSnapshot = async function(pointId) {
+  if (!window.db || !window.isFirebaseReady) {
+    alert("⚠️ ระบบฐานข้อมูลคลาวด์ยังไม่พร้อมใช้งาน");
+    return;
+  }
+
+  const isAdmin = (typeof window.isCurrentUserAdmin === 'function') 
+    ? window.isCurrentUserAdmin() 
+    : ((window.currentAuthUser?.email === 'jaru072@gmail.com') || (window.currentRole === 'ADMIN'));
+
+  if (!isAdmin) {
+    alert("⚠️ สงวนสิทธิ์เฉพาะผู้ดูแลระบบสูงสุดเท่านั้น");
+    return;
+  }
+
+  try {
+    const pointDoc = await getDoc(doc(window.db, "cloud_restore_points", pointId));
+    if (!pointDoc.exists()) {
+      alert("❌ ไม่พบข้อมูลจุดกู้คืนนี้บนคลาวด์");
+      return;
+    }
+
+    const point = pointDoc.data();
+    const stats = point.stats || {};
+    const confirmMsg = `⚠️ ยืนยันการกู้คืนข้อมูลระบบจากจุดนี้หรือไม่?\n\n` +
+      `• หมายเหตุ: "${point.note}"\n` +
+      `• บันทึกเมื่อ: ${point.createdAtBE}\n` +
+      `• พัสดุ-อุปกรณ์: ${stats.equipmentsCount || 0} รายการ\n` +
+      `• บุคลากร: ${stats.employeesCount || 0} คน\n` +
+      `• ประวัติทำรายการ: ${stats.transactionsCount || 0} รายการ\n\n` +
+      `ข้อมูลปัจจุบันในระบบจะถูกแทนที่ด้วยข้อมูลจากจุดนี้ และหน้าระบบจะทำการรีโหลดใหม่อัตโนมัติ`;
+
+    if (!confirm(confirmMsg)) return;
+
+    const toast = getGlobalToast();
+    toast("⏳ กำลังกู้คืนข้อมูลระบบจากคลาวด์ กรุณารอสักครู่...");
+
+    const data = point.data || {};
+
+    if (Array.isArray(data.equipments)) {
+      await replaceCollectionInFirestore("equipment", data.equipments);
+      window.equipmentList = data.equipments;
+      localStorage.setItem('flora_equipment', JSON.stringify(data.equipments));
+    }
+    if (Array.isArray(data.employees)) {
+      await replaceCollectionInFirestore("employees", data.employees);
+      window.employeeList = data.employees;
+      localStorage.setItem('flora_employees', JSON.stringify(data.employees));
+    }
+    if (Array.isArray(data.transactions)) {
+      await replaceCollectionInFirestore("transactions", data.transactions);
+      window.transactionHistory = data.transactions;
+      localStorage.setItem('flora_transactions', JSON.stringify(data.transactions));
+    }
+    if (Array.isArray(data.attendance)) {
+      await replaceCollectionInFirestore("attendance", data.attendance);
+      window.attendanceLogs = data.attendance;
+      localStorage.setItem('flora_attendance', JSON.stringify(data.attendance));
+    }
+    if (Array.isArray(data.categories)) {
+      await replaceCollectionInFirestore("categories", data.categories);
+      window.categoriesList = data.categories;
+      localStorage.setItem('flora_categories', JSON.stringify(data.categories));
+    }
+    if (Array.isArray(data.departments)) {
+      await replaceCollectionInFirestore("departments", data.departments);
+      window.departmentsList = data.departments;
+      localStorage.setItem('flora_departments', JSON.stringify(data.departments));
+    }
+    if (Array.isArray(data.positions)) {
+      await replaceCollectionInFirestore("positions", data.positions);
+      window.positionsList = data.positions;
+      localStorage.setItem('flora_positions', JSON.stringify(data.positions));
+    }
+    if (Array.isArray(data.locations)) {
+      await replaceCollectionInFirestore("locations", data.locations);
+      window.locationsList = data.locations;
+      localStorage.setItem('flora_locations', JSON.stringify(data.locations));
+    }
+
+    toast("✅ กู้คืนข้อมูลระบบจากจุดกู้คืนสำเร็จ! กำลังรีโหลดหน้าเว็บ...");
+    setTimeout(() => {
+      window.location.reload();
+    }, 1200);
+  } catch (err) {
+    console.error("Restore cloud snapshot error:", err);
+    alert("เกิดข้อผิดพลาดในการกู้คืนข้อมูล: " + err.message);
+  }
+};
+
+window.deleteCloudSnapshot = async function(pointId) {
+  if (!window.db || !window.isFirebaseReady) return;
+  const isAdmin = (typeof window.isCurrentUserAdmin === 'function') 
+    ? window.isCurrentUserAdmin() 
+    : ((window.currentAuthUser?.email === 'jaru072@gmail.com') || (window.currentRole === 'ADMIN'));
+
+  if (!isAdmin) {
+    alert("⚠️ สงวนสิทธิ์เฉพาะผู้ดูแลระบบสูงสุดเท่านั้น");
+    return;
+  }
+
+  if (!confirm("⚠️ ยืนยันการลบจุดกู้คืนนี้ออกจากคลาวด์หรือไม่?")) return;
+
+  try {
+    await deleteDoc(doc(window.db, "cloud_restore_points", pointId));
+    getGlobalToast()("🗑️ ลบจุดกู้คืนบนคลาวด์เรียบร้อยแล้ว");
+    window.loadCloudRestorePointsList();
+  } catch (err) {
+    console.error("Delete cloud snapshot error:", err);
+    alert("เกิดข้อผิดพลาดในการลบจุดกู้คืน: " + err.message);
+  }
+};
+
+window.checkAndRunDailyCloudSnapshot = async function() {
+  if (!window.db || !window.isFirebaseReady) return;
+  if (window._isDailyCloudSnapshotRunning) return;
+
+  const isAdmin = (typeof window.isCurrentUserAdmin === 'function') 
+    ? window.isCurrentUserAdmin() 
+    : ((window.currentAuthUser?.email === 'jaru072@gmail.com') || (window.currentRole === 'ADMIN'));
+
+  if (!isAdmin) return;
+
+  const todayKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());
+  
+  // 1. Fast local check to avoid queries if already done today on this device
+  const lastAutoDate = localStorage.getItem('flora_last_auto_cloud_point_date');
+  if (lastAutoDate === todayKey) {
+    return;
+  }
+
+  window._isDailyCloudSnapshotRunning = true;
+  try {
+    // 2. Cloud Firestore check to verify across all devices
+    const q = query(
+      collection(window.db, "cloud_restore_points"), 
+      where("dateKey", "==", todayKey), 
+      where("type", "==", "AUTO_DAILY"), 
+      limit(1)
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      localStorage.setItem('flora_last_auto_cloud_point_date', todayKey);
+      return;
+    }
+
+    // Wait briefly if initial data lists are still populating from Firestore (non-blocking)
+    let waitCount = 0;
+    while ((!Array.isArray(window.equipmentList) || window.equipmentList.length === 0) && waitCount < 8) {
+      await new Promise(r => setTimeout(r, 800));
+      waitCount++;
+    }
+
+    // 3. Perform quiet daily backup in the background (100% silent, non-blocking)
+    const saved = await window.saveCloudRestorePoint("สำรองอัตโนมัติประจำวัน", "AUTO_DAILY", true);
+    if (saved) {
+      localStorage.setItem('flora_last_auto_cloud_point_date', todayKey);
+      const toast = typeof getGlobalToast === 'function' ? getGlobalToast() : (typeof showToast === 'function' ? showToast : console.log);
+      toast("☁️ บันทึกจุดกู้คืนบนคลาวด์ประจำวันเรียบร้อยแล้ว");
+      if (typeof window.loadCloudRestorePointsList === 'function') {
+        window.loadCloudRestorePointsList();
+      }
+    }
+  } catch (err) {
+    console.warn("[CloudSnapshotAuto] Notice:", err.message);
+  } finally {
+    window._isDailyCloudSnapshotRunning = false;
+  }
+};
+
   if (typeof window.updateHybridBackupStatusUI === 'function') {
     window.updateHybridBackupStatusUI();
   }
@@ -3602,6 +4037,16 @@ function initBackupRestore() {
     if (typeof window.subscribeToCloudBackupStatus === 'function') {
       window.subscribeToCloudBackupStatus();
     }
+    // Load cloud restore points on firebase ready
+    if (typeof window.loadCloudRestorePointsList === 'function') {
+      window.loadCloudRestorePointsList();
+    }
+    // Check and trigger daily cloud snapshot for Admin in background
+    setTimeout(() => {
+      if (typeof window.checkAndRunDailyCloudSnapshot === 'function') {
+        window.checkAndRunDailyCloudSnapshot();
+      }
+    }, 4500);
   });
 
   const modalElem = document.getElementById('backupRestoreModal');
@@ -3613,6 +4058,9 @@ function initBackupRestore() {
       if (typeof window.updateHybridBackupStatusUI === 'function') {
         window.updateHybridBackupStatusUI();
       }
+      if (typeof window.loadCloudRestorePointsList === 'function') {
+        window.loadCloudRestorePointsList();
+      }
     });
     modalElem.addEventListener('shown.bs.modal', () => {
       if (typeof window.refreshFolderUIDisplay === 'function') {
@@ -3621,8 +4069,18 @@ function initBackupRestore() {
       if (typeof window.updateHybridBackupStatusUI === 'function') {
         window.updateHybridBackupStatusUI();
       }
+      if (typeof window.loadCloudRestorePointsList === 'function') {
+        window.loadCloudRestorePointsList();
+      }
     });
   }
+
+  // Auto daily cloud restore point check in the background (silent and non-intrusive)
+  setTimeout(() => {
+    if (typeof window.checkAndRunDailyCloudSnapshot === 'function') {
+      window.checkAndRunDailyCloudSnapshot();
+    }
+  }, 5500);
 }
 
 if (document.readyState === 'loading') {
