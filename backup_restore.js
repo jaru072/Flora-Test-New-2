@@ -3386,6 +3386,12 @@ function isCurrentUserAdmin() {
 
 // 3. Main Hybrid Daily Backup Process
 window.runHybridDailyBackup = async function(isManual = false) {
+  // ปิดระบบสำรองข้อมูลอัตโนมัติเมื่อเปิดเว็บไซต์ (อนุญาตเฉพาะการกดสั่งสำรองข้อมูลด้วยตนเองเท่านั้น)
+  if (!isManual) {
+    console.log("[HybridBackup] Automatic backup on startup is disabled. Manual backup only.");
+    return { skipped: true, reason: "Auto backup on startup disabled" };
+  }
+
   const dayInfo = window.getRotationDayInfo();
   const todayStr = dayInfo.dateIso; // YYYY-MM-DD in Asia/Bangkok
 
@@ -3597,13 +3603,6 @@ function initBackupRestore() {
       window.subscribeToCloudBackupStatus();
     }
   });
-
-  // Automatic Hybrid Daily Backup check after startup
-  setTimeout(() => {
-    if (typeof window.runHybridDailyBackup === 'function') {
-      window.runHybridDailyBackup(false).catch(e => console.warn("[HybridBackup] Startup auto-check notice:", e));
-    }
-  }, 3500);
 
   const modalElem = document.getElementById('backupRestoreModal');
   if (modalElem) {

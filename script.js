@@ -179,12 +179,13 @@
       { id: "CAT-002", code: "CAT-002", name: "งานธุรการ", prefix: "AD", label: "อุปกรณ์ธุรการ", icon: "📝" },
       { id: "CAT-003", code: "CAT-003", name: "อุปกรณ์ทำความสะอาด", prefix: "CL", label: "อุปกรณ์ทำความสะอาดทั้งหมด", icon: "🧹" },
       { id: "CAT-004", code: "CAT-004", name: "ฮาร์ดแวร์,เคมีภัณฑ์", prefix: "CH", label: "น้ำยาเคมี/สี/วัสดุอุดรอยต่อ", icon: "🧪" },
-      { id: "CAT-005", code: "CAT-005", name: "เครื่องมือช่าง", prefix: "TL", label: "อุปกรณ์สำหรับทำงานช่าง", icon: "🛠️" },
+      { id: "CAT-005", code: "CAT-005", name: "เครื่องมือช่าง", prefix: "TL", label: "อุปกรณ์สำหรับทำงานช่าง (สิ้นเปลือง/ทั่วไป)", icon: "🛠️" },
       { id: "CAT-006", code: "CAT-006", name: "เมล็ดพันธ์", prefix: "SD", label: "เมล็ดพันธ์ต่างๆ", icon: "🌱" },
       { id: "CAT-007", code: "CAT-007", name: "วัสดุเกษตรทั่วไป(ใช้แล้วหมดไป)", prefix: "MT", label: "วัสดุเกษตรทั่วไป(ใช้แล้วหมดไป)", icon: "🌾" },
-      { id: "CAT-008", code: "CAT-008", name: "อุปกรณ์เกษตร ประเภทยืมใช้(รถเข็น พั้ว จอบ จก ฯลฯ)", prefix: "AG", label: "อุปกรณ์เกษตร ประเภทยืมใช้(รถเข็น พั้ว จอบ จก ฯลฯ)", icon: "🚜" },
+      { id: "CAT-008", code: "CAT-008", name: "BA งานเกษตร", prefix: "BA", label: "BA งานเกษตร (ประเภทยืมใช้)", icon: "🚜" },
       { id: "CAT-009", code: "CAT-009", name: "ระบบไฟ", prefix: "EL", label: "ระบบไฟ", icon: "💡" },
-      { id: "CAT-010", code: "CAT-010", name: "ระบบน้ำ", prefix: "IR", label: "ระบบน้ำ", icon: "💧" }
+      { id: "CAT-010", code: "CAT-010", name: "ระบบน้ำ", prefix: "IR", label: "ระบบน้ำ", icon: "💧" },
+      { id: "CAT-011", code: "CAT-011", name: "BT งานช่าง", prefix: "BT", label: "BT งานช่าง (ประเภทยืมใช้)", icon: "🔧" }
     ];
 
     const defaultDepartmentsList = [
@@ -286,13 +287,19 @@
     window.isEquipmentBorrowType = function(item) {
       if (!item) return false;
       if (item.isBorrowable === true) return true;
-      const cat = (item.category || '').toLowerCase();
-      if (cat.includes('ยืมใช้') || cat.includes('ยืม')) return true;
-      const name = (item.name || '').toLowerCase();
+      const code = (item.code || item.id || '').toString().trim().toUpperCase();
+      // อุปกรณ์ยืมใช้จะขึ้นต้นด้วยตัวอักษร "B" (เช่น BA-xxx, BT-xxx หรือ Bxxx)
+      if (/^B[A-Z0-9]/i.test(code) || code.startsWith('B-') || code.startsWith('BA-') || code.startsWith('BT-')) return true;
+      const prefix = (item.prefix || '').toString().trim().toUpperCase();
+      if (prefix === 'BA' || prefix === 'BT' || prefix.startsWith('B')) return true;
+      const cat = (item.category || '').toString().toLowerCase();
+      if (cat.includes('ยืมใช้') || cat.includes('ยืม') || 
+          cat.includes('ba ') || cat.includes('bt ') || 
+          cat.startsWith('ba') || cat.startsWith('bt') ||
+          cat.includes('ba งานเกษตร') || cat.includes('bt งานช่าง')) return true;
+      const name = (item.name || '').toString().toLowerCase();
       if (name.includes('ยืมใช้')) return true;
-      const prefix = (item.prefix || '').toUpperCase();
       if (prefix === 'AG') return true;
-      const code = (item.code || '').toUpperCase();
       if (code.startsWith('SL-') || code.startsWith('AG-')) return true;
       return false;
     };
@@ -392,15 +399,6 @@
           }
           if (typeof window.hideMandatoryLoginScreen === 'function') {
             window.hideMandatoryLoginScreen();
-          }
-
-          // Trigger automatic daily hybrid backup for Admin
-          if (user.email === 'jaru072@gmail.com' || currentRole === 'ADMIN') {
-            setTimeout(() => {
-              if (typeof window.runHybridDailyBackup === 'function') {
-                window.runHybridDailyBackup(false).catch(e => console.warn("[AutoBackup]", e));
-              }
-            }, 3500);
           }
         } else {
           console.log("Firebase Auth: No active user session detected.");
@@ -794,13 +792,6 @@
             localStorage.setItem('google_drive_access_token', credential.accessToken);
             localStorage.setItem('google_drive_token_expires', String(Date.now() + 3500 * 1000));
             sessionStorage.setItem('google_drive_access_token', credential.accessToken);
-            
-            // Check if Google Drive daily backup is pending
-            setTimeout(() => {
-              if (typeof window.runHybridDailyBackup === 'function') {
-                window.runHybridDailyBackup(false).catch(e => console.warn("[GoogleSignIn] Hybrid backup trigger notice:", e));
-              }
-            }, 1000);
           }
         } catch (credErr) {
           console.warn("Credential extraction notice:", credErr);
@@ -2030,6 +2021,23 @@
           }
         } else {
           categoriesList = [...defaultCategoriesList];
+        }
+
+        // Reconcile borrow categories: BA งานเกษตร and BT งานช่าง
+        if (Array.isArray(categoriesList)) {
+          const cat008 = categoriesList.find(c => c && (c.id === 'CAT-008' || c.code === 'CAT-008' || (c.name && c.name.includes('เกษตร') && c.name.includes('ยืม'))));
+          if (cat008) {
+            cat008.prefix = 'BA';
+            if (!cat008.name.startsWith('BA')) {
+              cat008.label = 'BA งานเกษตร (ประเภทยืมใช้)';
+            }
+          }
+          const catBT = categoriesList.find(c => c && (c.id === 'CAT-011' || c.code === 'CAT-011' || c.prefix === 'BT' || (c.name && c.name.includes('ช่าง') && c.name.includes('ยืม'))));
+          if (!catBT) {
+            categoriesList.push({ id: "CAT-011", code: "CAT-011", name: "BT งานช่าง", prefix: "BT", label: "BT งานช่าง (ประเภทยืมใช้)", icon: "🔧" });
+          } else {
+            catBT.prefix = 'BT';
+          }
         }
 
         if (typeof window.getFloraOrgDepartments === 'function') {
@@ -3990,10 +3998,12 @@
     window.getCategoryPrefix = function(categoryName) {
       if (!categoryName) return 'EQ';
       if (typeof categoriesList !== 'undefined' && Array.isArray(categoriesList)) {
-        const cat = categoriesList.find(c => c && c.name === categoryName);
+        const cat = categoriesList.find(c => c && (c.name === categoryName || c.code === categoryName || c.id === categoryName));
         if (cat && cat.prefix) return String(cat.prefix).trim().toUpperCase();
       }
       const name = String(categoryName).trim();
+      if (name.startsWith('BA') || (name.includes('เกษตร') && name.includes('ยืม'))) return 'BA';
+      if (name.startsWith('BT') || (name.includes('ช่าง') && name.includes('ยืม'))) return 'BT';
       if (name.includes('ตัดแต่ง')) return 'CT';
       if (name.includes('รดน้ำ') || name.includes('สปรินเกอร์') || name.includes('ระบบน้ำ')) return 'IR';
       if (name.includes('เตรียมดิน') || name.includes('จอบ') || name.includes('เสียม') || name.includes('พรวน')) return 'SL';
@@ -4006,7 +4016,7 @@
       if (name.includes('ทำความสะอาด')) return 'CL';
       if (name.includes('ช่าง')) return 'TL';
       if (name.includes('เมล็ด')) return 'SD';
-      if (name.includes('ยืมใช้')) return 'AG';
+      if (name.includes('ยืมใช้') || name.includes('ยืม')) return 'BA';
       if (name.includes('ไฟ')) return 'EL';
       return 'EQ';
     };
@@ -4027,6 +4037,9 @@
 
       const name = String(categoryName || '').trim();
       const candidates = [];
+      if (name.startsWith('BA') || (name.includes('เกษตร') && name.includes('ยืม'))) candidates.push('BA');
+      if (name.startsWith('BT') || (name.includes('ช่าง') && name.includes('ยืม'))) candidates.push('BT');
+      if (name.includes('ยืม')) candidates.push('BA', 'BT');
       if (name.includes('ตัดแต่ง')) candidates.push('CT');
       if (name.includes('รดน้ำ') || name.includes('สปรินเกอร์') || name.includes('ระบบน้ำ')) candidates.push('IR', 'WT');
       if (name.includes('น้ำมัน') || name.includes('เชื้อเพลิง')) candidates.push('FG', 'OL');
@@ -4040,7 +4053,6 @@
       if (name.includes('ธุรการ') || name.includes('สำนักงาน')) candidates.push('AD', 'OF');
       if (name.includes('ทำความสะอาด')) candidates.push('CL', 'SK');
       if (name.includes('ไฟ')) candidates.push('EL', 'LT');
-      if (name.includes('ยืม')) candidates.push('AG');
 
       for (const cand of candidates) {
         if (!existingPrefixes.has(cand)) {
@@ -4784,9 +4796,15 @@
         return false;
       }
 
-      // 2.2 Prevent adding "อุปกรณ์ประเภทยืมใช้" to "เบิกจ่าย" (เบิกตัดสต๊อก)
+      // 2.2 Prevent adding "อุปกรณ์ประเภทยืมใช้" (ขึ้นต้นด้วย B / BA / BT) to "เบิกจ่าย" (เบิกตัดสต๊อก)
       if (type === 'เบิกจ่าย' && typeof window.isEquipmentBorrowType === 'function' && window.isEquipmentBorrowType(item)) {
-        alert(`❌ ไม่สามารถเพิ่ม "${item.name}" เข้าเอกสารเบิกตัดสต๊อกได้!\n\nเนื่องจากอุปกรณ์นี้เป็น "ประเภทยืมใช้" (ไม่ใช่ของใช้แล้วหมดไป)\nจะนำไปปนในเอกสารเบิกจ่ายไม่ได้เด็ดขาด\n\nกรุณาทำรายการผ่านโหมด "ยืมอุปกรณ์" แทน`);
+        alert(`❌ ไม่สามารถเพิ่ม "${item.name}" [${item.code || item.id}] เข้าเอกสารเบิกตัดสต๊อกได้!\n\nเนื่องจากอุปกรณ์นี้เป็น "ประเภทยืมใช้" (รหัสขึ้นต้นด้วย B เช่น หมวด BA งานเกษตร หรือ BT งานช่าง)\nจะนำมาเบิกตัดสต๊อกไม่ได้เด็ดขาด\n\nกรุณาทำรายการผ่านโหมด "ยืมอุปกรณ์" แทน`);
+        return false;
+      }
+
+      // 2.2b Prevent adding "วัสดุสิ้นเปลือง" to "ยืมอุปกรณ์"
+      if (type === 'ยืมอุปกรณ์' && typeof window.isEquipmentBorrowType === 'function' && !window.isEquipmentBorrowType(item)) {
+        alert(`❌ ไม่สามารถเพิ่ม "${item.name}" [${item.code || item.id}] เข้าเอกสารยืมอุปกรณ์ได้!\n\nเนื่องจากรายการนี้เป็น "วัสดุสิ้นเปลือง/ใช้แล้วหมดไป" (ไม่ใช่อุปกรณ์ประเภทยืมใช้ที่ขึ้นต้นด้วย B เช่น BA หรือ BT)\n\nกรุณาทำรายการผ่านโหมด "เบิกตัดสต็อก" แทน`);
         return false;
       }
 
@@ -5236,7 +5254,18 @@
         for (const it of itemsToProcess) {
           const equipObj = equipmentList.find(x => x.id === it.equipmentId);
           if (equipObj && typeof window.isEquipmentBorrowType === 'function' && window.isEquipmentBorrowType(equipObj)) {
-            alert(`❌ ไม่สามารถบันทึกเบิกตัดสต๊อก "${equipObj.name}" ได้!\n\nเนื่องจากอุปกรณ์นี้เป็น "ประเภทยืมใช้" (ไม่ใช่ของใช้แล้วหมดไป)\nจะนำมาเบิกตัดสต๊อกไม่ได้เด็ดขาด\n\nกรุณาทำรายการผ่านโหมด "ยืมอุปกรณ์" แทน`);
+            alert(`❌ ไม่สามารถบันทึกเบิกตัดสต๊อก "${equipObj.name}" [${equipObj.code || equipObj.id}] ได้!\n\nเนื่องจากอุปกรณ์นี้เป็น "ประเภทยืมใช้" (รหัสขึ้นต้นด้วย B เช่น หมวด BA งานเกษตร หรือ BT งานช่าง)\nจะนำมาเบิกตัดสต๊อกไม่ได้เด็ดขาด\n\nกรุณาทำรายการผ่านโหมด "ยืมอุปกรณ์" แทน`);
+            return;
+          }
+        }
+      }
+
+      // Check consumable equipment restriction in "ยืมอุปกรณ์"
+      if (type === 'ยืมอุปกรณ์') {
+        for (const it of itemsToProcess) {
+          const equipObj = equipmentList.find(x => x.id === it.equipmentId);
+          if (equipObj && typeof window.isEquipmentBorrowType === 'function' && !window.isEquipmentBorrowType(equipObj)) {
+            alert(`❌ ไม่สามารถบันทึกยืมอุปกรณ์ "${equipObj.name}" [${equipObj.code || equipObj.id}] ได้!\n\nเนื่องจากรายการนี้เป็น "วัสดุสิ้นเปลือง/ใช้แล้วหมดไป" (ไม่ใช่อุปกรณ์ประเภทยืมใช้ที่ขึ้นต้นด้วย B เช่น BA หรือ BT)\nจะนำมาบันทึกยืมไม่ได้เด็ดขาด\n\nกรุณาทำรายการผ่านโหมด "เบิกตัดสต็อก" แทน`);
             return;
           }
         }
@@ -9321,7 +9350,16 @@
       // Check borrowable equipment restriction in "เบิกจ่าย" (เบิกตัดสต๊อก)
       if (type === 'เบิกจ่าย' && typeof window.isEquipmentBorrowType === 'function' && window.isEquipmentBorrowType(item)) {
         if (warningBox && warningText) {
-          warningText.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i><strong>อุปกรณ์ประเภทยืมใช้:</strong> ชิ้นนี้เป็นอุปกรณ์ประเภทยืมใช้ (ไม่ใช่ของใช้แล้วหมดไป) ไม่สามารถนำมาเบิกตัดสต๊อกได้ กรุณาเลือกโหมด "ยืมอุปกรณ์"`;
+          warningText.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i><strong>อุปกรณ์ประเภทยืมใช้:</strong> ชิ้นนี้เป็นอุปกรณ์ประเภทยืมใช้ (รหัสขึ้นต้นด้วย B หมวด ${item.category}) ไม่สามารถนำมาเบิกตัดสต๊อกได้ กรุณาเลือกโหมด "ยืมอุปกรณ์"`;
+          warningBox.classList.remove('d-none');
+        }
+        qtyInput.classList.add('is-invalid');
+        const btnAddCart = document.getElementById('btnAddCurrentToCart');
+        if (btnAddCart) btnAddCart.disabled = true;
+        return;
+      } else if (type === 'ยืมอุปกรณ์' && typeof window.isEquipmentBorrowType === 'function' && !window.isEquipmentBorrowType(item)) {
+        if (warningBox && warningText) {
+          warningText.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i><strong>วัสดุสิ้นเปลือง:</strong> รายการนี้เป็นของใช้แล้วหมดไป (ไม่ใช่อุปกรณ์ประเภทยืมใช้ที่ขึ้นต้นด้วย B) ไม่สามารถยืมได้ กรุณาเลือกโหมด "เบิกตัดสต็อก"`;
           warningBox.classList.remove('d-none');
         }
         qtyInput.classList.add('is-invalid');
@@ -9439,12 +9477,24 @@
           }
         }
 
-        // Auto-select "ยืมอุปกรณ์" if the equipment is loanable (อุปกรณ์ประเภทยืมใช้)
+        // Auto-select "ยืมอุปกรณ์" if the equipment is loanable (ขึ้นต้นด้วย B / BA / BT)
         if (isBorrow) {
           if (typeof selectedTransItems === 'undefined' || selectedTransItems.length === 0 || currentTransCartType === 'ยืมอุปกรณ์') {
             const borrowRadio = document.getElementById('typeBorrow');
             if (borrowRadio && !borrowRadio.checked) {
               borrowRadio.checked = true;
+              if (typeof window.toggleTransTypeUI === 'function') {
+                window.toggleTransTypeUI();
+              }
+            }
+          }
+        } else {
+          // If consumable equipment and cart is empty, auto-select "เบิกจ่าย" if currently on "ยืมอุปกรณ์"
+          if (typeof selectedTransItems === 'undefined' || selectedTransItems.length === 0) {
+            const borrowRadio = document.getElementById('typeBorrow');
+            const issueRadio = document.getElementById('typeIssue');
+            if (borrowRadio && borrowRadio.checked && issueRadio) {
+              issueRadio.checked = true;
               if (typeof window.toggleTransTypeUI === 'function') {
                 window.toggleTransTypeUI();
               }
@@ -13447,6 +13497,23 @@
           return;
         }
       } else if (selectedTransItems.length === 0) {
+        // Enforce lock according to currently selected equipment in the form
+        const currentEquipId = document.getElementById('equipSelect')?.value;
+        const currentEquipObj = currentEquipId ? (equipmentList || []).find(x => x.id === currentEquipId) : null;
+        if (currentEquipObj) {
+          const isBorrow = typeof window.isEquipmentBorrowType === 'function' && window.isEquipmentBorrowType(currentEquipObj);
+          if (selectedType === 'เบิกจ่าย' && isBorrow) {
+            alert(`❌ ไม่สามารถเลือกประเภท "เบิกตัดสต๊อก" ได้!\n\nอุปกรณ์ "${currentEquipObj.name}" [${currentEquipObj.code || currentEquipObj.id}] เป็นอุปกรณ์ประเภทยืมใช้ (รหัสขึ้นต้นด้วย B หมวด ${currentEquipObj.category || 'ยืมใช้'})\nไม่สามารถนำมาเบิกตัดสต๊อกได้\n\nระบบล็อคให้ทำรายการผ่านโหมด "ยืมอุปกรณ์" เท่านั้น`);
+            const el = document.getElementById('typeBorrow');
+            if (el) el.checked = true;
+            return;
+          } else if (selectedType === 'ยืมอุปกรณ์' && !isBorrow) {
+            alert(`❌ ไม่สามารถเลือกประเภท "ยืมอุปกรณ์" ได้!\n\nรายการ "${currentEquipObj.name}" [${currentEquipObj.code || currentEquipObj.id}] เป็นวัสดุสิ้นเปลือง/ใช้แล้วหมดไป (ไม่ใช่อุปกรณ์ประเภทยืมใช้ที่ขึ้นต้นด้วย B)\nไม่สามารถนำมาทำรายการยืมได้\n\nระบบล็อคให้ทำรายการผ่านโหมด "เบิกตัดสต๊อก" เท่านั้น`);
+            const el = document.getElementById('typeIssue');
+            if (el) el.checked = true;
+            return;
+          }
+        }
         currentTransCartType = selectedType;
       }
 
@@ -15571,13 +15638,22 @@
         return;
       }
 
-      // กำหนดประเภทเอกสารอัตโนมัติ: ยืมอุปกรณ์ หรือ เบิกจ่าย (เบิกตัดสต็อก)
+      // ตรวจสอบประเภทเอกสารอัตโนมัติ: ยืมอุปกรณ์ หรือ เบิกจ่าย (เบิกตัดสต็อก)
       const hasBorrowItem = items.some(it => {
         const eq = (typeof equipmentList !== 'undefined' && Array.isArray(equipmentList)) ? equipmentList.find(e => e.id === it.id) : null;
         return eq && (typeof window.isEquipmentBorrowType === 'function') && window.isEquipmentBorrowType(eq);
       });
+      const hasConsumableItem = items.some(it => {
+        const eq = (typeof equipmentList !== 'undefined' && Array.isArray(equipmentList)) ? equipmentList.find(e => e.id === it.id) : null;
+        return eq && (typeof window.isEquipmentBorrowType === 'function') && !window.isEquipmentBorrowType(eq);
+      });
 
-      const determinedType = (hasBorrowItem || currentTransCartType === 'ยืมอุปกรณ์') ? 'ยืมอุปกรณ์' : 'เบิกจ่าย';
+      if (hasBorrowItem && hasConsumableItem) {
+        alert("❌ ไม่สามารถบันทึกได้!\n\nในรายการสแกนมีอุปกรณ์ประเภทยืมใช้ (รหัสขึ้นต้นด้วย B เช่น BA หรือ BT) ปะปนกับวัสดุสิ้นเปลือง\n\nเอกสาร 1 ใบต้องเป็นประเภทเดียวกันเท่านั้น กรุณาลบรายการที่ไม่ตรงประเภทออกก่อนบันทึก");
+        return;
+      }
+
+      const determinedType = hasBorrowItem ? 'ยืมอุปกรณ์' : 'เบิกจ่าย';
 
       // ปรับ radio button ใน transactionForm ให้ตรง
       const borrowRadio = document.getElementById('typeBorrow');
@@ -16327,13 +16403,19 @@
     window.isEquipmentBorrowType = function(item) {
       if (!item) return false;
       if (item.isBorrowable === true) return true;
-      const cat = (item.category || '').toLowerCase();
-      if (cat.includes('ยืมใช้') || cat.includes('ยืม')) return true;
-      const name = (item.name || '').toLowerCase();
+      const code = (item.code || item.id || '').toString().trim().toUpperCase();
+      // อุปกรณ์ยืมใช้จะขึ้นต้นด้วยตัวอักษร "B" (เช่น BA-xxx, BT-xxx หรือ Bxxx)
+      if (/^B[A-Z0-9]/i.test(code) || code.startsWith('B-') || code.startsWith('BA-') || code.startsWith('BT-')) return true;
+      const prefix = (item.prefix || '').toString().trim().toUpperCase();
+      if (prefix === 'BA' || prefix === 'BT' || prefix.startsWith('B')) return true;
+      const cat = (item.category || '').toString().toLowerCase();
+      if (cat.includes('ยืมใช้') || cat.includes('ยืม') || 
+          cat.includes('ba ') || cat.includes('bt ') || 
+          cat.startsWith('ba') || cat.startsWith('bt') ||
+          cat.includes('ba งานเกษตร') || cat.includes('bt งานช่าง')) return true;
+      const name = (item.name || '').toString().toLowerCase();
       if (name.includes('ยืมใช้')) return true;
-      const prefix = (item.prefix || '').toUpperCase();
       if (prefix === 'AG') return true;
-      const code = (item.code || '').toUpperCase();
       if (code.startsWith('SL-') || code.startsWith('AG-')) return true;
       return false;
     };
@@ -16839,9 +16921,9 @@
         }, 300);
 
         if (isBorrowType) {
-          showToast(`⚡ สแกนเบิกอุปกรณ์ประเภทยืมใช้! ระบบเลือก "ยืมอุปกรณ์" ให้ทันที (คุณ ${empNameStr} • "${savedEquip.name}") พร้อมระบุจำนวน`);
+          showToast(`🔒 สแกนอุปกรณ์ประเภทยืมใช้! ระบบล็อคประเภทเป็น "ยืมอุปกรณ์" ให้ทันที (คุณ ${empNameStr} • "${savedEquip.name}" [${savedEquip.code}]) พร้อมระบุจำนวน`);
         } else {
-          showToast(`⚡ สแกนเบิกด่วนสำเร็จ! ผู้ทำรายการ: คุณ ${empNameStr} | อุปกรณ์: "${savedEquip.name}" พร้อมระบุจำนวนได้ทันที`);
+          showToast(`⚡ สแกนวัสดุสิ้นเปลืองสำเร็จ! ระบบล็อคประเภทเป็น "เบิกตัดสต็อก" ให้ทันที (คุณ ${empNameStr} • "${savedEquip.name}" [${savedEquip.code}]) พร้อมระบุจำนวน`);
         }
       }, 350);
     }
@@ -16924,10 +17006,14 @@
         badgeElem.textContent = `${cols} x ${rows} = ${totalPerSheet} ดวง/แผ่น (~${approxWidthCm} x ${approxHeightCm} ซม.)`;
       }
 
-      const showBarcode = document.getElementById('chkShowBarcode')?.checked ?? true;
+      const showBarcode = document.getElementById('chkShowBarcode')?.checked ?? false;
       const showQr = document.getElementById('chkShowQr')?.checked ?? true;
       const showName = document.getElementById('chkShowName')?.checked ?? true;
       const showDetails = document.getElementById('chkShowDetails')?.checked ?? true;
+
+      // Spacing between labels in mm (Default: X=3mm, Y=2mm)
+      const gapXMm = Math.max(0, parseFloat(document.getElementById('labelGapXMm')?.value) || 3.0);
+      const gapYMm = Math.max(0, parseFloat(document.getElementById('labelGapYMm')?.value) || 2.0);
 
       let itemsToPrint = [];
       if (selectedScope === 'ALL') {
@@ -16977,7 +17063,10 @@
       let bcWidth = 1.1;
       let boxPadding = '6px';
       let previewMinHeight = 130;
-      let printHeightMm = ((280 / rows) - 1.8).toFixed(1);
+      // Calculate usable print height: A4 total height ~287mm usable; minus total vertical gaps
+      const totalVerticalGapMm = (rows - 1) * gapYMm;
+      const printUsableTotalHeightMm = Math.max(200, 287 - totalVerticalGapMm);
+      let printHeightMm = (printUsableTotalHeightMm / rows).toFixed(1);
 
       if (rows === 2) {
         previewMinHeight = 280;
@@ -16985,7 +17074,7 @@
         titleFontSize = cols === 1 ? '16px' : (cols === 2 ? '14px' : '13px');
         badgeFontSize = cols === 1 ? '15px' : (cols === 2 ? '13px' : '12px');
         detailFontSize = cols === 1 ? '15px' : (cols === 2 ? '13px' : '12px');
-        nameFontSize = cols === 1 ? '22px' : (cols === 2 ? '18px' : (cols === 3 ? '16px' : '14px'));
+        nameFontSize = cols === 1 ? '26px' : (cols === 2 ? '22px' : (cols === 3 ? '19px' : '17px'));
         bcHeight = cols === 1 ? 58 : (cols === 2 ? 48 : 42);
         bcWidth = cols === 1 ? 2.2 : (cols === 2 ? 1.7 : 1.3);
       } else if (rows === 3) {
@@ -16994,7 +17083,7 @@
         titleFontSize = cols === 1 ? '14.5px' : (cols === 2 ? '13px' : '12px');
         badgeFontSize = cols === 1 ? '14px' : (cols === 2 ? '12px' : '11px');
         detailFontSize = cols === 1 ? '13.5px' : (cols === 2 ? '12px' : '11px');
-        nameFontSize = cols === 1 ? '19px' : (cols === 2 ? '16px' : (cols === 3 ? '14px' : '12.5px'));
+        nameFontSize = cols === 1 ? '22px' : (cols === 2 ? '19px' : (cols === 3 ? '16.5px' : '14.5px'));
         bcHeight = cols === 1 ? 50 : (cols === 2 ? 40 : 34);
         bcWidth = cols === 1 ? 2.0 : (cols === 2 ? 1.5 : 1.2);
       } else if (rows === 4) {
@@ -17003,7 +17092,7 @@
         titleFontSize = cols <= 2 ? '12.5px' : '11px';
         badgeFontSize = cols <= 2 ? '11.5px' : '10.5px';
         detailFontSize = cols <= 2 ? '11.5px' : '10px';
-        nameFontSize = cols === 1 ? '17px' : (cols === 2 ? '14.5px' : (cols === 3 ? '13px' : '11.5px'));
+        nameFontSize = cols === 1 ? '19px' : (cols === 2 ? '16.5px' : (cols === 3 ? '14.5px' : '13px'));
         bcHeight = cols === 1 ? 42 : (cols === 2 ? 34 : 28);
         bcWidth = cols === 1 ? 1.8 : (cols === 2 ? 1.4 : 1.1);
       } else if (rows === 5) {
@@ -17012,7 +17101,7 @@
         titleFontSize = cols <= 2 ? '11.5px' : '10.5px';
         badgeFontSize = cols <= 2 ? '11px' : '10px';
         detailFontSize = cols <= 2 ? '11px' : '9.5px';
-        nameFontSize = cols === 1 ? '15.5px' : (cols === 2 ? '13.5px' : (cols === 3 ? '12px' : '10.5px'));
+        nameFontSize = cols === 1 ? '17px' : (cols === 2 ? '15px' : (cols === 3 ? '13.5px' : '12px'));
         bcHeight = cols === 1 ? 36 : (cols === 2 ? 30 : 25);
         bcWidth = cols === 1 ? 1.6 : (cols === 2 ? 1.3 : 1.05);
       } else if (rows === 6) {
@@ -17021,7 +17110,7 @@
         titleFontSize = cols <= 2 ? '11px' : '9.5px';
         badgeFontSize = cols <= 2 ? '10px' : '9px';
         detailFontSize = cols <= 2 ? '10px' : '9px';
-        nameFontSize = cols === 1 ? '14px' : (cols === 2 ? '12.5px' : (cols === 3 ? '11px' : '9.5px'));
+        nameFontSize = cols === 1 ? '15.5px' : (cols === 2 ? '14px' : (cols === 3 ? '12.5px' : '11px'));
         bcHeight = cols === 1 ? 30 : (cols === 2 ? 26 : 22);
         bcWidth = cols === 1 ? 1.5 : (cols === 2 ? 1.2 : 1.0);
       } else if (rows === 7) {
@@ -17030,7 +17119,7 @@
         titleFontSize = cols <= 2 ? '10.5px' : '9px';
         badgeFontSize = cols <= 2 ? '9.5px' : '8.5px';
         detailFontSize = cols <= 2 ? '9.5px' : '8.5px';
-        nameFontSize = cols === 1 ? '13px' : (cols === 2 ? '11.5px' : (cols === 3 ? '10.5px' : '9px'));
+        nameFontSize = cols === 1 ? '14.5px' : (cols === 2 ? '13px' : (cols === 3 ? '11.5px' : '10px'));
         bcHeight = cols === 1 ? 24 : (cols === 2 ? 20 : 17);
         bcWidth = cols === 1 ? 1.3 : (cols === 2 ? 1.1 : 0.95);
       } else if (rows === 8) {
@@ -17039,7 +17128,7 @@
         titleFontSize = cols <= 2 ? '9.5px' : '8.5px';
         badgeFontSize = cols <= 2 ? '9px' : '8px';
         detailFontSize = cols <= 2 ? '9px' : '8px';
-        nameFontSize = cols === 1 ? '12px' : (cols === 2 ? '10.5px' : (cols === 3 ? '9.5px' : '8.5px'));
+        nameFontSize = cols === 1 ? '13.5px' : (cols === 2 ? '12px' : (cols === 3 ? '10.5px' : '9.5px'));
         bcHeight = cols === 1 ? 20 : (cols === 2 ? 18 : 15);
         bcWidth = cols === 1 ? 1.2 : (cols === 2 ? 1.0 : 0.9);
       } else if (rows === 9) {
@@ -17048,7 +17137,7 @@
         titleFontSize = cols <= 2 ? '9px' : '8px';
         badgeFontSize = cols <= 2 ? '8.5px' : '7.5px';
         detailFontSize = cols <= 2 ? '8.5px' : '7.5px';
-        nameFontSize = cols === 1 ? '11px' : (cols === 2 ? '10px' : (cols === 3 ? '9px' : '8px'));
+        nameFontSize = cols === 1 ? '12.5px' : (cols === 2 ? '11px' : (cols === 3 ? '10px' : '9px'));
         bcHeight = cols === 1 ? 18 : (cols === 2 ? 15 : 13);
         bcWidth = cols === 1 ? 1.1 : (cols === 2 ? 0.95 : 0.85);
       } else {
@@ -17058,7 +17147,7 @@
         titleFontSize = cols <= 2 ? '8.5px' : '7.5px';
         badgeFontSize = cols <= 2 ? '8px' : '7px';
         detailFontSize = cols <= 2 ? '8px' : '7px';
-        nameFontSize = cols === 1 ? '10.5px' : (cols === 2 ? '9.5px' : (cols === 3 ? '8.5px' : '7.5px'));
+        nameFontSize = cols === 1 ? '11.5px' : (cols === 2 ? '10.5px' : (cols === 3 ? '9.5px' : '8.5px'));
         bcHeight = cols === 1 ? 15 : (cols === 2 ? 13 : 11);
         bcWidth = cols === 1 ? 1.0 : (cols === 2 ? 0.9 : 0.8);
       }
@@ -17097,7 +17186,7 @@
       previewQrPx = Math.max(38, previewQrPx);
 
       let previewHtml = `<div class="row g-2">`;
-      let printHtml = `<div class="row g-1">`;
+      let printHtml = `<div class="row" style="margin-left: -${gapXMm / 2}mm !important; margin-right: -${gapXMm / 2}mm !important;">`;
       const renderTasks = [];
 
       itemsToPrint.forEach((item, itemIdx) => {
@@ -17116,9 +17205,12 @@
             const middleMarginStyle = isPrint 
               ? `margin-top: ${printVerticalMarginMm}mm !important; margin-bottom: ${printVerticalMarginMm}mm !important;` 
               : `margin-top: ${prevVerticalMarginPx}px !important; margin-bottom: ${prevVerticalMarginPx}px !important;`;
+            const wrapperStyle = isPrint 
+              ? `padding-left: ${gapXMm / 2}mm !important; padding-right: ${gapXMm / 2}mm !important; padding-top: ${gapYMm / 2}mm !important; padding-bottom: ${gapYMm / 2}mm !important;` 
+              : ``;
 
             return `
-            <div class="${gridClass}">
+            <div class="${gridClass}" style="${wrapperStyle}">
               <div class="sticker-label-box border rounded-2 bg-white text-dark d-flex flex-column justify-content-between position-relative" style="${heightStyle} font-size: ${detailFontSize}; padding: ${currentPadding}; page-break-inside: avoid; break-inside: avoid; overflow: hidden; box-sizing: border-box;">
                 <div>
                   <div class="d-flex align-items-center justify-content-between mb-0.5 border-bottom pb-0.5" style="font-size: ${titleFontSize}; line-height: 1.1;">
@@ -17126,7 +17218,7 @@
                     <span class="badge bg-dark font-monospace" style="font-size: ${badgeFontSize};">${item.code}</span>
                   </div>
 
-                  ${showName ? `<div class="fw-bold text-dark text-truncate" style="font-size: ${nameFontSize}; line-height: 1.15; padding-bottom: 1px;" title="${item.name}">${item.name}</div>` : ''}
+                  ${showName ? `<div class="fw-bold text-dark text-center text-truncate w-100" style="font-size: ${nameFontSize}; line-height: 1.2; padding-top: 2px; padding-bottom: 2px;" title="${item.name}">${item.name}</div>` : ''}
                 </div>
 
                 <div class="d-flex align-items-center justify-content-center gap-2 overflow-hidden w-100 flex-grow-1" style="${middleMarginStyle} min-height: 0;">

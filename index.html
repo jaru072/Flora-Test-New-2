@@ -3662,6 +3662,28 @@
                   </div>
                 </div>
 
+                <!-- ระยะห่างระหว่างฉลาก (มิลลิเมตร) -->
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelGapXMm">
+                      <i class="bi bi-arrows-expand-vertical me-1 text-primary rotate-90" style="transform: rotate(90deg); display: inline-block;"></i> ห่างแนวนอน (มม.):
+                    </label>
+                    <div class="input-group input-group-sm">
+                      <input type="number" id="labelGapXMm" class="form-control text-center fw-bold" value="3" min="0" max="25" step="0.5" onchange="renderPrintableLabelsPreview()" oninput="renderPrintableLabelsPreview()" />
+                      <span class="input-group-text fs-8 text-muted">มม.</span>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelGapYMm">
+                      <i class="bi bi-arrows-expand-vertical me-1 text-primary"></i> ห่างแนวตั้ง (มม.):
+                    </label>
+                    <div class="input-group input-group-sm">
+                      <input type="number" id="labelGapYMm" class="form-control text-center fw-bold" value="2" min="0" max="25" step="0.5" onchange="renderPrintableLabelsPreview()" oninput="renderPrintableLabelsPreview()" />
+                      <span class="input-group-text fs-8 text-muted">มม.</span>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="row g-2 mb-3">
                   <div class="col-12">
                     <div class="d-flex align-items-center justify-content-between mb-1">
@@ -3682,7 +3704,7 @@
                 <div class="p-3 bg-light rounded-3 mb-3">
                   <div class="fw-bold fs-8 text-secondary mb-2">องค์ประกอบที่แสดงบนฉลาก:</div>
                   <div class="form-check form-switch mb-1">
-                    <input class="form-check-input" type="checkbox" id="chkShowBarcode" checked onchange="renderPrintableLabelsPreview()">
+                    <input class="form-check-input" type="checkbox" id="chkShowBarcode" onchange="renderPrintableLabelsPreview()">
                     <label class="form-check-label fs-7 fw-semibold" for="chkShowBarcode">แสดงบาร์โค้ด</label>
                   </div>
                   <div class="form-check form-switch mb-1">
