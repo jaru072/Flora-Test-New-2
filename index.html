@@ -533,7 +533,7 @@
         </div>
 
         <!-- Worker Notice -->
-        <div id="workerCatalogNotice" class="worker-restricted-notice mb-4">
+        <div id="workerCatalogNotice" class="worker-restricted-notice mb-4 d-none d-md-block">
           <i class="bi bi-info-circle-fill me-1"></i>
           <strong>โหมดพนักงานทำเกษตร (Worker):</strong> สามารถค้นหา ดูสเปก และตรวจสอบสถานะคงเหลือของอุปกรณ์ในคลังได้ (สิทธิ์เบิก/ยืม/รับเข้า/พิมพ์ฉลาก สำหรับ Staff/Admin/Manager)
         </div>
@@ -2200,7 +2200,7 @@
 
   <!-- ==================== MODAL: TRANSACTION FORM (บันทึก เบิก-จ่าย-ยืม-คืน-รับเข้า) ==================== -->
   <div class="modal fade" id="transactionModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-md-down modal-lg modal-dialog-scrollable">
       <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
         <!-- Header -->
         <div class="modal-header bg-success bg-gradient text-white py-3">
@@ -2343,7 +2343,7 @@
               <!-- Instant Equipment Selected Preview Card -->
               <div id="equipSelectPreviewBox" class="mt-2.5 p-3 bg-white border border-2 border-success border-opacity-50 rounded-4 shadow-sm d-none">
                 <div class="d-flex align-items-center gap-3">
-                  <img id="equipPreviewImg" src="" class="rounded-3 border shadow-sm" style="width: 70px; height: 70px; object-fit: cover;" />
+                  <img id="equipPreviewImg" src="" class="rounded-3 border shadow-sm cursor-zoom-in enlargeable-img" style="width: 70px; height: 70px; object-fit: cover;" onclick="openEnlargeImageModal(this.src, document.getElementById('equipPreviewNameText')?.textContent || 'รูปภาพอุปกรณ์')" title="คลิกเพื่อขยายรูปภาพขนาดใหญ่" />
                   <div class="flex-grow-1 overflow-hidden">
                     <div class="d-flex align-items-center gap-1.5 flex-wrap">
                       <span id="equipPreviewCodeBadge" class="badge bg-dark font-monospace fs-8"></span>
@@ -2438,12 +2438,12 @@
                   </div>
                 </div>
                 <div class="col-12 col-md-6">
-                  <div class="d-flex align-items-center gap-1 flex-wrap">
+                  <div class="d-flex align-items-center gap-1 flex-wrap" id="quickDueDateBtnGroup">
                     <small class="text-secondary fw-semibold w-100 fs-8 mb-0">ปุ่มเลือกด่วน:</small>
-                    <button type="button" class="btn btn-xs btn-outline-warning text-dark fw-bold rounded-pill px-2.5 py-1 fs-8" onclick="setQuickDueDate(1)">1 วัน (พรุ่งนี้)</button>
-                    <button type="button" class="btn btn-xs btn-warning text-dark fw-bold rounded-pill px-2.5 py-1 fs-8" onclick="setQuickDueDate(3)">3 วัน (มาตรฐาน)</button>
-                    <button type="button" class="btn btn-xs btn-outline-warning text-dark fw-bold rounded-pill px-2.5 py-1 fs-8" onclick="setQuickDueDate(7)">7 วัน (1 สัปดาห์)</button>
-                    <button type="button" class="btn btn-xs btn-outline-warning text-dark fw-bold rounded-pill px-2.5 py-1 fs-8" onclick="setQuickDueDate(14)">14 วัน</button>
+                    <button type="button" class="btn btn-xs btn-warning text-dark fw-bold rounded-pill px-2.5 py-1 fs-8 quick-due-btn shadow-xs" data-quick-days="1" onclick="setQuickDueDate(1)">1 วัน (พรุ่งนี้)</button>
+                    <button type="button" class="btn btn-xs btn-outline-warning text-dark fw-bold rounded-pill px-2.5 py-1 fs-8 quick-due-btn shadow-xs" data-quick-days="3" onclick="setQuickDueDate(3)">3 วัน</button>
+                    <button type="button" class="btn btn-xs btn-outline-warning text-dark fw-bold rounded-pill px-2.5 py-1 fs-8 quick-due-btn shadow-xs" data-quick-days="7" onclick="setQuickDueDate(7)">7 วัน (1 สัปดาห์)</button>
+                    <button type="button" class="btn btn-xs btn-outline-warning text-dark fw-bold rounded-pill px-2.5 py-1 fs-8 quick-due-btn shadow-xs" data-quick-days="14" onclick="setQuickDueDate(14)">14 วัน</button>
                   </div>
                 </div>
               </div>
@@ -2511,7 +2511,7 @@
           <!-- Equipment Info Card & Summary Metrics -->
           <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3 flex-shrink-0">
             <div class="d-flex align-items-center gap-3">
-              <img id="eqHistModalImg" src="" class="rounded-3 border shadow-sm" style="width: 64px; height: 64px; object-fit: cover; flex-shrink: 0;" onerror="this.src='https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&auto=format&fit=crop&q=80'" />
+              <img id="eqHistModalImg" src="" class="rounded-3 border shadow-sm cursor-zoom-in enlargeable-img" style="width: 64px; height: 64px; object-fit: cover; flex-shrink: 0;" onclick="openEnlargeImageModal(this.src, document.getElementById('eqHistModalName')?.textContent || 'รูปภาพอุปกรณ์')" title="คลิกเพื่อขยายรูปภาพขนาดใหญ่" onerror="this.src='https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&auto=format&fit=crop&q=80'" />
               <div class="overflow-hidden flex-grow-1" style="min-width: 0;">
                 <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
                   <h5 id="eqHistModalName" class="fw-bold text-dark mb-0 fs-6 text-truncate"></h5>
@@ -2735,7 +2735,7 @@
           <!-- Equipment Info Card -->
           <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3">
             <div class="d-flex align-items-center gap-3">
-              <img id="eqBorrowersImg" src="" class="rounded-3 border shadow-sm" style="width: 64px; height: 64px; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&auto=format&fit=crop&q=80'" />
+              <img id="eqBorrowersImg" src="" class="rounded-3 border shadow-sm cursor-zoom-in enlargeable-img" style="width: 64px; height: 64px; object-fit: cover;" onclick="openEnlargeImageModal(this.src, document.getElementById('eqBorrowersName')?.textContent || 'รูปภาพอุปกรณ์')" title="คลิกเพื่อขยายรูปภาพขนาดใหญ่" onerror="this.src='https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&auto=format&fit=crop&q=80'" />
               <div class="flex-grow-1">
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                   <h6 id="eqBorrowersName" class="fw-bold text-dark mb-0 fs-6"></h6>
@@ -3149,7 +3149,7 @@
         <!-- Header Banner with Item Preview -->
         <div class="modal-header border-0 bg-success bg-gradient text-white p-3 align-items-center position-relative">
           <div class="d-flex align-items-center gap-3 w-100 pe-4">
-            <img id="popupMenuEquipImage" src="" class="rounded-3 border border-2 border-white shadow-sm" style="width: 60px; height: 60px; object-fit: cover; flex-shrink: 0;" alt="Equipment Preview" />
+            <img id="popupMenuEquipImage" src="" class="rounded-3 border border-2 border-white shadow-sm cursor-zoom-in enlargeable-img" style="width: 60px; height: 60px; object-fit: cover; flex-shrink: 0;" alt="Equipment Preview" onclick="openEnlargeImageModal(this.src, document.getElementById('popupMenuEquipName')?.textContent || 'รูปภาพอุปกรณ์')" title="คลิกเพื่อขยายรูปภาพขนาดใหญ่" />
             <div class="text-truncate">
               <span id="popupMenuEquipCode" class="badge bg-white text-dark font-monospace mb-1"></span>
               <h6 id="popupMenuEquipName" class="fw-bold mb-0 text-white text-truncate"></h6>
@@ -3407,7 +3407,7 @@
                   </span>
                 </div>
                 <div class="d-flex align-items-center gap-2 mt-1">
-                  <img id="fastScanEquipPhoto" src="" class="rounded-3 border d-none" style="width: 38px; height: 38px; object-fit: cover;" />
+                  <img id="fastScanEquipPhoto" src="" class="rounded-3 border d-none cursor-zoom-in enlargeable-img" style="width: 38px; height: 38px; object-fit: cover;" onclick="openEnlargeImageModal(this.src, document.getElementById('fastScanEquipName')?.textContent || 'รูปภาพอุปกรณ์')" title="คลิกเพื่อขยายรูปภาพขนาดใหญ่" />
                   <div class="overflow-hidden flex-grow-1">
                     <div id="fastScanEquipName" class="fw-bold text-dark fs-7 text-truncate">ยังไม่ได้สแกนบาร์โค้ดอุปกรณ์</div>
                   </div>
@@ -3478,8 +3478,8 @@
             <h5 class="modal-title fw-bold mb-0 text-white fs-5">สแกนอุปกรณ์</h5>
           </div>
           <div class="d-flex align-items-center gap-2">
-            <button type="button" id="btnHeaderFinishScanner" class="btn btn-success fw-bold rounded-pill px-3 py-1 fs-7 shadow-sm text-nowrap" data-bs-dismiss="modal" onclick="finishContinuousScanModal()">
-              เสร็จสิ้น
+            <button type="button" id="btnHeaderFinishScanner" class="btn btn-outline-success fw-bold rounded-pill px-3 py-1 fs-7 shadow-sm text-nowrap d-none" onclick="toggleScannerReceiveIssueMode()">
+              สลับรับเข้าสต๊อก
             </button>
             <button type="button" class="btn-close btn-close-white ms-1" data-bs-dismiss="modal" onclick="closeBarcodeQrScannerModal()" title="ปิดหน้าต่าง"></button>
           </div>
@@ -3500,14 +3500,16 @@
 
           <!-- กรอบที่ 2: รายการอุปกรณ์ (แสดงรายการอุปกรณ์ที่สแกน) -->
           <div id="scannerEquipmentCard" class="card border-0 shadow-sm rounded-3 mb-2.5 bg-white p-2.5">
-            <div class="d-flex align-items-center justify-content-between mb-1.5">
+            <div class="d-flex align-items-center justify-content-between mb-1.5" id="scannerEquipmentCardHeader">
               <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2.5 py-1 fs-8 fw-bold">รายการอุปกรณ์</span>
+                <span id="scannerEquipmentBadgeTitle" class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2.5 py-1 fs-8 fw-bold">รายการอุปกรณ์</span>
                 <span class="fs-8 text-muted">รวม <span id="continuousScanCartCountBadge" class="fw-bold text-dark">0</span> รายการ</span>
               </div>
-              <button type="button" id="scannerClearAllBtn" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fs-8 d-none" onclick="clearAllScannerItemsConfirm()" title="ลบรายการที่เลือกไว้ทั้งหมด">
-                <i class="bi bi-trash3 me-1"></i>ลบทั้งหมด
-              </button>
+              <div class="d-flex align-items-center gap-1.5" id="scannerEquipmentHeaderActions">
+                <button type="button" id="scannerClearAllBtn" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fs-8 d-none" onclick="clearAllScannerItemsConfirm()" title="ลบรายการที่เลือกไว้ทั้งหมด">
+                  <i class="bi bi-trash3 me-1"></i>ลบทั้งหมด
+                </button>
+              </div>
             </div>
             <!-- รายการอุปกรณ์ที่สแกน -->
             <div id="scannerScannedItemsContainer" class="overflow-auto border border-light rounded-2 p-1.5 bg-light bg-opacity-50" style="min-height: 110px; max-height: 230px;">
@@ -3519,7 +3521,7 @@
           </div>
 
           <!-- กรอบที่ 3: กรอบหน้าต่างสแกน (Scanner View) -->
-          <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-dark text-white">
+          <div id="scannerViewCard" class="card border-0 shadow-sm rounded-4 overflow-hidden bg-dark text-white">
             <div class="p-2 bg-secondary bg-opacity-25 border-bottom d-flex align-items-center justify-content-between">
               <span class="fs-8 fw-semibold text-warning"><i class="bi bi-record-circle text-danger me-1 animate-pulse"></i> กล้องอ่านบาร์โค้ด & คิวอาร์โค้ด</span>
             </div>
@@ -3631,92 +3633,109 @@
                   </select>
                 </div>
 
-                <!-- Label Layout Columns & Rows (A4 Grid) -->
-                <div class="row g-2 mb-2">
-                  <div class="col-6">
-                    <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelColsSelect">
-                      <i class="bi bi-layout-three-columns me-1 text-primary"></i> จำนวนคอลัมน์:
-                    </label>
-                    <select id="labelColsSelect" class="form-select form-select-sm rounded-3 fw-semibold" onchange="onLabelGridSelectChange()">
-                      <option value="1">1 คอลัมน์ (กว้างเต็มหน้า)</option>
-                      <option value="2">2 คอลัมน์ (ใหญ่)</option>
-                      <option value="3" selected>3 คอลัมน์ (มาตรฐาน)</option>
-                      <option value="4">4 คอลัมน์ (เล็ก)</option>
-                      <option value="5">5 คอลัมน์ (กะทัดรัด)</option>
-                      <option value="6">6 คอลัมน์ (จิ๋ว)</option>
-                    </select>
-                  </div>
-                  <div class="col-6">
-                    <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelRowsSelect">
-                      <i class="bi bi-distribute-vertical me-1 text-success"></i> จำนวนแถว:
-                    </label>
-                    <select id="labelRowsSelect" class="form-select form-select-sm rounded-3 fw-semibold" onchange="onLabelGridSelectChange()">
-                      <option value="2">2 แถว</option>
-                      <option value="3">3 แถว</option>
-                      <option value="4">4 แถว</option>
-                      <option value="5">5 แถว</option>
-                      <option value="6">6 แถว</option>
-                      <option value="7" selected>7 แถว (มาตรฐาน)</option>
-                      <option value="8">8 แถว</option>
-                      <option value="9">9 แถว</option>
-                      <option value="10">10 แถว</option>
-                      <option value="11">11 แถว</option>
-                      <option value="12">12 แถว</option>
-                      <option value="14">14 แถว</option>
-                      <option value="16">16 แถว</option>
-                    </select>
-                  </div>
+                <!-- ปุ่มพับ/ขยาย ตั้งค่าขนาดฉลาก (แสดงเฉพาะบนมือถือ) -->
+                <div class="d-md-none mb-2">
+                  <button type="button" class="btn btn-outline-primary btn-sm w-100 rounded-3 d-flex align-items-center justify-content-between py-2 px-3 fw-semibold shadow-xs bg-white" data-bs-toggle="collapse" data-bs-target="#labelSizeSettingsCollapse" aria-expanded="false" aria-controls="labelSizeSettingsCollapse" id="btnToggleLabelSizeSettings">
+                    <span class="d-flex align-items-center">
+                      <i class="bi bi-eye me-2 fs-6 text-primary" id="iconLabelSizeSettingsEye"></i>
+                      <span>ตั้งค่าขนาดฉลาก</span>
+                    </span>
+                    <span class="d-flex align-items-center text-muted fs-8">
+                      <span class="badge bg-primary bg-opacity-10 text-primary me-2 fw-semibold" id="labelSummaryMiniBadge">3×4 (12 ดวง/แผ่น)</span>
+                      <i class="bi bi-chevron-down" id="iconLabelSizeSettingsChevron" style="transition: transform 0.2s ease;"></i>
+                    </span>
+                  </button>
                 </div>
 
-                <!-- ระยะห่างระหว่างฉลาก (มิลลิเมตร) -->
-                <div class="row g-2 mb-2">
-                  <div class="col-6">
-                    <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelGapXMm">
-                      <i class="bi bi-arrows-expand-vertical me-1 text-primary rotate-90" style="transform: rotate(90deg); display: inline-block;"></i> ห่างแนวนอน (มม.):
-                    </label>
-                    <div class="input-group input-group-sm">
-                      <input type="number" id="labelGapXMm" class="form-control text-center fw-bold" value="3" min="0" max="25" step="0.5" onchange="onLabelGapChange()" oninput="onLabelGapChange()" />
-                      <span class="input-group-text fs-8 text-muted">มม.</span>
+                <!-- กล่องตั้งค่าขนาดฉลาก (ซ่อน/พับเฉพาะบนมือถือ แสดงปกติบนคอมพิวเตอร์) -->
+                <div class="collapse d-md-block" id="labelSizeSettingsCollapse">
+                  <!-- Label Layout Columns & Rows (A4 Grid) -->
+                  <div class="row g-2 mb-2">
+                    <div class="col-6">
+                      <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelColsSelect">
+                        <i class="bi bi-layout-three-columns me-1 text-primary"></i> จำนวนคอลัมน์:
+                      </label>
+                      <select id="labelColsSelect" class="form-select form-select-sm rounded-3 fw-semibold" onchange="onLabelGridSelectChange()">
+                        <option value="1">1 คอลัมน์ (กว้างเต็มหน้า)</option>
+                        <option value="2">2 คอลัมน์ (ใหญ่)</option>
+                        <option value="3" selected>3 คอลัมน์ (มาตรฐาน)</option>
+                        <option value="4">4 คอลัมน์ (เล็ก)</option>
+                        <option value="5">5 คอลัมน์ (กะทัดรัด)</option>
+                        <option value="6">6 คอลัมน์ (จิ๋ว)</option>
+                      </select>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelRowsSelect">
+                        <i class="bi bi-distribute-vertical me-1 text-success"></i> จำนวนแถว:
+                      </label>
+                      <select id="labelRowsSelect" class="form-select form-select-sm rounded-3 fw-semibold" onchange="onLabelGridSelectChange()">
+                        <option value="2">2 แถว</option>
+                        <option value="3">3 แถว</option>
+                        <option value="4" selected>4 แถว</option>
+                        <option value="5">5 แถว</option>
+                        <option value="6">6 แถว</option>
+                        <option value="7">7 แถว (มาตรฐาน)</option>
+                        <option value="8">8 แถว</option>
+                        <option value="9">9 แถว</option>
+                        <option value="10">10 แถว</option>
+                        <option value="11">11 แถว</option>
+                        <option value="12">12 แถว</option>
+                        <option value="14">14 แถว</option>
+                        <option value="16">16 แถว</option>
+                      </select>
                     </div>
                   </div>
-                  <div class="col-6">
-                    <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelGapYMm">
-                      <i class="bi bi-arrows-expand-vertical me-1 text-primary"></i> ห่างแนวตั้ง (มม.):
-                    </label>
-                    <div class="input-group input-group-sm">
-                      <input type="number" id="labelGapYMm" class="form-control text-center fw-bold" value="2" min="0" max="25" step="0.5" onchange="onLabelGapChange()" oninput="onLabelGapChange()" />
-                      <span class="input-group-text fs-8 text-muted">มม.</span>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- กำหนดขนาดดวงฉลาก (กว้าง x สูง มม.) หรือคำนวณอัตโนมัติ -->
-                <div class="row g-2 mb-2">
-                  <div class="col-6">
-                    <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelItemWidthMm">
-                      <i class="bi bi-arrows-expand me-1 text-success"></i> กว้างต่อดวง (มม.):
-                    </label>
-                    <div class="input-group input-group-sm">
-                      <input type="number" id="labelItemWidthMm" class="form-control text-center fw-bold" value="64.7" min="15" max="200" step="0.5" onchange="onLabelItemDimensionChange()" oninput="onLabelItemDimensionChange()" />
-                      <span class="input-group-text fs-8 text-muted">มม.</span>
+                  <!-- ระยะห่างระหว่างฉลาก (มิลลิเมตร) -->
+                  <div class="row g-2 mb-2">
+                    <div class="col-6">
+                      <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelGapXMm">
+                        <i class="bi bi-arrows-expand-vertical me-1 text-primary rotate-90" style="transform: rotate(90deg); display: inline-block;"></i> ห่างแนวนอน (มม.):
+                      </label>
+                      <div class="input-group input-group-sm">
+                        <input type="number" id="labelGapXMm" class="form-control text-center fw-bold" value="40" min="0" max="100" step="0.5" onchange="onLabelGapChange()" oninput="onLabelGapChange()" />
+                        <span class="input-group-text fs-8 text-muted">มม.</span>
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelGapYMm">
+                        <i class="bi bi-arrows-expand-vertical me-1 text-primary"></i> ห่างแนวตั้ง (มม.):
+                      </label>
+                      <div class="input-group input-group-sm">
+                        <input type="number" id="labelGapYMm" class="form-control text-center fw-bold" value="40" min="0" max="100" step="0.5" onchange="onLabelGapChange()" oninput="onLabelGapChange()" />
+                        <span class="input-group-text fs-8 text-muted">มม.</span>
+                      </div>
                     </div>
                   </div>
-                  <div class="col-6">
-                    <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelItemHeightMm">
-                      <i class="bi bi-arrows-vertical me-1 text-success"></i> สูงต่อดวง (มม.):
-                    </label>
-                    <div class="input-group input-group-sm">
-                      <input type="number" id="labelItemHeightMm" class="form-control text-center fw-bold" value="39.1" min="15" max="280" step="0.5" onchange="onLabelItemDimensionChange()" oninput="onLabelItemDimensionChange()" />
-                      <span class="input-group-text fs-8 text-muted">มม.</span>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- กล่องสรุปผลการคำนวณจำนวนดวง/แผ่น -->
-                <div id="labelCalculatedSizeSummary" class="p-2.5 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25 mb-3">
-                  <div class="d-flex align-items-center justify-content-between">
-                    <span class="fs-8 fw-bold text-success"><i class="bi bi-calculator me-1"></i>ผลการคำนวณ:</span>
-                    <span id="labelDimensionInfoBadge" class="badge bg-success text-white fs-7 px-3 py-1.5 fw-bold">21 ดวง/แผ่น</span>
+                  <!-- กำหนดขนาดดวงฉลาก (กว้าง x สูง มม.) หรือคำนวณอัตโนมัติ -->
+                  <div class="row g-2 mb-2">
+                    <div class="col-6">
+                      <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelItemWidthMm">
+                        <i class="bi bi-arrows-expand me-1 text-success"></i> กว้างต่อดวง (มม.):
+                      </label>
+                      <div class="input-group input-group-sm">
+                        <input type="number" id="labelItemWidthMm" class="form-control text-center fw-bold" value="50.0" min="15" max="200" step="0.5" onchange="onLabelItemDimensionChange()" oninput="onLabelItemDimensionChange()" />
+                        <span class="input-group-text fs-8 text-muted">มม.</span>
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label fw-bold fs-8 text-dark mb-1" for="labelItemHeightMm">
+                        <i class="bi bi-arrows-vertical me-1 text-success"></i> สูงต่อดวง (มม.):
+                      </label>
+                      <div class="input-group input-group-sm">
+                        <input type="number" id="labelItemHeightMm" class="form-control text-center fw-bold" value="52.8" min="15" max="280" step="0.5" onchange="onLabelItemDimensionChange()" oninput="onLabelItemDimensionChange()" />
+                        <span class="input-group-text fs-8 text-muted">มม.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- กล่องสรุปผลการคำนวณจำนวนดวง/แผ่น -->
+                  <div id="labelCalculatedSizeSummary" class="p-2.5 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25 mb-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                      <span class="fs-8 fw-bold text-success"><i class="bi bi-calculator me-1"></i>ผลการคำนวณ:</span>
+                      <span id="labelDimensionInfoBadge" class="badge bg-success text-white fs-7 px-3 py-1.5 fw-bold">12 ดวง/แผ่น</span>
+                    </div>
                   </div>
                 </div>
 
@@ -4253,7 +4272,7 @@
 
                 <div class="mt-2 text-center d-none" id="equipImgPreviewBox">
                   <div class="position-relative d-inline-block">
-                    <img id="equipImgPreview" src="" class="rounded-3 shadow-sm border border-2 border-success" style="max-height: 135px; max-width: 100%; object-fit: contain; background: #f8fafc;" />
+                    <img id="equipImgPreview" src="" class="rounded-3 shadow-sm border border-2 border-success cursor-zoom-in enlargeable-img" style="max-height: 135px; max-width: 100%; object-fit: contain; background: #f8fafc;" onclick="openEnlargeImageModal(this.src, document.getElementById('equipName')?.value || 'ตัวอย่างรูปภาพอุปกรณ์')" title="คลิกเพื่อขยายรูปภาพขนาดใหญ่" />
                   </div>
                   <div class="mt-1.5 d-flex flex-wrap justify-content-center align-items-center gap-1.5">
                     <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> แนวนอนพร้อมบันทึก</span>
@@ -4324,7 +4343,7 @@
               <!-- Selected Equipment Details Banner -->
               <div id="restockEquipPreviewBox" class="p-3 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3 d-none">
                 <div class="d-flex align-items-center gap-3">
-                  <img id="restockEquipPreviewImg" src="" class="rounded-3 border" style="width: 60px; height: 60px; object-fit: cover;" />
+                  <img id="restockEquipPreviewImg" src="" class="rounded-3 border cursor-zoom-in enlargeable-img" style="width: 60px; height: 60px; object-fit: cover;" onclick="openEnlargeImageModal(this.src, document.getElementById('restockEquipNameText')?.textContent || 'รูปภาพอุปกรณ์')" title="คลิกเพื่อขยายรูปภาพขนาดใหญ่" />
                   <div class="flex-grow-1">
                     <div class="d-flex align-items-center gap-2">
                       <span id="restockEquipCodeBadge" class="badge bg-dark font-monospace"></span>
@@ -4439,12 +4458,22 @@
             </form>
           </div>
 
+          <!-- Category List Table Header & Instruction -->
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <small class="text-muted fs-8">
+              <i class="bi bi-arrows-vertical text-success me-1 fs-7"></i>
+              <strong>จัดลำดับ:</strong> ใช้เมาส์หรือนิ้วกดค้างที่ไอคอน <i class="bi bi-grip-vertical text-dark"></i> แล้วลากขึ้น-ลง หรือกดปุ่มลูกศร เพื่อเปลี่ยนลำดับหมวดหมู่
+            </small>
+            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8" id="categoryCountBadge">ทั้งหมด 0 หมวดหมู่</span>
+          </div>
+
           <!-- Category List Table -->
           <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 fs-7">
               <thead class="bg-light">
                 <tr>
-                  <th style="width: 100px;" class="text-center">จัดการ</th>
+                  <th style="width: 80px;" class="text-center" title="เลื่อนตำแหน่งขึ้นหรือลง"><i class="bi bi-arrow-down-up me-1 text-success"></i>ลำดับ</th>
+                  <th style="width: 90px;" class="text-center">จัดการ</th>
                   <th style="width: 50px;" class="text-center">ไอคอน</th>
                   <th>ชื่อหมวดหมู่</th>
                   <th style="width: 110px;" class="text-center">ตัวย่อรหัสอุปกรณ์</th>
@@ -6111,6 +6140,46 @@
           <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold fs-7 shadow-sm" onclick="executeBulkUpdateEmployees()">
             <i class="bi bi-check-circle-fill me-1"></i> บันทึกการแก้ไขแบบกลุ่ม
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal สำหรับขยายรูปภาพอุปกรณ์ขนาดใหญ่ (Responsive Image Enlarge Modal) -->
+  <div class="modal fade" id="imageEnlargeModal" tabindex="-1" aria-hidden="true" style="z-index: 1095;">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+        <div class="modal-header bg-dark text-white py-2.5 px-3 border-0 d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2 overflow-hidden me-2">
+            <span class="badge bg-success rounded-circle p-2 d-flex align-items-center justify-content-center">
+              <i class="bi bi-card-image fs-6"></i>
+            </span>
+            <div class="overflow-hidden">
+              <h6 class="modal-title fw-bold text-white mb-0 text-truncate fs-6" id="imageEnlargeModalTitle">รูปภาพอุปกรณ์</h6>
+              <small class="text-white-50 fs-8 d-block text-truncate" id="imageEnlargeModalSubtitle"></small>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-1 flex-shrink-0">
+            <button type="button" class="btn btn-sm btn-outline-light rounded-circle p-1 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" onclick="zoomEnlargeImage(0.25)" title="ซูมเข้า">
+              <i class="bi bi-zoom-in fs-7"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-light rounded-circle p-1 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" onclick="zoomEnlargeImage(-0.25)" title="ซูมออก">
+              <i class="bi bi-zoom-out fs-7"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-light rounded-circle p-1 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" onclick="resetEnlargeImageZoom()" title="รีเซ็ตขนาด">
+              <i class="bi bi-arrow-counterclockwise fs-7"></i>
+            </button>
+            <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+        <div class="modal-body p-0 bg-dark text-center d-flex align-items-center justify-content-center position-relative overflow-hidden" style="min-height: 320px; max-height: 80vh;">
+          <div class="w-100 h-100 p-2 d-flex align-items-center justify-content-center overflow-auto" style="touch-action: pan-x pan-y;">
+            <img id="imageEnlargeModalImg" src="" alt="รูปภาพอุปกรณ์" class="img-fluid rounded-2 shadow" style="max-height: 72vh; max-width: 100%; object-fit: contain; cursor: zoom-in;" onclick="toggleEnlargeImageZoom()" />
+          </div>
+        </div>
+        <div class="modal-footer bg-dark border-top border-secondary border-opacity-25 py-2 px-3 d-flex justify-content-between align-items-center">
+          <small class="text-white-50 fs-8"><i class="bi bi-info-circle me-1"></i>แตะหรือคลิกรูปภาพเพื่อซูมเข้า/ออก</small>
+          <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3 fs-8" data-bs-dismiss="modal">ปิดหน้าต่าง</button>
         </div>
       </div>
     </div>

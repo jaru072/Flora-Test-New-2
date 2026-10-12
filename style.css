@@ -189,26 +189,34 @@ body {
 .equipment-img-overlay-hint {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
   transition: opacity 0.2s ease;
   pointer-events: none;
+  z-index: 8;
 }
 
-@media (max-width: 768px), (hover: none) {
-  .equipment-img-overlay-hint {
-    display: none !important;
+@media (hover: hover) and (pointer: fine) {
+  .equipment-img-container:hover .equipment-img-overlay-hint {
+    opacity: 1;
+    pointer-events: none;
   }
 }
 
+.equipment-img-overlay-hint button,
+.equipment-img-overlay-hint span {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
 .btn-equipment-menu {
-  z-index: 30 !important;
+  z-index: 35 !important;
   pointer-events: auto !important;
   touch-action: manipulation;
-  cursor: pointer;
+  cursor: pointer !important;
 }
 
 @media (max-width: 768px) {
@@ -1058,26 +1066,50 @@ body:has(.modal[style*="display: block"]) .floating-scroll-nav,
   #transactionModal.modal {
     padding: 0 !important;
   }
-  #transactionModal .modal-dialog {
+  #transactionModal .modal-dialog,
+  #transactionModal .modal-dialog-centered {
     margin: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
     height: 100% !important;
+    height: 100dvh !important;
     min-height: 100% !important;
+    min-height: 100dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    top: 0 !important;
+    transform: none !important;
   }
   #transactionModal .modal-content {
     height: 100% !important;
-    min-height: 100vh !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    min-height: 100% !important;
     border-radius: 0 !important;
     border: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    top: 0 !important;
   }
   #transactionModal .modal-header {
+    flex-shrink: 0 !important;
     border-radius: 0 !important;
-    padding-top: max(12px, env(safe-area-inset-top)) !important;
+    padding-top: max(14px, env(safe-area-inset-top, 14px)) !important;
+    padding-left: max(16px, env(safe-area-inset-left, 16px)) !important;
+    padding-right: max(16px, env(safe-area-inset-right, 16px)) !important;
   }
   #transactionModal .modal-body {
-    padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain !important;
+    padding-bottom: max(24px, env(safe-area-inset-bottom, 24px)) !important;
     -webkit-overflow-scrolling: touch;
+  }
+  #transactionModal .modal-footer {
+    flex-shrink: 0 !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px)) !important;
   }
 }
 
@@ -1140,6 +1172,110 @@ body:has(.modal[style*="display: block"]) .floating-scroll-nav,
     display: none !important;
   }
 }
+
+/* Printable Label Modal: Keep settings expanded on desktop, collapsible on mobile */
+@media (min-width: 768px) {
+  #labelSizeSettingsCollapse.collapse {
+    display: block !important;
+    height: auto !important;
+    visibility: visible !important;
+  }
+}
+
+/* Category Management Drag & Drop / Touch Reordering */
+#categoryTableBody tr.category-row {
+  transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#categoryTableBody tr.is-dragging {
+  opacity: 0.45;
+  background-color: rgba(25, 135, 84, 0.08) !important;
+  cursor: grabbing !important;
+}
+
+#categoryTableBody tr.drag-over-top {
+  border-top: 3px solid #198754 !important;
+}
+
+#categoryTableBody tr.drag-over-bottom {
+  border-bottom: 3px solid #198754 !important;
+}
+
+#categoryTableBody tr.is-touch-dragging {
+  background-color: #fff9e6 !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+  border-left: 3px solid #ffc107 !important;
+  position: relative;
+  z-index: 10;
+}
+
+.drag-handle {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.drag-handle:hover {
+  color: #198754 !important;
+}
+
+.drag-handle:active {
+  cursor: grabbing !important;
+  transform: scale(1.2);
+  color: #198754 !important;
+}
+
+/* แถบเลื่อนแนวนอนชื่ออุปกรณ์ในรายการเอกสารบนมือถือ จัดให้อยู่ใน 3 บรรทัด */
+.trans-item-name-scroll {
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.trans-item-name-scroll::-webkit-scrollbar {
+  height: 3px;
+}
+
+.trans-item-name-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.trans-item-name-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 3px;
+}
+
+/* Modal ขยายรูปภาพอุปกรณ์และเอฟเฟกต์ซูม */
+#imageEnlargeModal {
+  z-index: 1095 !important;
+}
+
+#imageEnlargeModal .modal-content {
+  background-color: #0f172a;
+}
+
+#imageEnlargeModalImg {
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.cursor-zoom-in,
+.equipment-img,
+.enlargeable-img {
+  cursor: zoom-in !important;
+}
+
+.enlargeable-img:hover {
+  filter: brightness(1.06);
+}
+
 
 
 

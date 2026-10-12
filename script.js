@@ -2351,6 +2351,10 @@
       if (modalElem) {
         const bsModal = bootstrap.Modal.getOrCreateInstance(modalElem);
         bsModal.show();
+        const modalBody = modalElem.querySelector('.modal-body');
+        if (modalBody) {
+          modalBody.scrollTop = 0;
+        }
       }
     };
 
@@ -3254,6 +3258,94 @@
         console.warn("Rotate preview image error:", err);
       }
     };
+
+    // ==================== IMAGE ENLARGE / LIGHTBOX MODULE ====================
+    let currentImageZoomScale = 1;
+
+    window.openEnlargeImageModal = function(imageUrl, title = '', subtitle = '') {
+      if (!imageUrl) return;
+      const modalEl = document.getElementById('imageEnlargeModal');
+      if (!modalEl) return;
+
+      const imgEl = document.getElementById('imageEnlargeModalImg');
+      const titleEl = document.getElementById('imageEnlargeModalTitle');
+      const subtitleEl = document.getElementById('imageEnlargeModalSubtitle');
+
+      if (imgEl) {
+        imgEl.src = imageUrl;
+        currentImageZoomScale = 1;
+        imgEl.style.transform = 'scale(1)';
+      }
+
+      if (titleEl) {
+        titleEl.textContent = title || 'รูปภาพอุปกรณ์';
+      }
+
+      if (subtitleEl) {
+        if (subtitle) {
+          subtitleEl.textContent = subtitle;
+          subtitleEl.classList.remove('d-none');
+        } else {
+          subtitleEl.classList.add('d-none');
+        }
+      }
+
+      const modalInst = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modalInst.show();
+    };
+
+    window.zoomEnlargeImage = function(delta) {
+      const imgEl = document.getElementById('imageEnlargeModalImg');
+      if (!imgEl) return;
+      currentImageZoomScale = Math.min(3.5, Math.max(0.5, Math.round((currentImageZoomScale + delta) * 100) / 100));
+      imgEl.style.transform = `scale(${currentImageZoomScale})`;
+    };
+
+    window.resetEnlargeImageZoom = function() {
+      const imgEl = document.getElementById('imageEnlargeModalImg');
+      if (!imgEl) return;
+      currentImageZoomScale = 1;
+      imgEl.style.transform = 'scale(1)';
+    };
+
+    window.toggleEnlargeImageZoom = function() {
+      const imgEl = document.getElementById('imageEnlargeModalImg');
+      if (!imgEl) return;
+      currentImageZoomScale = currentImageZoomScale === 1 ? 2 : 1;
+      imgEl.style.transform = `scale(${currentImageZoomScale})`;
+    };
+
+    // Global click listener for any equipment image in the app
+    document.addEventListener('click', (e) => {
+      const target = e.target;
+      if (!target || target.tagName !== 'IMG') return;
+
+      if (target.id === 'imageEnlargeModalImg' || target.classList.contains('no-enlarge')) return;
+
+      const isEquipImg =
+        target.classList.contains('equipment-img') ||
+        target.classList.contains('enlargeable-img') ||
+        target.id === 'equipPreviewImg' ||
+        target.id === 'eqHistModalImg' ||
+        target.id === 'eqBorrowersImg' ||
+        target.id === 'popupMenuEquipImage' ||
+        target.id === 'fastScanEquipPhoto' ||
+        target.id === 'fastCheckoutEquipPhoto' ||
+        target.id === 'scannedItemImg' ||
+        target.id === 'equipImgPreview' ||
+        target.id === 'restockEquipPreviewImg' ||
+        target.id === 'qrEquipImage' ||
+        target.closest('.equipment-card') ||
+        target.closest('.equipment-img-container') ||
+        target.closest('#selectedTransCartItemsList') ||
+        target.closest('#equipDropdownList');
+
+      if (isEquipImg && target.src && !target.src.startsWith('data:image/svg')) {
+        e.stopPropagation();
+        const title = target.alt || target.getAttribute('data-enlarge-title') || target.title || 'รูปภาพอุปกรณ์';
+        window.openEnlargeImageModal(target.src, title);
+      }
+    });
 
     // Backup & Restore module loaded from backup_restore.js
 
@@ -4788,8 +4880,12 @@
       // 2. Validate transaction type
       let type = currentTransCartType;
       if (selectedTransItems.length === 0) {
-        // Cart is empty: ALWAYS adapt transaction type automatically based on the scanned equipment!
-        if (typeof window.isEquipmentBorrowType === 'function' && window.isEquipmentBorrowType(item)) {
+        // ถ้าอยู่ในโหมดรับเข้าสต๊อก (เช่น สลับรับเข้าสต๊อก จากหน้าต่างสแกน) ให้ใช้ รับเข้าสต๊อก
+        if (window.scannerStockActionType === 'รับเข้าสต๊อก' || currentTransCartType === 'รับเข้าสต๊อก') {
+          type = 'รับเข้าสต๊อก';
+          const stockInRadio = document.getElementById('typeStockIn');
+          if (stockInRadio) stockInRadio.checked = true;
+        } else if (typeof window.isEquipmentBorrowType === 'function' && window.isEquipmentBorrowType(item)) {
           type = 'ยืมอุปกรณ์';
           const borrowRadio = document.getElementById('typeBorrow');
           if (borrowRadio) borrowRadio.checked = true;
@@ -4837,6 +4933,11 @@
           alert(`❌ ไม่สามารถเพิ่ม "${item.name}" [${item.code || item.id}] เข้าเอกสารเบิกตัดสต๊อกได้!\n\nเนื่องจากอุปกรณ์นี้เป็น "ประเภทยืมใช้" (รหัสขึ้นต้นด้วย B เช่น หมวด BA งานเกษตร หรือ BT งานช่าง)\nจะนำมาเบิกตัดสต๊อกไม่ได้เด็ดขาด\n\nกรุณาทำรายการผ่านโหมด "ยืมอุปกรณ์" แทน`);
           return false;
         }
+      }
+
+      // โหมด "รับเข้าสต๊อก" สามารถรับเข้าได้ทั้งอุปกรณ์ประเภทยืมใช้ และวัสดุสิ้นเปลือง
+      if (type === 'รับเข้าสต๊อก') {
+        currentTransCartType = 'รับเข้าสต๊อก';
       }
 
       // 2.2b Prevent adding "วัสดุสิ้นเปลือง" to "ยืมอุปกรณ์"
@@ -4996,7 +5097,8 @@
         return;
       }
 
-      if ((type === 'เบิกจ่าย' || type === 'ยืมอุปกรณ์') && equipObj) {
+      const isStockInMode = (type === 'รับเข้าสต๊อก' || type === 'รับเข้าสต๊อก (ขาเข้า)' || (typeof window.scannerStockActionType !== 'undefined' && window.scannerStockActionType === 'รับเข้าสต๊อก'));
+      if (!isStockInMode && (type === 'เบิกจ่าย' || type === 'ยืมอุปกรณ์') && equipObj) {
         if (newQty > equipObj.quantity) {
           alert(`❌ ไม่สามารถเพิ่มจำนวนเกินสต๊อกที่มีได้ (${equipObj.quantity} ${item.unit || 'ชิ้น'})`);
           return;
@@ -5020,7 +5122,8 @@
       const type = document.querySelector('input[name="transType"]:checked')?.value || 'เบิกจ่าย';
       const equipObj = equipmentList.find(x => x.id === equipId);
 
-      if ((type === 'เบิกจ่าย' || type === 'ยืมอุปกรณ์') && equipObj) {
+      const isStockInModeExact = (type === 'รับเข้าสต๊อก' || type === 'รับเข้าสต๊อก (ขาเข้า)' || (typeof window.scannerStockActionType !== 'undefined' && window.scannerStockActionType === 'รับเข้าสต๊อก'));
+      if (!isStockInModeExact && (type === 'เบิกจ่าย' || type === 'ยืมอุปกรณ์') && equipObj) {
         if (parsed > equipObj.quantity) {
           alert(`❌ ยอดในสต๊อกมีเพียง ${equipObj.quantity} ${item.unit || 'ชิ้น'}`);
           parsed = equipObj.quantity;
@@ -5147,33 +5250,22 @@
       }
 
       let totalQtySum = 0;
-      let html = `
-        <div class="table-responsive">
-          <table class="table table-sm table-hover align-middle mb-2 border rounded-3 overflow-hidden fs-7 bg-white">
-            <thead class="table-success text-dark">
-              <tr>
-                <th style="width: 35px;" class="text-center">#</th>
-                <th>อุปกรณ์ / รหัส</th>
-                <th class="text-center" style="width: 140px;">เบิก-จ่าย-ยืม-คืน</th>
-                <th class="text-center" style="width: 130px;">จำนวนที่ทำรายการ</th>
-                <th class="text-end" style="width: 100px;">สต๊อกปัจจุบัน</th>
-                <th class="text-center" style="width: 45px;">ลบ</th>
-              </tr>
-            </thead>
-            <tbody>
-      `;
+      let desktopRowsHtml = '';
+      let mobileCardsHtml = '';
 
       selectedTransItems.forEach((item, index) => {
         totalQtySum += item.qty;
         const equipObj = equipmentList.find(x => x.id === item.id);
         const currentStock = equipObj ? equipObj.quantity : item.maxStock;
+        const itemUnit = item.unit || equipObj?.unit || 'ชิ้น';
 
-        html += `
+        // รูปแบบตารางสำหรับคอมพิวเตอร์และหน้าจอใหญ่
+        desktopRowsHtml += `
           <tr>
             <td class="text-center fw-bold text-muted fs-8">${index + 1}</td>
             <td>
               <div class="d-flex align-items-center gap-2">
-                <img src="${item.imageUrl || DEFAULT_EQUIPMENT_IMAGE}" class="rounded-2 border" style="width: 36px; height: 36px; object-fit: cover;" onerror="this.src='${DEFAULT_EQUIPMENT_IMAGE}'" />
+                <img src="${item.imageUrl || DEFAULT_EQUIPMENT_IMAGE}" class="rounded-2 border cursor-zoom-in enlargeable-img" style="width: 36px; height: 36px; object-fit: cover;" onclick="openEnlargeImageModal('${item.imageUrl || DEFAULT_EQUIPMENT_IMAGE}', '${escapeHtml(item.name)}', 'รหัส: ${escapeHtml(item.code)}')" title="คลิกเพื่อขยายรูปภาพขนาดใหญ่" onerror="this.src='${DEFAULT_EQUIPMENT_IMAGE}'" />
                 <div>
                   <div class="fw-bold text-dark mb-0">${item.name}</div>
                   <span class="badge bg-dark font-monospace fs-8 me-1">${item.code}</span>
@@ -5192,7 +5284,7 @@
               </div>
             </td>
             <td class="text-end">
-              <span class="fw-semibold text-secondary">${currentStock} ${item.unit}</span>
+              <span class="fw-semibold text-secondary">${currentStock} ${itemUnit}</span>
             </td>
             <td class="text-center">
               <button type="button" class="btn btn-link text-danger p-0 border-0" onclick="removeCartItem('${item.id}')" title="ลบรายการนี้">
@@ -5201,12 +5293,73 @@
             </td>
           </tr>
         `;
+
+        // รูปแบบการ์ด ๓ บรรทัด สำหรับโทรศัพท์มือถือ
+        mobileCardsHtml += `
+          <div class="card mb-2 border border-light-subtle shadow-xs bg-white rounded-3 p-2">
+            <!-- บรรทัดที่ ๑: ลำดับ รูปภาพ ชื่ออุปกรณ์ (เลื่อนซ้าย-ขวาได้เมื่อชื่อยาว) ปุ่มลบ -->
+            <div class="d-flex align-items-center gap-2 mb-1.5" style="min-height: 28px;">
+              <span class="badge bg-light text-secondary border fs-8 flex-shrink-0" style="min-width: 24px; text-align: center;">#${index + 1}</span>
+              <img src="${item.imageUrl || DEFAULT_EQUIPMENT_IMAGE}" class="rounded-2 border flex-shrink-0 cursor-zoom-in enlargeable-img" style="width: 28px; height: 28px; object-fit: cover;" onclick="openEnlargeImageModal('${item.imageUrl || DEFAULT_EQUIPMENT_IMAGE}', '${escapeHtml(item.name)}', 'รหัส: ${escapeHtml(item.code)}')" title="คลิกเพื่อขยายรูปภาพขนาดใหญ่" onerror="this.src='${DEFAULT_EQUIPMENT_IMAGE}'" />
+              <div class="trans-item-name-scroll flex-grow-1 min-w-0 py-0.5">
+                <span class="fw-bold text-dark fs-7">${item.name}</span>
+              </div>
+              <button type="button" class="btn btn-link text-danger p-0 border-0 flex-shrink-0 ms-1" onclick="removeCartItem('${item.id}')" title="ลบรายการนี้">
+                <i class="bi bi-trash-fill fs-6"></i>
+              </button>
+            </div>
+
+            <!-- บรรทัดที่ ๒: ป้ายประเภทการทำรายการ + รหัสอุปกรณ์ + คลังที่เก็บ -->
+            <div class="d-flex align-items-center justify-content-between gap-1 mb-1.5 text-nowrap overflow-hidden fs-8">
+              <div class="d-flex align-items-center gap-1.5 overflow-hidden">
+                ${typeBadge}
+                <span class="badge bg-dark font-monospace fs-8">${item.code}</span>
+              </div>
+              <small class="text-muted text-truncate" title="${item.location || '-'}">
+                <i class="bi bi-geo-alt me-0.5"></i>${item.location || '-'}
+              </small>
+            </div>
+
+            <!-- บรรทัดที่ ๓: สต๊อกคงเหลือปัจจุบัน (ซ้าย) + ปุ่มปรับจำนวน - [ช่องระบุ] + (ขวา) อยู่บรรทัดเดียวกัน -->
+            <div class="d-flex align-items-center justify-content-between gap-2 pt-1.5 border-top border-light-subtle">
+              <div class="fs-8 text-secondary text-nowrap">
+                <span class="text-muted">สต๊อก:</span> <strong class="text-dark">${currentStock}</strong> ${itemUnit}
+              </div>
+              <div class="input-group input-group-sm flex-nowrap" style="width: 125px;">
+                <button class="btn btn-outline-secondary px-2.5 py-1" type="button" onclick="updateCartItemQty('${item.id}', -1)">-</button>
+                <input type="number" class="form-control text-center fw-bold px-1 py-1 fs-7" value="${item.qty}" min="1" max="${currentStock}" onchange="setCartItemQtyExact('${item.id}', this.value)">
+                <button class="btn btn-outline-secondary px-2.5 py-1" type="button" onclick="updateCartItemQty('${item.id}', 1)">+</button>
+              </div>
+            </div>
+          </div>
+        `;
       });
 
-      html += `
+      let html = `
+        <!-- มุมมองบนโทรศัพท์มือถือ (แสดงเป็นการ์ด ๓ บรรทัด) -->
+        <div class="d-block d-md-none mb-2">
+          ${mobileCardsHtml}
+        </div>
+
+        <!-- มุมมองบนคอมพิวเตอร์และแท็บเล็ตหน้าจอใหญ่ (แสดงเป็นตาราง) -->
+        <div class="d-none d-md-block table-responsive">
+          <table class="table table-sm table-hover align-middle mb-2 border rounded-3 overflow-hidden fs-7 bg-white">
+            <thead class="table-success text-dark">
+              <tr>
+                <th style="width: 35px;" class="text-center">#</th>
+                <th>อุปกรณ์ / รหัส</th>
+                <th class="text-center" style="width: 140px;">เบิก-จ่าย-ยืม-คืน</th>
+                <th class="text-center" style="width: 130px;">จำนวนที่ทำรายการ</th>
+                <th class="text-end" style="width: 100px;">สต๊อกปัจจุบัน</th>
+                <th class="text-center" style="width: 45px;">ลบ</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${desktopRowsHtml}
             </tbody>
           </table>
         </div>
+
         <div class="d-flex justify-content-between align-items-center bg-success bg-opacity-10 p-2 rounded-3 border border-success border-opacity-25 fs-8">
           <span class="fw-bold text-success"><i class="bi bi-check-all me-1"></i>สรุปรายการในเอกสาร:</span>
           <span class="fw-bold text-dark">${selectedTransItems.length} ชนิด (รวมทั้งสิ้น <span class="text-success fs-7">${totalQtySum}</span> ชิ้น)</span>
@@ -5234,11 +5387,16 @@
       }
       popup.classList.remove('d-none');
 
-      const navHeight = document.querySelector('.navbar.sticky-top')?.offsetHeight || 60;
-      const rect = popup.getBoundingClientRect();
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const targetY = rect.top + scrollTop - navHeight - 16;
-      window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+      const transModal = document.getElementById('transactionModal');
+      if (transModal && transModal.classList.contains('show')) {
+        popup.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else {
+        const navHeight = document.querySelector('.navbar.sticky-top')?.offsetHeight || 60;
+        const rect = popup.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const targetY = rect.top + scrollTop - navHeight - 16;
+        window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+      }
 
       if (window._transStockOverPopupTimer) {
         clearTimeout(window._transStockOverPopupTimer);
@@ -5259,6 +5417,13 @@
     // Transaction Submit (Supports Multi-Item Documents & Firestore Sync Verification)
     async function handleTransactionSubmit(e) {
       e.preventDefault();
+
+      // ตรวจสอบสิทธิ์เจ้าหน้าที่หรือผู้ดูแลระบบ
+      const isAuthorized = (typeof window.hasStaffOrAdminAuthorization === 'function') && window.hasStaffOrAdminAuthorization();
+      if (!isAuthorized) {
+        alert("🔒 พนักงานไม่มีสิทธิ์บันทึกข้อมูล (เบิก-รับเข้า-ยืม-คืน)\n\nต้องสแกนบัตรของเจ้าหน้าที่ หรือ ผู้ดูแลระบบ (Admin) เท่านั้น เพื่อยืนยันสิทธิ์ก่อนบันทึก");
+        return;
+      }
 
       const type = document.querySelector('input[name="transType"]:checked').value;
       const empId = document.getElementById('empSelect').value;
@@ -5445,6 +5610,13 @@
 
       const now = new Date();
       const docNo = 'DOC-' + String(Date.now()).slice(-6);
+      let approverEmp = window.authorizedStaffOperator || null;
+      if (!approverEmp && (typeof window.isStaffOrAdminEmp === 'function') && window.isStaffOrAdminEmp(emp)) {
+        approverEmp = emp;
+      }
+      const approverName = approverEmp 
+        ? (typeof formatEmpName === 'function' ? formatEmpName(approverEmp) : approverEmp.name)
+        : ((typeof currentRole !== 'undefined' && currentRole !== 'WORKER') ? `ผู้ดูแลระบบ (${currentRole})` : 'เจ้าหน้าที่');
       const newTx = {
         id: 'tx-' + String(Date.now()).slice(-6),
         docNo: docNo,
@@ -5453,6 +5625,8 @@
         employeeName: `${emp.name} (${emp.department || 'แผนกทั่วไป'})`,
         employeeCode: emp.code || emp.id,
         employeeDepartment: emp.department || 'แผนกทั่วไป',
+        approvedById: approverEmp?.id || '',
+        approvedByName: approverName,
         items: itemsToProcess.map(i => ({
           equipmentId: i.equipmentId,
           equipmentName: i.equipmentName,
@@ -5978,25 +6152,32 @@
         html += `
           <div class="col-12 col-sm-6 col-lg-4 col-xl-3" id="equip-card-${item.id}" data-equip-id="${item.id}">
             <div class="equipment-card">
-              <div class="equipment-img-container position-relative" onclick="openEquipmentTransactionHistoryModal('${item.id}')" title="คลิกรูปภาพเพื่อดูประวัติการทำรายการอุปกรณ์ (${escapeHtml(item.name)})">
-                <img src="${item.imageUrl}" loading="lazy" class="equipment-img" alt="${escapeHtml(item.name)}" onerror="this.src='${DEFAULT_EQUIPMENT_IMAGE}'" />
+              <div class="equipment-img-container position-relative">
+                <img src="${item.imageUrl}" loading="lazy" class="equipment-img cursor-zoom-in enlargeable-img" alt="${escapeHtml(item.name)}" onclick="event.stopPropagation(); openEnlargeImageModal('${item.imageUrl || DEFAULT_EQUIPMENT_IMAGE}', '${escapeHtml(item.name || '')}', 'รหัส: ${escapeHtml(item.code || '')}')" title="คลิกรูปภาพเพื่อขยายใหญ่" onerror="this.src='${DEFAULT_EQUIPMENT_IMAGE}'" />
                 <span class="badge-code">${highlightedCode}</span>
                 ${isStaff ? `
-                  <button type="button" class="btn btn-dark bg-opacity-80 text-white position-absolute top-0 end-0 m-2 rounded-pill fs-8 shadow-sm border-0 py-1 px-2.5 d-inline-flex align-items-center gap-1" style="z-index: 5;" onclick="event.stopPropagation(); openEquipmentPopupMenu('${item.id}')" title="คลิกเพื่อเปิดเมนูจัดการ (Popup Menu)">
+                  <button type="button" class="btn btn-dark bg-opacity-80 text-white position-absolute top-0 end-0 m-2 rounded-pill fs-8 shadow-sm border-0 py-1 px-2.5 d-inline-flex align-items-center gap-1 btn-equipment-menu" style="z-index: 35; pointer-events: auto;" onclick="event.stopPropagation(); openEquipmentPopupMenu('${item.id}')" title="คลิกเพื่อเปิดเมนูจัดการ (Popup Menu)">
                     <i class="bi bi-sliders text-success"></i> เมนู
                   </button>
                 ` : ''}
-                <div class="equipment-img-overlay-hint">
-                  <span class="badge bg-dark bg-opacity-90 text-white rounded-pill px-3 py-1.5 fs-8 shadow">
-                    <i class="bi bi-clock-history me-1 text-info"></i> ดูประวัติ
-                  </span>
+                <!-- ปุ่มดูประวัติบนคอมพิวเตอร์ (แสดงเมื่อชี้เมาส์ กึ่งกลางรูปภาพ) -->
+                <div class="equipment-img-overlay-hint d-none d-md-flex">
+                  <button type="button" class="btn btn-sm btn-dark bg-opacity-95 text-white rounded-pill px-3 py-1.5 fs-8 shadow border-0 d-inline-flex align-items-center gap-1" onclick="event.stopPropagation(); openEquipmentTransactionHistoryModal('${item.id}')" title="คลิกดูประวัติการทำรายการ">
+                    <i class="bi bi-clock-history text-info"></i> ดูประวัติ
+                  </button>
+                </div>
+                <!-- ปุ่มดูประวัติบนโทรศัพท์มือถือ (กึ่งกลางรูปภาพ) -->
+                <div class="position-absolute top-50 start-50 translate-middle d-md-none" style="z-index: 6;">
+                  <button type="button" class="btn btn-sm btn-dark bg-opacity-90 text-white rounded-pill px-3 py-1.5 fs-8 shadow border-0 d-inline-flex align-items-center gap-1 text-nowrap" onclick="event.stopPropagation(); openEquipmentTransactionHistoryModal('${item.id}')" title="คลิกดูประวัติการทำรายการ">
+                    <i class="bi bi-clock-history text-info"></i> ดูประวัติ
+                  </button>
                 </div>
                 ${statusBadge}
               </div>
 
               <div class="card-body p-3 d-flex flex-column">
                 <div>
-                  <h6 class="fw-bold text-dark mb-1 text-truncate" title="${escapeHtml(item.name || '')}">${highlightedName}</h6>
+                  <h6 class="fw-bold text-dark mb-1 text-truncate cursor-pointer" onclick="openEquipmentTransactionHistoryModal('${item.id}')" title="คลิกเพื่อดูประวัติการทำรายการ (${escapeHtml(item.name || '')})">${highlightedName}</h6>
                   ${descHtml}
                 </div>
 
@@ -6967,12 +7148,12 @@
               <input type="checkbox" class="form-check-input staff-item-checkbox cursor-pointer" value="${item.id}" ${isChecked ? 'checked' : ''} onchange="toggleStaffItemSelect('${item.id}', this.checked)" onclick="event.stopPropagation()" />
             </td>
             <td class="ps-2" style="width: 70px;">
-              <div class="position-relative ${isStaff ? 'cursor-pointer' : ''} d-inline-block" ${isStaff ? `onclick="openEquipmentPopupMenu('${item.id}')" title="คลิกรูปภาพเพื่อเปิดเมนู (Popup Menu)"` : ''}>
-                <img src="${item.imageUrl}" loading="lazy" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px;" onerror="this.src='${DEFAULT_EQUIPMENT_IMAGE}'" />
+              <div class="position-relative d-inline-block">
+                <img src="${item.imageUrl}" loading="lazy" class="cursor-zoom-in enlargeable-img" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px;" onclick="event.stopPropagation(); openEnlargeImageModal('${item.imageUrl || DEFAULT_EQUIPMENT_IMAGE}', '${escapeHtml(item.name || '')}', 'รหัส: ${escapeHtml(item.code || '')}')" title="คลิกรูปภาพเพื่อขยายใหญ่" onerror="this.src='${DEFAULT_EQUIPMENT_IMAGE}'" />
                 ${isStaff ? `
-                  <span class="position-absolute bottom-0 end-0 bg-dark text-white rounded-circle p-1 d-flex align-items-center justify-content-center shadow-sm" style="width: 18px; height: 18px; font-size: 10px;">
+                  <button type="button" class="position-absolute bottom-0 end-0 bg-dark text-white rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm border-0" style="width: 20px; height: 20px; font-size: 10px; cursor: pointer;" onclick="event.stopPropagation(); openEquipmentPopupMenu('${item.id}')" title="เปิดเมนูจัดการ (Popup Menu)">
                     <i class="bi bi-three-dots"></i>
-                  </span>
+                  </button>
                 ` : ''}
               </div>
             </td>
@@ -9213,7 +9394,7 @@
           html += `
             <button type="button" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-2 gap-2 border-bottom-0 border-top cursor-pointer text-start" onclick="selectEquipmentForTransaction('${item.id}')">
               <div class="d-flex align-items-center gap-2 overflow-hidden">
-                <img src="${img}" class="rounded-2 border flex-shrink-0" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.src='${DEFAULT_EQUIPMENT_IMAGE}'" />
+                <img src="${img}" class="rounded-2 border flex-shrink-0 cursor-zoom-in enlargeable-img" style="width: 38px; height: 38px; object-fit: cover;" onclick="event.stopPropagation(); openEnlargeImageModal('${img}', '${escapeHtml(item.name)}', 'รหัส: ${escapeHtml(item.code)}')" title="คลิกเพื่อขยายรูปภาพขนาดใหญ่" onerror="this.src='${DEFAULT_EQUIPMENT_IMAGE}'" />
                 <div class="overflow-hidden">
                   <div class="fw-bold text-dark text-truncate fs-7" title="${item.name}">${item.name}</div>
                   <div class="fs-8 text-muted text-truncate d-flex align-items-center gap-1 flex-wrap">
@@ -9665,8 +9846,16 @@
       // Open transaction modal
       window.openTransactionModal(equipId);
 
-      // Scroll smoothly to the top of transaction type buttons box
+      // Scroll smoothly to top of modal body if open, otherwise fallback to form
       setTimeout(() => {
+        const transModal = document.getElementById('transactionModal');
+        if (transModal && transModal.classList.contains('show')) {
+          const modalBody = transModal.querySelector('.modal-body');
+          if (modalBody) {
+            modalBody.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+          return;
+        }
         const typeBox = document.getElementById('transactionTypeBox') || document.getElementById('transactionForm');
         if (typeBox) {
           const navHeight = document.querySelector('.navbar.sticky-top')?.offsetHeight || 60;
@@ -10178,6 +10367,13 @@
         `;
       }
 
+            // คำนวณข้อมูลผู้ทำรายการและผู้อนุมัติสำหรับพิมพ์เอกสาร
+      const empInTx = (typeof employeeList !== 'undefined' && Array.isArray(employeeList)) 
+        ? employeeList.find(e => e && (e.id === tx.employeeId || (tx.employeeName && tx.employeeName.includes(e.name))))
+        : null;
+      const isOperatorStaffOrAdmin = empInTx ? ((typeof window.isStaffOrAdminEmp === 'function') && window.isStaffOrAdminEmp(empInTx)) : false;
+      const hasExternalApprover = !isOperatorStaffOrAdmin && tx.approvedByName && String(tx.approvedByName).trim() !== '';
+      const approverDisplayName = hasExternalApprover ? tx.approvedByName : '..........................................................';
       paper.innerHTML = `
         <div class="border-bottom pb-3 mb-3 d-flex justify-content-between align-items-center">
           <div>
@@ -10198,6 +10394,11 @@
           <div class="col-12 col-md-6">
             <span class="text-muted"><i class="bi bi-geo-alt-fill me-1 text-danger"></i>แปลงเกษตร/สถานที่:</span> <strong class="text-dark">${tx.location || '-'}</strong>
           </div>
+          ${hasExternalApprover ? `
+            <div class="col-12 border-top pt-2">
+              <span class="text-muted"><i class="bi bi-shield-check me-1 text-success"></i>ผู้อนุมัติรายการ:</span> <strong class="text-success">${escapeHtml(tx.approvedByName)}</strong>
+            </div>
+          ` : ''}
           ${(tx.type === 'ยืมอุปกรณ์' || tx.dueDateStr || tx.dueDate) ? `
             <div class="col-12 mt-1 border-top pt-2 d-flex align-items-center justify-content-between flex-wrap">
               <div>
@@ -10238,8 +10439,8 @@
           <div class="col-6">
             <div class="border-bottom pb-2 mb-1" style="width: 70%; margin: 0 auto;"></div>
             <div>ลงชื่อ..........................................................</div>
-            <div class="fw-bold text-dark mt-1">(เจ้าหน้าที่ผู้จ่าย / ผู้อนุมัติ)</div>
-            <div class="text-muted">ผู้ส่งมอบ / ผู้อนุมัติ</div>
+            <div class="fw-bold text-dark mt-1">(${hasExternalApprover ? escapeHtml(approverDisplayName) : '..........................................................'})</div>
+            <div class="text-muted">เจ้าหน้าที่ผู้จ่าย / ผู้อนุมัติ</div>
           </div>
         </div>
       `;
@@ -12539,7 +12740,10 @@
                 <img src="${empAvatar}" loading="lazy" class="rounded-circle border shadow-2xs" style="width: 28px; height: 28px; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'" />
                 <div>
                   <div class="fw-semibold text-dark fs-8 text-truncate" style="max-width: 170px;">${escapeHtml(empName)}</div>
-                  <span class="badge bg-light text-secondary border fs-9 py-0.5">${escapeHtml(empDept)}</span>
+                  <div class="d-flex align-items-center gap-1 flex-wrap mt-0.5">
+                    <span class="badge bg-light text-secondary border fs-9 py-0.5">${escapeHtml(empDept)}</span>
+                    ${tx.approvedByName ? `<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-9 py-0.5" title="ผู้อนุมัติ: ${escapeHtml(tx.approvedByName)}"><i class="bi bi-shield-check me-1"></i>อนุมัติ: ${escapeHtml(tx.approvedByName)}</span>` : ''}
+                  </div>
                 </div>
               </div>
             </td>
@@ -13474,6 +13678,23 @@
         onReady: function(selectedDates, dateStr, instance) {
           applyThaiBuddhistYear(instance);
         },
+        onChange: function(selectedDates, dateStr, instance) {
+          applyThaiBuddhistYear(instance);
+          if (Array.isArray(selectedDates) && selectedDates.length > 0) {
+            const picked = new Date(selectedDates[0]);
+            picked.setHours(0, 0, 0, 0);
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            const diffDays = Math.round((picked.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            if (typeof window.updateQuickDueDateButtons === 'function') {
+              window.updateQuickDueDateButtons(diffDays);
+            }
+          } else {
+            if (typeof window.updateQuickDueDateButtons === 'function') {
+              window.updateQuickDueDateButtons(null);
+            }
+          }
+        },
         onValueUpdate: function(selectedDates, dateStr, instance) {
           applyThaiBuddhistYear(instance);
         },
@@ -13514,7 +13735,23 @@
       }
     }
 
-    window.setQuickDueDate = function(days) {
+    window.updateQuickDueDateButtons = function(days) {
+      const container = document.getElementById('borrowDueDateBox');
+      if (!container) return;
+      const buttons = container.querySelectorAll('.quick-due-btn, [data-quick-days]');
+      buttons.forEach(btn => {
+        const btnDays = parseInt(btn.getAttribute('data-quick-days'), 10);
+        if (days !== null && days !== undefined && btnDays === days) {
+          btn.classList.remove('btn-outline-warning');
+          btn.classList.add('btn-warning');
+        } else {
+          btn.classList.remove('btn-warning');
+          btn.classList.add('btn-outline-warning');
+        }
+      });
+    };
+
+    window.setQuickDueDate = function(days = 1) {
       const d = new Date();
       d.setDate(d.getDate() + days);
       d.setHours(17, 0, 0, 0); // Default to 17:00
@@ -13533,6 +13770,10 @@
         const minutes = String(d.getMinutes()).padStart(2, '0');
         const input = document.getElementById('transDueDate');
         if (input) input.value = `${year}-${month}-${day} ${hours}:${minutes}`;
+      }
+
+      if (typeof window.updateQuickDueDateButtons === 'function') {
+        window.updateQuickDueDateButtons(days);
       }
     };
 
@@ -13596,7 +13837,21 @@
           box.classList.remove('d-none');
           initThaiFlatpickr();
           if (!window.transDueDatePicker || !Array.isArray(window.transDueDatePicker.selectedDates) || window.transDueDatePicker.selectedDates.length === 0) {
-            setQuickDueDate(3);
+            setQuickDueDate(1);
+          } else {
+            const curDate = window.transDueDatePicker.selectedDates[0];
+            if (curDate) {
+              const picked = new Date(curDate);
+              picked.setHours(0, 0, 0, 0);
+              const now = new Date();
+              now.setHours(0, 0, 0, 0);
+              const diffDays = Math.round((picked.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+              if (typeof window.updateQuickDueDateButtons === 'function') {
+                window.updateQuickDueDateButtons(diffDays);
+              }
+            } else {
+              setQuickDueDate(1);
+            }
           }
         } else {
           box.classList.add('d-none');
@@ -13865,7 +14120,7 @@
           <div class="col-12 col-md-6">
             <div class="card rounded-3 p-2.5 bg-white h-100 shadow-none d-flex flex-row align-items-center justify-content-between gap-2 ${isOverdue ? 'border-danger border-2' : 'border'}">
               <div class="d-flex align-items-center gap-2 overflow-hidden">
-                <img src="${img}" class="rounded-2 border flex-shrink-0" style="width: 42px; height: 42px; object-fit: cover;" onerror="this.src='${DEFAULT_EQUIPMENT_IMAGE}'" />
+                <img src="${img}" class="rounded-2 border flex-shrink-0 cursor-zoom-in enlargeable-img" style="width: 42px; height: 42px; object-fit: cover;" onclick="openEnlargeImageModal('${img}', '${escapeHtml(b.equipmentName || '')}', 'รหัส: ${escapeHtml(b.equipmentCode || '')}')" title="คลิกเพื่อขยายรูปภาพขนาดใหญ่" onerror="this.src='${DEFAULT_EQUIPMENT_IMAGE}'" />
                 <div class="overflow-hidden">
                   <div class="fw-bold text-dark text-truncate fs-7" title="${b.equipmentName}">${b.equipmentName}</div>
                   <div class="d-flex align-items-center gap-1 flex-wrap fs-8">
@@ -15550,9 +15805,425 @@
     window.lastContinuousScannedCode = null;
     window.lastContinuousScannedTime = 0;
 
+    // สถานะโหมดคืนอุปกรณ์ในหน้าต่างสแกน
+    window.scannerReturnMode = false;
+    window.scannerActiveReturnItems = [];
+    window.scannerActiveReturnEmployee = null;
+    window.scannerStockActionType = 'เบิกตัดสต็อก'; // 'เบิกตัดสต็อก' | 'รับเข้าสต๊อก'
+
+    // สลับโหมดระหว่าง เบิกตัดสต็อก กับ รับเข้าสต๊อก ในหน้าต่างสแกน
+    window.toggleScannerReceiveIssueMode = function() {
+      if (window.scannerStockActionType === 'รับเข้าสต๊อก') {
+        window.scannerStockActionType = 'เบิกตัดสต็อก';
+        currentTransCartType = 'เบิกจ่าย';
+        const issueRadio = document.getElementById('typeIssue');
+        if (issueRadio) issueRadio.checked = true;
+        const stockInRadio = document.getElementById('typeStockIn');
+        if (stockInRadio) stockInRadio.checked = false;
+        if (typeof window.toggleTransTypeUI === 'function') window.toggleTransTypeUI();
+        showToast('📤 สลับเข้าสู่โหมด "เบิกตัดสต็อก" (ตัดจ่ายสินค้าออกจากคลัง)');
+      } else {
+        window.scannerStockActionType = 'รับเข้าสต๊อก';
+        currentTransCartType = 'รับเข้าสต๊อก';
+        const stockInRadio = document.getElementById('typeStockIn');
+        if (stockInRadio) stockInRadio.checked = true;
+        const issueRadio = document.getElementById('typeIssue');
+        if (issueRadio) issueRadio.checked = false;
+        if (typeof window.toggleTransTypeUI === 'function') window.toggleTransTypeUI();
+        showToast('📦 สลับเข้าสู่โหมด "รับเข้าสต๊อก" (บันทึกรับสินค้าเพิ่มเข้าคลัง)');
+      }
+      if (typeof window.updateScannerEquipmentListUI === 'function') {
+        window.updateScannerEquipmentListUI();
+      }
+    };
+
+    // ค้นหารายการอุปกรณ์ที่พนักงานยังยืมค้างส่งคืนทั้งหมด
+    window.getEmployeeActiveUnreturnedList = function(empId, empName) {
+      if (!Array.isArray(transactionHistory) || transactionHistory.length === 0) return [];
+
+      const sortedTxs = [...transactionHistory].sort((a, b) => {
+        const tA = (a.rawTimestamp || (a.timestamp ? new Date(a.timestamp).getTime() : 0));
+        const tB = (b.rawTimestamp || (b.timestamp ? new Date(b.timestamp).getTime() : 0));
+        return tA - tB;
+      });
+
+      const empKey = String(empId || '').toLowerCase().trim();
+      const cleanEmpName = String(empName || '').split('(')[0].trim().toLowerCase();
+
+      const isMatchingEmp = (txEmpId, txEmpName) => {
+        const tId = String(txEmpId || '').toLowerCase().trim();
+        const tName = String(txEmpName || '').split('(')[0].trim().toLowerCase();
+        if (empKey && tId && (tId === empKey)) return true;
+        if (cleanEmpName && tName && (tName === cleanEmpName || tName.includes(cleanEmpName) || cleanEmpName.includes(tName))) return true;
+        return false;
+      };
+
+      const itemMap = {};
+
+      sortedTxs.forEach(tx => {
+        if (!tx) return;
+        const type = tx.type || '';
+        if (type !== 'ยืมอุปกรณ์' && type !== 'คืนอุปกรณ์') return;
+        if (!isMatchingEmp(tx.employeeId, tx.employeeName)) return;
+
+        let itemsInTx = [];
+        if (Array.isArray(tx.items) && tx.items.length > 0) {
+          itemsInTx = tx.items;
+        } else if (tx.equipmentId || tx.equipmentName) {
+          itemsInTx = [{
+            equipmentId: tx.equipmentId,
+            equipmentCode: tx.equipmentCode,
+            equipmentName: tx.equipmentName,
+            quantity: Number(tx.quantity || 0),
+            unit: tx.unit,
+            imageUrl: tx.imageUrl
+          }];
+        }
+
+        itemsInTx.forEach(it => {
+          const eqId = it.equipmentId || it.equipmentCode || it.equipmentName;
+          if (!eqId) return;
+          const qty = Number(it.quantity || 0);
+          if (qty <= 0) return;
+
+          const eqObj = (equipmentList || []).find(e => e.id === it.equipmentId || e.code === it.equipmentCode || e.name === it.equipmentName);
+          const code = eqObj?.code || it.equipmentCode || '';
+          const name = eqObj?.name || it.equipmentName || 'อุปกรณ์';
+          const unit = eqObj?.unit || it.unit || 'ชิ้น';
+          const img = eqObj?.imageUrl || it.imageUrl || DEFAULT_EQUIPMENT_IMAGE;
+          const actualId = eqObj ? eqObj.id : (it.equipmentId || eqId);
+
+          if (!itemMap[actualId]) {
+            itemMap[actualId] = {
+              equipmentId: actualId,
+              equipmentCode: code,
+              equipmentName: name,
+              unit: unit,
+              imageUrl: img,
+              borrowedQty: 0,
+              returnQty: 0
+            };
+          }
+
+          if (type === 'ยืมอุปกรณ์') {
+            itemMap[actualId].borrowedQty += qty;
+          } else if (type === 'คืนอุปกรณ์') {
+            itemMap[actualId].borrowedQty = Math.max(0, itemMap[actualId].borrowedQty - qty);
+          }
+        });
+      });
+
+      const activeList = Object.values(itemMap).filter(x => x.borrowedQty > 0);
+      activeList.forEach(x => {
+        x.returnQty = x.borrowedQty;
+      });
+      return activeList;
+    };
+
+    // ปรับจำนวนที่จะคืนในหน้าต่างสแกน (ปุ่ม - และ + โดย + ต้องไม่เกินจำนวนที่ยืม)
+    window.updateScannerReturnItemQty = function(equipId, delta) {
+      if (!window.scannerActiveReturnItems || !Array.isArray(window.scannerActiveReturnItems)) return;
+      const target = window.scannerActiveReturnItems.find(x => x.equipmentId === equipId);
+      if (!target) return;
+
+      const newQty = (target.returnQty || 1) + delta;
+      if (newQty < 1) return;
+      if (newQty > target.borrowedQty) return; // ไม่เกินจำนวนที่ยืม
+
+      target.returnQty = newQty;
+      if (typeof window.updateScannerEquipmentListUI === 'function') {
+        window.updateScannerEquipmentListUI();
+      }
+    };
+
+    // สลับเข้าสู่โหมด "ยืมอุปกรณ์" ต่อเนื่องทันที (ขั้นตอนที่ ๒)
+    window.switchToBorrowModeFromScanner = function() {
+      window.scannerReturnMode = false;
+      window.scannerActiveReturnItems = [];
+      selectedTransItems = [];
+      currentTransCartType = 'ยืมอุปกรณ์';
+      window.scannerStockActionType = 'เบิกตัดสต็อก';
+
+      const borrowRadio = document.getElementById('typeBorrow');
+      if (borrowRadio) borrowRadio.checked = true;
+      const issueRadio = document.getElementById('typeIssue');
+      if (issueRadio) issueRadio.checked = false;
+      const stockInRadio = document.getElementById('typeStockIn');
+      if (stockInRadio) stockInRadio.checked = false;
+      if (typeof window.toggleTransTypeUI === 'function') {
+        window.toggleTransTypeUI();
+      }
+
+      // แสดงกรอบกล้องและปรับความสูงกล่องรายการอุปกรณ์กลับคืน
+      const cameraCard = document.getElementById('scannerViewCard');
+      if (cameraCard) cameraCard.classList.remove('d-none');
+      const itemsContainer = document.getElementById('scannerScannedItemsContainer');
+      if (itemsContainer) itemsContainer.style.maxHeight = '230px';
+
+      if (window.scannerActiveReturnEmployee && typeof window.updateScannerOperatorUI === 'function') {
+        window.updateScannerOperatorUI(window.scannerActiveReturnEmployee);
+      }
+      if (typeof window.updateScannerEquipmentListUI === 'function') {
+        window.updateScannerEquipmentListUI();
+      }
+
+      // เปิดกล้องใหม่อัตโนมัติทันที
+      setTimeout(() => {
+        if (typeof startHtml5Scanner === 'function') {
+          startHtml5Scanner();
+        }
+      }, 250);
+
+      showToast('🔄 สลับเข้าสู่โหมด "ยืมอุปกรณ์" ให้อัตโนมัติ สามารถยิงสแกนบาร์โค้ดอุปกรณ์ชิ้นใหม่ได้ทันที');
+    };
+
+    // บันทึกคืนอุปกรณ์ชิ้นเดียวจากปุ่ม "คืน" ในแถว
+    window.confirmSingleReturnFromScanner = async function(equipId) {
+      const isAuth = (typeof window.hasStaffOrAdminAuthorization === 'function') && window.hasStaffOrAdminAuthorization();
+      if (!isAuth) {
+        alert("🔒 กรุณาสแกนบัตรเจ้าหน้าที่ (Staff) หรือ ผู้ดูแลระบบ (Admin) เพื่อปลดล็อกก่อนทำรายการคืน");
+        return;
+      }
+      if (!window.scannerActiveReturnItems) return;
+      const item = window.scannerActiveReturnItems.find(x => x.equipmentId === equipId);
+      if (!item) return;
+
+      const emp = window.scannerActiveReturnEmployee || (typeof employeeList !== 'undefined' ? employeeList.find(e => e.id === activeScannerDetectedEmpId) : null);
+      const empName = emp ? (typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name) : 'พนักงาน';
+      const qtyNum = item.returnQty || 1;
+
+      // 1. เพิ่มสต็อกกลับเข้าคลัง
+      const eqObj = (typeof equipmentList !== 'undefined' && Array.isArray(equipmentList)) ? equipmentList.find(e => e.id === item.equipmentId || e.code === item.equipmentCode) : null;
+      if (eqObj) {
+        eqObj.quantity = (eqObj.quantity || 0) + qtyNum;
+        eqObj.borrowedCount = Math.max(0, (eqObj.borrowedCount || 0) - qtyNum);
+        if (typeof isFirebaseReady !== 'undefined' && isFirebaseReady && typeof db !== 'undefined' && db && eqObj.id) {
+          try {
+            setDoc(doc(db, "equipment", eqObj.id), eqObj, { merge: true }).catch(err => console.warn(err));
+          } catch(e) {}
+        }
+      }
+
+      // 2. สร้างรายการประวัติธุรกรรม คืนอุปกรณ์
+      const now = new Date();
+      const thaiDate = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+      const thaiTime = now.toLocaleTimeString('th-TH', { hour12: false, hour: '2-digit', minute: '2-digit' });
+      const docNo = 'DOC-' + String(Date.now()).slice(-6);
+      let approverEmp = window.authorizedStaffOperator || null;
+      if (!approverEmp && emp && (typeof window.isStaffOrAdminEmp === 'function') && window.isStaffOrAdminEmp(emp)) {
+        approverEmp = emp;
+      }
+      const approverName = approverEmp 
+        ? (typeof formatEmpName === 'function' ? formatEmpName(approverEmp) : approverEmp.name)
+        : ((typeof currentRole !== 'undefined' && currentRole !== 'WORKER') ? `ผู้ดูแลระบบ (${currentRole})` : 'เจ้าหน้าที่');
+
+      const newTx = {
+        id: 'tx-' + String(Date.now()).slice(-6),
+        docNo: docNo,
+        type: 'คืนอุปกรณ์',
+        employeeId: emp ? emp.id : 'UNKNOWN',
+        employeeName: empName,
+        employeeCode: emp ? (emp.code || emp.id) : '',
+        employeeDepartment: emp ? (emp.department || 'ทั่วไป') : 'ทั่วไป',
+        approvedById: approverEmp?.id || '',
+        approvedByName: approverName,
+        items: [{
+          equipmentId: item.equipmentId,
+          equipmentName: item.equipmentName,
+          equipmentCode: item.equipmentCode,
+          quantity: qtyNum,
+          unit: item.unit || 'ชิ้น',
+          imageUrl: item.imageUrl || '',
+          location: eqObj?.location || 'คลังกลาง'
+        }],
+        equipmentId: item.equipmentId,
+        equipmentName: `${item.equipmentCode ? `[${item.equipmentCode}] ` : ''}${item.equipmentName}`,
+        quantity: qtyNum,
+        unit: item.unit || 'ชิ้น',
+        location: eqObj?.location || 'คลังกลาง',
+        note: 'บันทึกคืนอุปกรณ์จากหน้าต่างสแกน',
+        rawTimestamp: now.getTime(),
+        timestamp: `${thaiDate} ${thaiTime} น.`
+      };
+
+      if (Array.isArray(transactionHistory)) {
+        transactionHistory.unshift(newTx);
+      }
+      if (typeof saveToLocalStorage === 'function') {
+        saveToLocalStorage();
+      }
+      if (typeof isFirebaseReady !== 'undefined' && isFirebaseReady && typeof db !== 'undefined' && db) {
+        try {
+          addDoc(collection(db, "transactions"), newTx).catch(err => console.warn(err));
+        } catch(e) {}
+      }
+
+      // 3. ปรับลดรายการที่ยืมค้างไว้
+      item.borrowedQty = Math.max(0, item.borrowedQty - qtyNum);
+      if (item.borrowedQty <= 0) {
+        window.scannerActiveReturnItems = window.scannerActiveReturnItems.filter(x => x.equipmentId !== equipId);
+      } else {
+        item.returnQty = item.borrowedQty;
+      }
+
+      showToast(`✅ บันทึกคืนอุปกรณ์ "${item.equipmentCode ? `[${item.equipmentCode}] ` : ''}${item.equipmentName}" จำนวน ${qtyNum} ${item.unit || 'ชิ้น'} เรียบร้อยแล้ว`);
+
+      // 4. รีเฟรชตารางประวัติและรายการอุปกรณ์ในระบบทันที
+      if (typeof renderHistoryTable === 'function') {
+        renderHistoryTable();
+      }
+      if (typeof renderCatalogGrid === 'function') {
+        renderCatalogGrid();
+      }
+
+      // 5. หากคืนครบทุกรายการแล้ว สลับเข้าสู่โหมดยืมของใหม่ต่อเนื่องทันที
+      if (window.scannerActiveReturnItems.length === 0) {
+        window.switchToBorrowModeFromScanner();
+      } else {
+        if (typeof window.updateScannerEquipmentListUI === 'function') {
+          window.updateScannerEquipmentListUI();
+        }
+      }
+    };
+
+    // บันทึกคืนอุปกรณ์ทั้งหมดในคราวเดียว
+    window.confirmAllReturnsFromScanner = async function() {
+      if (window._isDirectReturnLocked) return;
+      window._isDirectReturnLocked = true;
+      setTimeout(() => { window._isDirectReturnLocked = false; }, 2500);
+
+      if (!window.scannerActiveReturnItems || window.scannerActiveReturnItems.length > 0 && window.scannerActiveReturnItems.length === 0) return;
+      if (!window.scannerActiveReturnItems || window.scannerActiveReturnItems.length === 0) return;
+
+      const emp = window.scannerActiveReturnEmployee || (typeof employeeList !== 'undefined' ? employeeList.find(e => e.id === activeScannerDetectedEmpId) : null);
+      const empName = emp ? (typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name) : 'พนักงาน';
+
+      const returnItemsList = [...window.scannerActiveReturnItems];
+      let totalQty = 0;
+      const txItems = [];
+
+      returnItemsList.forEach(item => {
+        const qtyNum = item.returnQty || item.borrowedQty || 1;
+        totalQty += qtyNum;
+
+        // 1. คืนสต็อก
+        const eqObj = (typeof equipmentList !== 'undefined' && Array.isArray(equipmentList)) ? equipmentList.find(e => e.id === item.equipmentId || e.code === item.equipmentCode) : null;
+        if (eqObj) {
+          eqObj.quantity = (eqObj.quantity || 0) + qtyNum;
+          eqObj.borrowedCount = Math.max(0, (eqObj.borrowedCount || 0) - qtyNum);
+          if (typeof isFirebaseReady !== 'undefined' && isFirebaseReady && typeof db !== 'undefined' && db && eqObj.id) {
+            try {
+              setDoc(doc(db, "equipment", eqObj.id), eqObj, { merge: true }).catch(err => console.warn(err));
+            } catch(e) {}
+          }
+        }
+
+        txItems.push({
+          equipmentId: item.equipmentId,
+          equipmentName: item.equipmentName,
+          equipmentCode: item.equipmentCode,
+          quantity: qtyNum,
+          unit: item.unit || 'ชิ้น',
+          imageUrl: item.imageUrl || '',
+          location: eqObj?.location || 'คลังกลาง'
+        });
+      });
+
+      // 2. สร้างเอกสารคืนอุปกรณ์รวม
+      const now = new Date();
+      const thaiDate = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+      const thaiTime = now.toLocaleTimeString('th-TH', { hour12: false, hour: '2-digit', minute: '2-digit' });
+      const docNo = 'DOC-' + String(Date.now()).slice(-6);
+      let approverEmpAll = window.authorizedStaffOperator || null;
+      if (!approverEmpAll && emp && (typeof window.isStaffOrAdminEmp === 'function') && window.isStaffOrAdminEmp(emp)) {
+        approverEmpAll = emp;
+      }
+      const approverNameAll = approverEmpAll 
+        ? (typeof formatEmpName === 'function' ? formatEmpName(approverEmpAll) : approverEmpAll.name)
+        : ((typeof currentRole !== 'undefined' && currentRole !== 'WORKER') ? `ผู้ดูแลระบบ (${currentRole})` : 'เจ้าหน้าที่');
+
+      const newTx = {
+        id: 'tx-' + String(Date.now()).slice(-6),
+        docNo: docNo,
+        type: 'คืนอุปกรณ์',
+        employeeId: emp ? emp.id : 'UNKNOWN',
+        employeeName: empName,
+        employeeCode: emp ? (emp.code || emp.id) : '',
+        employeeDepartment: emp ? (emp.department || 'ทั่วไป') : 'ทั่วไป',
+        approvedById: approverEmpAll?.id || '',
+        approvedByName: approverNameAll,
+        items: txItems,
+        equipmentId: txItems[0]?.equipmentId || '',
+        equipmentName: txItems.length === 1 ? `${txItems[0].equipmentCode ? `[${txItems[0].equipmentCode}] ` : ''}${txItems[0].equipmentName}` : `อุปกรณ์หลายรายการ (${txItems.length} รายการ)`,
+        quantity: totalQty,
+        unit: 'รายการ',
+        location: 'คลังกลาง',
+        note: `บันทึกคืนอุปกรณ์ทั้งหมด ${returnItemsList.length} รายการ จากหน้าต่างสแกน`,
+        rawTimestamp: now.getTime(),
+        timestamp: `${thaiDate} ${thaiTime} น.`
+      };
+
+      if (Array.isArray(transactionHistory)) {
+        transactionHistory.unshift(newTx);
+      }
+      if (typeof saveToLocalStorage === 'function') {
+        saveToLocalStorage();
+      }
+      if (typeof isFirebaseReady !== 'undefined' && isFirebaseReady && typeof db !== 'undefined' && db) {
+        try {
+          addDoc(collection(db, "transactions"), newTx).catch(err => console.warn(err));
+        } catch(e) {}
+      }
+
+      showToast(`✅ บันทึกคืนอุปกรณ์ทั้งหมด ${returnItemsList.length} รายการ (${totalQty} ชิ้น) เรียบร้อยแล้ว`);
+
+      // 3. สลับเข้าสู่โหมดยืมของใหม่ต่อเนื่องทันที
+      window.switchToBorrowModeFromScanner();
+    };
+
+
+    // Global variable for staff/admin authorization unlock in scanner
+    window.authorizedStaffOperator = null;
+    window.isScannerSavingInProgress = false; // ตัวล็อกป้องกันการสแกนหรือบันทึกซ้ำซ้อน
+
+    window.isStaffOrAdminEmp = function(emp) {
+      if (!emp) return false;
+      const role = String(emp.role || '').toUpperCase();
+      const pos = String(emp.position || '').toLowerCase();
+      const dept = String(emp.department || '').toLowerCase();
+      const isStaffRole = (role === 'ADMIN' || role === 'MANAGER' || role === 'STAFF');
+      const isStaffPos = pos.includes('admin') || pos.includes('manager') || pos.includes('staff') || 
+                         pos.includes('ผู้ดูแล') || pos.includes('ผู้จัดการ') || pos.includes('เจ้าหน้าที่') || 
+                         pos.includes('หัวหน้า') || pos.includes('บริหาร') || pos.includes('ธุรการ');
+      const isStaffDept = dept.includes('บริหาร') || dept.includes('อำนวยการ') || dept.includes('สำนักงาน');
+      return (isStaffRole || isStaffPos || isStaffDept || emp.accessInventory === true);
+    };
+
+    window.hasStaffOrAdminAuthorization = function() {
+      // 1) หากล็อกอินในระบบด้วยสิทธิ์ ADMIN, MANAGER หรือ STAFF อยู่แล้ว อนุญาตอัตโนมัติ
+      if (typeof currentRole !== 'undefined' && (currentRole === 'ADMIN' || currentRole === 'MANAGER' || currentRole === 'STAFF')) {
+        return true;
+      }
+      // 2) ตรวจสอบบัตรเจ้าหน้าที่/แอดมินที่สแกนเข้ามาในหน้าสแกน (authorizedStaffOperator)
+      if (window.authorizedStaffOperator && window.isStaffOrAdminEmp(window.authorizedStaffOperator)) {
+        return true;
+      }
+      // 3) ตรวจสอบผู้ทำรายการที่เลือก/สแกน (ถ้าผู้ทำรายการเองเป็นเจ้าหน้าที่หรือแอดมิน)
+      const empSelect = document.getElementById('empSelect');
+      const empId = empSelect ? empSelect.value : (typeof activeScannerDetectedEmpId !== 'undefined' ? activeScannerDetectedEmpId : null);
+      if (empId && typeof employeeList !== 'undefined' && Array.isArray(employeeList)) {
+        const emp = employeeList.find(e => e && e.id === empId);
+        if (emp && window.isStaffOrAdminEmp(emp)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     window.updateScannerOperatorUI = function(emp = null) {
       const statusElem = document.getElementById('scannerOperatorStatusText');
       const badgeElem = document.getElementById('scannerOperatorBadge');
+      // authBadge removed
       if (!statusElem || !badgeElem) return;
 
       if (!emp) {
@@ -15567,13 +16238,15 @@
         const empDisplayName = typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name;
         const empDept = emp.department || 'ทั่วไป';
         statusElem.innerHTML = `<span class="fw-bold text-dark">${escapeHtml(empDisplayName)}</span> <span class="text-muted fs-8 font-monospace">[${escapeHtml(emp.id || emp.code || '')}]</span> <span class="text-secondary fs-8">(${escapeHtml(empDept)})</span>`;
-        badgeElem.className = 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8 text-nowrap ms-2';
+        badgeElem.className = 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8 text-nowrap';
         badgeElem.textContent = 'ระบุแล้ว';
       } else {
         statusElem.textContent = 'รอสแกนผู้ทำรายการ';
-        badgeElem.className = 'badge bg-light text-muted border border-secondary border-opacity-25 fs-8 text-nowrap ms-2';
+        badgeElem.className = 'badge bg-light text-muted border border-secondary border-opacity-25 fs-8 text-nowrap';
         badgeElem.textContent = 'ยังไม่ระบุ';
       }
+
+      // รีเซ็ตการแสดงผลป้ายอุปกรณ์ (ไม่ต้องแสดงป้าย "รอสแกนบัตรเจ้าหน้าที่" ด้านบน)
     };
 
     window.clearAllScannerItemsConfirm = function() {
@@ -15612,8 +16285,144 @@
       const countBadge = document.getElementById('continuousScanCartCountBadge');
       const noItemsBox = document.getElementById('scannerNoItemsPlaceholder');
       const listContainer = document.getElementById('scannerScannedItemsList');
-      const clearAllBtn = document.getElementById('scannerClearAllBtn');
       const saveBtn = document.getElementById('btnScannerSaveTransaction');
+      const headerTitleBadge = document.getElementById('scannerEquipmentBadgeTitle');
+      const headerActions = document.getElementById('scannerEquipmentHeaderActions');
+      const finishBtn = document.getElementById('btnHeaderFinishScanner');
+      const cameraCard = document.getElementById('scannerViewCard');
+      const itemsContainer = document.getElementById('scannerScannedItemsContainer');
+
+      // ตรวจสอบว่าเป็นโหมดคืนอุปกรณ์หรือไม่
+      if (window.scannerReturnMode && window.scannerActiveReturnItems && window.scannerActiveReturnItems.length > 0) {
+        // ตรวจสอบบทบาทของผู้ทำรายการ (ถ้าเป็นพนักงานทำเกษตร ต้องเปิดกล้องและคงกรอบสแกนไว้เสมอ เพื่อให้สแกนบัตรเจ้าหน้าที่บันทึกคืนอัตโนมัติได้)
+        const empSelect = document.getElementById('empSelect');
+        const curEmpId = empSelect ? empSelect.value : (window.activeScannerDetectedEmpId || null);
+        const curEmp = (curEmpId && typeof employeeList !== 'undefined' && Array.isArray(employeeList)) 
+          ? employeeList.find(e => e && e.id === curEmpId) 
+          : (window.scannerActiveReturnEmployee || null);
+        const isOperatorWorker = curEmp ? !((typeof window.isStaffOrAdminEmp === 'function') && window.isStaffOrAdminEmp(curEmp)) : true;
+
+        if (isOperatorWorker) {
+          // กรณีพนักงานทำเกษตร: ปรับความสูงกล่องรายการอุปกรณ์ให้กว้างเด่นชัด และปรับขนาดกรอบกล้องด้านล่างให้กะทัดรัด (สูง 160px) เพื่อไม่ให้ดันรายการอุปกรณ์ตกขอบ
+          if (cameraCard) {
+            cameraCard.classList.remove('d-none');
+            const readerBox = document.getElementById('barcodeScannerReaderContainer');
+            if (readerBox) readerBox.style.minHeight = '160px';
+          }
+          if (itemsContainer) {
+            itemsContainer.style.minHeight = '180px';
+            itemsContainer.style.maxHeight = '320px';
+          }
+          if (!isScannerActive && typeof window.startHtml5Scanner === 'function') {
+            window.startHtml5Scanner();
+          }
+        } else {
+          // กรณีเจ้าหน้าที่หรือผู้ดูแลระบบทำรายการเอง: ซ่อนกรอบกล้องและขยายพื้นที่รายการเต็มหน้าต่าง
+          if (cameraCard) cameraCard.classList.add('d-none');
+          if (itemsContainer) {
+            itemsContainer.style.minHeight = '240px';
+            itemsContainer.style.maxHeight = 'calc(100vh - 220px)';
+          }
+          if (isScannerActive && typeof window.stopHtml5Scanner === 'function') {
+            window.stopHtml5Scanner();
+          }
+        }
+
+        // 2. ยกเลิกปุ่มเสร็จสิ้นในโหมดคืน
+        if (finishBtn) finishBtn.classList.add('d-none');
+
+        const returnItems = window.scannerActiveReturnItems;
+        if (countBadge) countBadge.textContent = returnItems.length;
+
+        const contFooterCount = document.getElementById('continuousScanFooterCount');
+        if (contFooterCount) contFooterCount.textContent = returnItems.length;
+
+        if (headerTitleBadge) {
+          headerTitleBadge.className = 'badge bg-warning bg-opacity-25 text-dark rounded-pill px-2.5 py-1 fs-8 fw-bold';
+          headerTitleBadge.textContent = 'รายการยืมค้างส่งคืน';
+        }
+
+        const isAuthorizedReturn = (typeof window.hasStaffOrAdminAuthorization === 'function') && window.hasStaffOrAdminAuthorization();
+        if (headerActions) {
+          headerActions.innerHTML = `
+            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-0.5 fs-8 fw-bold text-nowrap" onclick="switchToBorrowModeFromScanner()" title="สลับไปยืมอุปกรณ์เพิ่มโดยไม่คืน">
+              ยืมเพิ่ม
+            </button>
+            <button type="button" id="scannerClearAllBtn" class="btn btn-sm ${isAuthorizedReturn ? 'btn-info text-dark shadow-xs' : 'btn-secondary text-white opacity-75'} rounded-pill px-2.5 py-0.5 fs-8 fw-bold text-nowrap" ${isAuthorizedReturn ? '' : 'disabled'} onclick="confirmAllReturnsFromScanner()" title="${isAuthorizedReturn ? 'คืนอุปกรณ์ที่ยืมทั้งหมด' : 'สแกนบัตรเจ้าหน้าที่เพื่อปลดล็อกการคืน'}">
+              คืนทั้งหมด
+            </button>
+          `;
+        }
+
+        if (saveBtn) {
+          if (!isAuthorizedReturn) {
+            saveBtn.disabled = true;
+            saveBtn.className = 'btn btn-secondary fw-bold rounded-pill px-4 py-2.5 shadow-sm fs-6 w-100';
+            saveBtn.innerHTML = 'สแกนบัตรเจ้าหน้าที่เพื่อปลดล็อกปุ่มคืน';
+            saveBtn.onclick = null;
+          } else {
+            saveBtn.disabled = false;
+            saveBtn.className = 'btn btn-info fw-bold rounded-pill px-4 py-2.5 shadow-sm text-dark fs-6 w-100';
+            saveBtn.innerHTML = '<i class="bi bi-box-arrow-in-down me-1.5"></i> คืนอุปกรณ์ทั้งหมด';
+            saveBtn.onclick = function() { window.confirmAllReturnsFromScanner(); };
+          }
+        }
+
+        if (!listContainer) return;
+        if (noItemsBox) noItemsBox.classList.add('d-none');
+        listContainer.classList.remove('d-none');
+
+        // แสดงรายการอุปกรณ์ที่ยืมค้างส่งคืนทั้งหมดอย่างชัดเจน พร้อมรหัส ชื่อ จำนวน และปุ่มปรับคืน
+        listContainer.innerHTML = returnItems.map(it => {
+          const isAtMax = (it.returnQty || 1) >= it.borrowedQty;
+          const isAtMin = (it.returnQty || 1) <= 1;
+          const equipCode = it.equipmentCode || it.equipmentId || '';
+          const equipName = it.equipmentName || 'อุปกรณ์การเกษตร';
+          const borrowedNum = it.borrowedQty || 1;
+          const returnNum = it.returnQty || borrowedNum;
+
+          return `
+          <div class="d-flex align-items-center justify-content-between py-1.5 px-2 mb-1 bg-white rounded-3 border border-light shadow-2xs gap-2">
+            <div class="d-flex align-items-center gap-1.5 flex-grow-1 min-w-0 overflow-hidden" style="min-width: 0;">
+              <span class="fw-bold font-monospace fs-7 text-primary flex-shrink-0">${escapeHtml(equipCode)}</span>
+              <span class="fw-semibold text-dark text-truncate fs-7 flex-grow-1" style="min-width: 0;" title="${escapeHtml(equipName)}">${escapeHtml(equipName)}</span>
+            </div>
+            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+              <div class="input-group input-group-sm align-items-center bg-light rounded-pill border px-1" style="height: 28px;">
+                <button type="button" class="btn btn-sm btn-link text-dark p-0 px-1.5 border-0 text-decoration-none lh-1" onclick="updateScannerReturnItemQty('${it.equipmentId}', -1)" ${isAtMin ? 'disabled style="opacity:0.35;"' : ''} title="ลดจำนวน">
+                  <i class="bi bi-dash fw-bold fs-6"></i>
+                </button>
+                <span class="fw-bold text-dark px-1 fs-7 text-center" style="min-width: 20px;">${returnNum}</span>
+                <button type="button" class="btn btn-sm btn-link text-dark p-0 px-1.5 border-0 text-decoration-none lh-1" onclick="updateScannerReturnItemQty('${it.equipmentId}', 1)" ${isAtMax ? 'disabled style="opacity:0.35;"' : ''} title="เพิ่มจำนวน">
+                  <i class="bi bi-plus fw-bold fs-6"></i>
+                </button>
+              </div>
+              <button type="button" class="btn btn-sm ${isAuthorizedReturn ? 'btn-info text-dark fw-bold shadow-xs' : 'btn-secondary text-white opacity-75'} rounded-pill px-2.5 py-0.5 border-0 lh-1 text-nowrap fs-8" onclick="confirmSingleReturnFromScanner('${it.equipmentId}')" title="${isAuthorizedReturn ? 'กดเพื่อคืนอุปกรณ์นี้' : 'สแกนบัตรเจ้าหน้าที่เพื่อปลดล็อกการคืน'}">
+                คืน
+              </button>
+            </div>
+          </div>
+        `;
+        }).join('');
+        return;
+      }
+
+      // โหมดปกติ (ยืมอุปกรณ์, เบิกตัดสต็อก, หรือ รับเข้าสต๊อก)
+      // แสดงกรอบกล้องและปรับความสูงกล่องรายการอุปกรณ์กลับคืน
+      if (cameraCard) {
+        cameraCard.classList.remove('d-none');
+        const readerBox = document.getElementById('barcodeScannerReaderContainer');
+        if (readerBox) readerBox.style.minHeight = '260px';
+      }
+      if (itemsContainer) {
+        itemsContainer.style.minHeight = '110px';
+        itemsContainer.style.maxHeight = '230px';
+      }
+
+      if (headerTitleBadge) {
+        headerTitleBadge.className = 'badge bg-primary bg-opacity-10 text-primary rounded-pill px-2.5 py-1 fs-8 fw-bold';
+        headerTitleBadge.textContent = 'รายการอุปกรณ์';
+      }
 
       const items = (typeof selectedTransItems !== 'undefined' && Array.isArray(selectedTransItems)) ? selectedTransItems : [];
       if (countBadge) countBadge.textContent = items.length;
@@ -15621,34 +16430,80 @@
       const contFooterCount = document.getElementById('continuousScanFooterCount');
       if (contFooterCount) contFooterCount.textContent = items.length;
 
-      if (clearAllBtn) {
-        if (items.length > 0) {
-          clearAllBtn.classList.remove('d-none');
-        } else {
-          clearAllBtn.classList.add('d-none');
-        }
+      if (headerActions) {
+        headerActions.innerHTML = `
+          <button type="button" id="scannerClearAllBtn" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fs-8 ${items.length > 0 ? '' : 'd-none'}" onclick="clearAllScannerItemsConfirm()" title="ลบรายการที่เลือกไว้ทั้งหมด">
+            <i class="bi bi-trash3 me-1"></i>ลบทั้งหมด
+          </button>
+        `;
       }
 
-      // ตรวจสอบและอัปเดตปุ่ม "บันทึกข้อมูล" (บันทึกเบิกตัดสต็อก / บันทึกยืมอุปกรณ์)
-      if (saveBtn) {
-        if (items.length === 0) {
-          saveBtn.disabled = true;
-          saveBtn.className = 'btn btn-secondary fw-bold rounded-pill px-4 py-2.5 shadow-sm fs-6 w-100';
-          saveBtn.innerHTML = 'บันทึกข้อมูล';
-        } else {
-          saveBtn.disabled = false;
-          // ตรวจสอบประเภทอุปกรณ์ในรายการ
-          const hasBorrowItem = items.some(it => {
-            const eq = (typeof equipmentList !== 'undefined' && Array.isArray(equipmentList)) ? equipmentList.find(e => e.id === it.id) : null;
-            return eq && (typeof window.isEquipmentBorrowType === 'function') && window.isEquipmentBorrowType(eq);
-          });
+      // ตรวจสอบประเภทอุปกรณ์ในรายการ
+      const hasBorrowItem = items.some(it => {
+        const eq = (typeof equipmentList !== 'undefined' && Array.isArray(equipmentList)) ? equipmentList.find(e => e.id === it.id) : null;
+        return eq && (typeof window.isEquipmentBorrowType === 'function') && window.isEquipmentBorrowType(eq);
+      });
 
-          if (hasBorrowItem || currentTransCartType === 'ยืมอุปกรณ์') {
+      // ถ้าผู้ใช้เลือกโหมด "รับเข้าสต๊อก" อยู่แล้ว ให้คงเป็นโหมดรับเข้าสต๊อกเสมอ (ไม่ถูกบีบเป็นยืมอุปกรณ์)
+      const isStockInActive = (window.scannerStockActionType === 'รับเข้าสต๊อก');
+      const isBorrowMode = !isStockInActive && (hasBorrowItem || currentTransCartType === 'ยืมอุปกรณ์');
+
+      const isAuthorized = (typeof window.hasStaffOrAdminAuthorization === 'function') && window.hasStaffOrAdminAuthorization();
+
+      if (isBorrowMode) {
+        // ยกเลิกปุ่มเสร็จสิ้นในโหมดยืม
+        if (finishBtn) finishBtn.classList.add('d-none');
+
+        if (saveBtn) {
+          saveBtn.onclick = function() { window.saveTransactionDirectlyFromScanner(); };
+          if (items.length === 0) {
+            saveBtn.disabled = true;
+            saveBtn.className = 'btn btn-secondary fw-bold rounded-pill px-4 py-2.5 shadow-sm fs-6 w-100';
+            saveBtn.innerHTML = 'บันทึกข้อมูล';
+          } else if (!isAuthorized) {
+            saveBtn.disabled = true;
+            saveBtn.className = 'btn btn-secondary fw-bold rounded-pill px-4 py-2.5 shadow-sm fs-6 w-100';
+            saveBtn.innerHTML = '<i class="bi bi-shield-lock-fill me-1.5 text-warning"></i> สแกนบัตรเจ้าหน้าที่เพื่อบันทึกยืม';
+          } else {
+            saveBtn.disabled = false;
             saveBtn.className = 'btn btn-warning fw-bold rounded-pill px-4 py-2.5 shadow-sm text-dark fs-6 w-100';
             saveBtn.innerHTML = '<i class="bi bi-arrow-repeat me-1.5"></i> บันทึกยืมอุปกรณ์';
+          }
+        }
+      } else {
+        // โหมดเบิกตัดสต็อก / รับเข้าสต๊อก (วัสดุสิ้นเปลือง / รายการสินค้า)
+        // แสดงปุ่มสลับรับเข้าสต๊อก / สลับเบิกตัดสต๊อก
+        if (finishBtn) {
+          finishBtn.classList.remove('d-none');
+          if (window.scannerStockActionType === 'รับเข้าสต๊อก') {
+            finishBtn.className = 'btn btn-outline-danger fw-bold rounded-pill px-3 py-1 fs-7 shadow-sm text-nowrap';
+            finishBtn.innerHTML = 'สลับเบิกตัดสต๊อก';
           } else {
-            saveBtn.className = 'btn btn-danger fw-bold rounded-pill px-4 py-2.5 shadow-sm text-white fs-6 w-100';
-            saveBtn.innerHTML = '<i class="bi bi-box-arrow-up me-1.5"></i> บันทึกเบิกตัดสต็อก';
+            finishBtn.className = 'btn btn-outline-success fw-bold rounded-pill px-3 py-1 fs-7 shadow-sm text-nowrap';
+            finishBtn.innerHTML = 'สลับรับเข้าสต๊อก';
+          }
+        }
+
+        if (saveBtn) {
+          saveBtn.onclick = function() { window.saveTransactionDirectlyFromScanner(); };
+          if (items.length === 0) {
+            saveBtn.disabled = true;
+            saveBtn.className = 'btn btn-secondary fw-bold rounded-pill px-4 py-2.5 shadow-sm fs-6 w-100';
+            saveBtn.innerHTML = 'บันทึกข้อมูล';
+          } else if (!isAuthorized) {
+            saveBtn.disabled = true;
+            saveBtn.className = 'btn btn-secondary fw-bold rounded-pill px-4 py-2.5 shadow-sm fs-6 w-100';
+            const actionLabel = (window.scannerStockActionType === 'รับเข้าสต๊อก') ? 'บันทึกรับเข้า' : 'บันทึกเบิก';
+            saveBtn.innerHTML = `<i class="bi bi-shield-lock-fill me-1.5 text-warning"></i> สแกนบัตรเจ้าหน้าที่เพื่อ${actionLabel}`;
+          } else {
+            saveBtn.disabled = false;
+            if (window.scannerStockActionType === 'รับเข้าสต๊อก') {
+              saveBtn.className = 'btn btn-success fw-bold rounded-pill px-4 py-2.5 shadow-sm text-white fs-6 w-100';
+              saveBtn.innerHTML = '<i class="bi bi-box-arrow-in-down me-1.5"></i> บันทึกรับเข้าสต๊อก';
+            } else {
+              saveBtn.className = 'btn btn-danger fw-bold rounded-pill px-4 py-2.5 shadow-sm text-white fs-6 w-100';
+              saveBtn.innerHTML = '<i class="bi bi-box-arrow-up me-1.5"></i> บันทึกเบิกตัดสต็อก';
+            }
           }
         }
       }
@@ -15663,26 +16518,27 @@
         listContainer.innerHTML = items.map(it => {
           const equipObj = (typeof equipmentList !== 'undefined' && Array.isArray(equipmentList)) ? equipmentList.find(e => e.id === it.id) : null;
           const currentStock = equipObj ? (equipObj.quantity || 0) : 999;
-          const isAtMax = (it.qty || 1) >= currentStock;
+          const isStockInRow = (window.scannerStockActionType === 'รับเข้าสต๊อก' || currentTransCartType === 'รับเข้าสต๊อก');
+          const isAtMax = !isStockInRow && ((it.qty || 1) >= currentStock);
           const isAtMin = (it.qty || 1) <= 1;
 
           return `
-          <div class="d-flex align-items-center justify-content-between py-1.5 px-2.5 bg-white rounded-3 border border-light shadow-2xs">
-            <div class="d-flex align-items-center gap-1.5 overflow-hidden me-2" style="max-width: 58%;">
-              <span class="fw-semibold text-dark text-truncate fs-7">${escapeHtml(it.name || '-')}</span>
-              <span class="text-muted fs-9 font-monospace d-none d-sm-inline">[${escapeHtml(it.code || it.id || '')}]</span>
+          <div class="d-flex align-items-center justify-content-between py-1.5 ps-1 pe-1 bg-white rounded-3 border border-light shadow-2xs gap-2">
+            <div class="d-flex align-items-center gap-1.5 flex-grow-1 min-w-0 overflow-hidden ps-0 ms-0" style="min-width: 0;">
+              <span class="fw-bold font-monospace fs-7 flex-shrink-0 ps-0 ms-0" style="color: #0d47a1;">${escapeHtml(it.code || it.id || '')}</span>
+              <span class="fw-semibold text-dark text-truncate fs-7 flex-grow-1" style="min-width: 0;" title="${escapeHtml(it.name || '-')}">${escapeHtml(it.name || '-')}</span>
             </div>
-            <div class="d-flex align-items-center gap-2 flex-shrink-0">
-              <div class="input-group input-group-sm align-items-center bg-light rounded-pill border px-1" style="height: 34px;">
-                <button type="button" class="btn btn-sm btn-link text-dark p-0 px-2 border-0 text-decoration-none lh-1" onclick="updateScannerItemQty('${it.id}', -1)" ${isAtMin ? 'disabled style="opacity:0.35;"' : ''} title="ลดจำนวน">
-                  <i class="bi bi-dash fw-bold fs-5"></i>
+            <div class="d-flex align-items-center gap-1 flex-shrink-0 pe-0 me-0">
+              <div class="input-group input-group-sm align-items-center bg-light rounded-pill border px-1" style="height: 28px;">
+                <button type="button" class="btn btn-sm btn-link text-dark p-0 px-1.5 border-0 text-decoration-none lh-1" onclick="updateScannerItemQty('${it.id}', -1)" ${isAtMin ? 'disabled style="opacity:0.35;"' : ''} title="ลดจำนวน">
+                  <i class="bi bi-dash fw-bold fs-6"></i>
                 </button>
-                <span class="fw-bold text-dark px-2 fs-6 text-center" style="min-width: 28px;">${it.qty || 1}</span>
-                <button type="button" class="btn btn-sm btn-link text-dark p-0 px-2 border-0 text-decoration-none lh-1" onclick="updateScannerItemQty('${it.id}', 1)" ${isAtMax ? 'disabled style="opacity:0.35;"' : ''} title="เพิ่มจำนวน">
-                  <i class="bi bi-plus fw-bold fs-5"></i>
+                <span class="fw-bold text-dark px-1 fs-7 text-center" style="min-width: 20px;">${it.qty || 1}</span>
+                <button type="button" class="btn btn-sm btn-link text-dark p-0 px-1.5 border-0 text-decoration-none lh-1" onclick="updateScannerItemQty('${it.id}', 1)" ${isAtMax ? 'disabled style="opacity:0.35;"' : ''} title="เพิ่มจำนวน">
+                  <i class="bi bi-plus fw-bold fs-6"></i>
                 </button>
               </div>
-              <button type="button" class="btn btn-sm btn-link text-danger p-1 border-0 lh-1 ms-0.5" onclick="removeCartItem('${it.id}')" title="ลบรายการนี้">
+              <button type="button" class="btn btn-sm btn-link text-danger p-1 border-0 lh-1 me-0" onclick="removeCartItem('${it.id}')" title="ลบรายการนี้">
                 <i class="bi bi-trash3 fs-6"></i>
               </button>
             </div>
@@ -15702,8 +16558,12 @@
       }
     };
 
-    // บันทึกรายการโดยตรงจากหน้าสแกนอุปกรณ์ (เบิกตัดสต็อก หรือ ยืมอุปกรณ์ อัตโนมัติ)
+    // บันทึกรายการโดยตรงจากหน้าสแกนอุปกรณ์ (เบิกตัดสต็อก, รับเข้าสต๊อก หรือ ยืมอุปกรณ์ อัตโนมัติ)
     window.saveTransactionDirectlyFromScanner = async function() {
+      if (window._isDirectSaveLocked) return;
+      window._isDirectSaveLocked = true;
+      setTimeout(() => { window._isDirectSaveLocked = false; }, 2500);
+
       const items = (typeof selectedTransItems !== 'undefined' && Array.isArray(selectedTransItems)) ? selectedTransItems : [];
       if (items.length === 0) {
         alert("⚠️ กรุณาสแกนอุปกรณ์อย่างน้อย 1 รายการก่อนบันทึก");
@@ -15724,7 +16584,7 @@
         return;
       }
 
-      // ตรวจสอบประเภทเอกสารอัตโนมัติ: ยืมอุปกรณ์ หรือ เบิกจ่าย (เบิกตัดสต็อก)
+      // ตรวจสอบประเภทเอกสารอัตโนมัติ: ยืมอุปกรณ์ หรือ เบิกจ่าย (เบิกตัดสต็อก) / รับเข้าสต๊อก
       const hasBorrowItem = items.some(it => {
         const eq = (typeof equipmentList !== 'undefined' && Array.isArray(equipmentList)) ? equipmentList.find(e => e.id === it.id) : null;
         return eq && (typeof window.isEquipmentBorrowType === 'function') && window.isEquipmentBorrowType(eq);
@@ -15734,18 +16594,24 @@
         return eq && (typeof window.isEquipmentBorrowType === 'function') && !window.isEquipmentBorrowType(eq);
       });
 
-      if (hasBorrowItem && hasConsumableItem) {
+      const isStockIn = (window.scannerStockActionType === 'รับเข้าสต๊อก');
+
+      // ถ้าไม่ใช่โหมดรับเข้าสต๊อก และมีอุปกรณ์ยืมใช้ปะปนกับวัสดุสิ้นเปลือง
+      if (!isStockIn && hasBorrowItem && hasConsumableItem) {
         alert("❌ ไม่สามารถบันทึกได้!\n\nในรายการสแกนมีอุปกรณ์ประเภทยืมใช้ (รหัสขึ้นต้นด้วย B เช่น BA หรือ BT) ปะปนกับวัสดุสิ้นเปลือง\n\nเอกสาร 1 ใบต้องเป็นประเภทเดียวกันเท่านั้น กรุณาลบรายการที่ไม่ตรงประเภทออกก่อนบันทึก");
         return;
       }
 
-      const determinedType = hasBorrowItem ? 'ยืมอุปกรณ์' : 'เบิกจ่าย';
+      const determinedType = isStockIn ? 'รับเข้าสต๊อก' : (hasBorrowItem ? 'ยืมอุปกรณ์' : 'เบิกจ่าย');
 
       // ปรับ radio button ใน transactionForm ให้ตรง
       const borrowRadio = document.getElementById('typeBorrow');
       const issueRadio = document.getElementById('typeIssue');
+      const stockInRadio = document.getElementById('typeStockIn');
       if (determinedType === 'ยืมอุปกรณ์' && borrowRadio) {
         borrowRadio.checked = true;
+      } else if (determinedType === 'รับเข้าสต๊อก' && stockInRadio) {
+        stockInRadio.checked = true;
       } else if (issueRadio) {
         issueRadio.checked = true;
       }
@@ -15776,6 +16642,10 @@
         }
 
         // รีเซ็ตสถานะหน้าสแกน
+        window.authorizedStaffOperator = null;
+      window.isScannerSavingInProgress = false;
+      window._isDirectSaveLocked = false;
+      window._isDirectReturnLocked = false;
         if (typeof window.updateScannerOperatorUI === 'function') {
           window.updateScannerOperatorUI(null);
         }
@@ -15783,7 +16653,7 @@
           window.updateScannerEquipmentListUI();
         }
 
-        const actionText = determinedType === 'ยืมอุปกรณ์' ? 'ยืมอุปกรณ์' : 'เบิกตัดสต็อก';
+        const actionText = determinedType === 'ยืมอุปกรณ์' ? 'ยืมอุปกรณ์' : (determinedType === 'รับเข้าสต๊อก' ? 'รับเข้าสต๊อก' : 'เบิกตัดสต็อก');
         showToast(`✅ บันทึกรายการ "${actionText}" สำเร็จเรียบร้อยแล้ว`);
       } catch (err) {
         console.error("Scanner Direct Save Error:", err);
@@ -15813,6 +16683,13 @@
       activeScannedUnknownCode = null;
       window.lastContinuousScannedCode = null;
       window.lastContinuousScannedTime = 0;
+      window.scannerReturnMode = false;
+      window.scannerActiveReturnItems = [];
+      window.scannerActiveReturnEmployee = null;
+      window.authorizedStaffOperator = null;
+      window.isScannerSavingInProgress = false;
+      window._isDirectSaveLocked = false;
+      window._isDirectReturnLocked = false;
 
       const promptState = document.getElementById('scannedItemPromptState');
       const resultCard = document.getElementById('scannedItemResultCard');
@@ -15876,6 +16753,9 @@
       const hasCartItems = (typeof selectedTransItems !== 'undefined' && Array.isArray(selectedTransItems) && selectedTransItems.length > 0);
       window.isContinuousCartScanning = false;
       window.lastContinuousScannedCode = null;
+      window.scannerReturnMode = false;
+      window.scannerActiveReturnItems = [];
+      window.scannerActiveReturnEmployee = null;
       window.stopHtml5Scanner();
       const modalElem = document.getElementById('barcodeQrScannerModal');
       if (modalElem) {
@@ -15910,6 +16790,13 @@
     window.closeBarcodeQrScannerModal = function() {
       window.isContinuousCartScanning = false;
       window.lastContinuousScannedCode = null;
+      window.scannerReturnMode = false;
+      window.scannerActiveReturnItems = [];
+      window.scannerActiveReturnEmployee = null;
+      window.authorizedStaffOperator = null;
+      window.isScannerSavingInProgress = false;
+      window._isDirectSaveLocked = false;
+      window._isDirectReturnLocked = false;
       if (typeof window.stopHtml5Scanner === 'function') {
         window.stopHtml5Scanner();
       }
@@ -15976,18 +16863,25 @@
 
       try {
         const config = { 
-          fps: 15, 
+          fps: 25, 
           qrbox: (viewfinderWidth, viewfinderHeight) => {
             const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
             return {
-              width: Math.max(220, Math.floor(viewfinderWidth * 0.85)),
-              height: Math.max(160, Math.floor(minEdge * 0.75))
+              width: Math.max(260, Math.floor(viewfinderWidth * 0.90)),
+              height: Math.max(180, Math.floor(minEdge * 0.80))
             };
           },
-          aspectRatio: 1.0
+          aspectRatio: 1.0,
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          }
         };
 
-        html5QrScannerInstance = new Html5Qrcode("barcodeScannerReaderContainer");
+        html5QrScannerInstance = new Html5Qrcode("barcodeScannerReaderContainer", {
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          }
+        });
         
         html5QrScannerInstance.start(
           { facingMode: "environment" },
@@ -16121,12 +17015,31 @@
         // 1. Continuous scanning mode (when inside scanner modal or transaction document modal)
         if (window.isContinuousCartScanning || isTransModalActive || isScannerModalOpen) {
           const now = Date.now();
-          if (cleanCode === window.lastContinuousScannedCode && (now - window.lastContinuousScannedTime) < 1500) {
-            // Ignore repetitive video frame within 1.5s for the same code
+          // เพิ่มระยะเวลาหน่วงเฉพาะการสแกนอุปกรณ์เดิมซ้ำเป็น 2.5 วินาที เพื่อป้องกันกล้องอ่านบาร์โค้ดอุปกรณ์เดิมรัวซ้ำซ้อน
+          if (cleanCode === window.lastContinuousScannedCode && (now - window.lastContinuousScannedTime) < 2500) {
+            // Ignore repetitive video frame within 2.5s for the same equipment code
             return;
           }
           window.lastContinuousScannedCode = cleanCode;
           window.lastContinuousScannedTime = now;
+
+          // ถ้าอยู่ในโหมดคืนอุปกรณ์ (แสดงรายการที่ยืมค้างไว้)
+          if (window.scannerReturnMode && window.scannerActiveReturnItems && window.scannerActiveReturnItems.length > 0) {
+            const matchedReturnItem = window.scannerActiveReturnItems.find(x => x.equipmentId === item.id || x.equipmentCode === item.code || x.equipmentName === item.name);
+            if (matchedReturnItem) {
+              if (matchedReturnItem.returnQty < matchedReturnItem.borrowedQty) {
+                matchedReturnItem.returnQty = Math.min(matchedReturnItem.borrowedQty, (matchedReturnItem.returnQty || 1) + 1);
+              }
+              if (typeof window.updateScannerEquipmentListUI === 'function') {
+                window.updateScannerEquipmentListUI();
+              }
+              showToast(`📦 สแกนตรงกับอุปกรณ์ที่ยืม: "${matchedReturnItem.equipmentCode ? `[${matchedReturnItem.equipmentCode}] ` : ''}${matchedReturnItem.equipmentName}" (ระบุจำนวนคืน ${matchedReturnItem.returnQty}/${matchedReturnItem.borrowedQty})`);
+              return;
+            } else {
+              showToast(`ℹ️ อุปกรณ์ "${item.name}" [${item.code || item.id}] ไม่อยู่ในรายการที่ยืมค้างไว้ (หากต้องการยืม กรุณากดปุ่ม "ยืมเพิ่ม" หรือกดยืนยันคืนของเดิมก่อน)`);
+              return;
+            }
+          }
 
           window.transDuplicateScanCounts = window.transDuplicateScanCounts || {};
           const existingInCart = (selectedTransItems || []).find(x => x.id === item.id);
@@ -16286,6 +17199,62 @@
 
         // Continuous scanning mode for employee badge
         if (window.isContinuousCartScanning || isTransModalActive || isScannerModalOpen) {
+          const isStaffOrAdmin = (typeof window.isStaffOrAdminEmp === 'function') && window.isStaffOrAdminEmp(emp);
+          const currentEmpSelect = document.getElementById('empSelect');
+          const existingEmpId = currentEmpSelect ? currentEmpSelect.value : (activeScannerDetectedEmpId || null);
+          const existingEmp = (existingEmpId && typeof employeeList !== 'undefined' && Array.isArray(employeeList)) 
+            ? employeeList.find(e => e && e.id === existingEmpId) 
+            : null;
+          const hasExistingWorker = existingEmp && !(typeof window.isStaffOrAdminEmp === 'function' && window.isStaffOrAdminEmp(existingEmp));
+          const hasItems = (typeof selectedTransItems !== 'undefined' && Array.isArray(selectedTransItems) && selectedTransItems.length > 0) ||
+                           (window.scannerReturnMode && window.scannerActiveReturnItems && window.scannerActiveReturnItems.length > 0);
+
+          // กรณีที่ 1: พนักงานทั่วไปสแกนของและบัตรตัวเองไว้แล้ว และมีเจ้าหน้าที่/แอดมินมาสแกนบัตรเพื่ออนุมัติ
+          // สำคัญมาก: ห้ามเขียนทับชื่อพนักงานที่เป็นผู้ทำรายการ แต่ให้เก็บเจ้าหน้าที่เป็นผู้อนุมัติ (authorizedStaffOperator) และบันทึกทันที!
+          if (isStaffOrAdmin && hasExistingWorker && hasItems) {
+            if (window.isScannerSavingInProgress) {
+              return; // ป้องกันการยิงซ้ำขณะกำลังประมวลผลบันทึก
+            }
+            window.isScannerSavingInProgress = true;
+            window.authorizedStaffOperator = emp;
+
+            // หยุดกล้องสแกนทันทีเพื่อป้องกันไม่ให้กล้องอ่านเฟรมซ้ำในเสี้ยววินาที
+            if (typeof window.stopHtml5Scanner === 'function') {
+              window.stopHtml5Scanner();
+            }
+
+            const staffDisplayName = typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name;
+            const workerDisplayName = typeof formatEmpName === 'function' ? formatEmpName(existingEmp) : existingEmp.name;
+            showToast(`⚡ เจ้าหน้าที่ "${staffDisplayName}" อนุมัติการทำรายการให้คุณ "${workerDisplayName}" เรียบร้อยแล้ว! กำลังบันทึกข้อมูล...`);
+
+            setTimeout(async () => {
+              try {
+                if (window.scannerReturnMode && window.scannerActiveReturnItems && window.scannerActiveReturnItems.length > 0) {
+                  // ในโหมดคืนอุปกรณ์: ปลดล็อกปุ่ม "คืนทั้งหมด" และปุ่ม "คืน" รายการเดี่ยว เพื่อให้ตรวจนับ ปรับจำนวน หรือเลือกกดคืนได้ทันที
+                  window.isScannerSavingInProgress = false;
+                  if (typeof window.updateScannerEquipmentListUI === 'function') {
+                    window.updateScannerEquipmentListUI();
+                  }
+                  if (typeof window.updateScannerOperatorUI === 'function') {
+                    window.updateScannerOperatorUI();
+                  }
+                  showToast(`🔓 ปลดล็อกสิทธิ์สำเร็จ! เจ้าหน้าที่ "${staffDisplayName}" อนุมัติแล้ว สามารถปรับจำนวน (+ / -) และกดปุ่มคืนได้ทันที`);
+                } else {
+                  // ในโหมดยืม หรือ เบิกตัดสต็อก: บันทึกข้อมูลและตัดสต็อกลงระบบอัตโนมัติทันที
+                  if (typeof window.saveTransactionDirectlyFromScanner === 'function') {
+                    await window.saveTransactionDirectlyFromScanner();
+                  }
+                }
+              } finally {
+                setTimeout(() => {
+                  window.isScannerSavingInProgress = false;
+                }, 1000);
+              }
+            }, 250);
+            return;
+          }
+
+          // กรณีที่ 2: ตั้งค่าผู้ทำรายการตามปกติ (หรือกรณีเจ้าหน้าที่/แอดมินมาทำรายการเบิกด้วยตนเอง)
           if (typeof selectEmployeeToFormDirectly === 'function') {
             selectEmployeeToFormDirectly(emp);
           } else if (typeof selectEmployeeForTransaction === 'function') {
@@ -16303,6 +17272,16 @@
             empBox.classList.add('d-none');
             empBox.innerHTML = '';
           }
+          activeScannerDetectedEmpId = emp.id;
+          window.scannerActiveReturnEmployee = emp;
+          if (isStaffOrAdmin) {
+            window.authorizedStaffOperator = emp;
+          } else {
+            window.authorizedStaffOperator = null;
+      window.isScannerSavingInProgress = false;
+      window._isDirectSaveLocked = false;
+      window._isDirectReturnLocked = false;
+          }
           if (typeof window.updateScannerOperatorUI === 'function') {
             window.updateScannerOperatorUI(emp);
           }
@@ -16313,11 +17292,42 @@
           const contBanner = document.getElementById('continuousScanBanner');
           if (contBanner) contBanner.classList.add('d-none');
           if (empCard) empCard.classList.add('d-none');
+
+          // ตรวจสอบว่าพนักงานท่านนี้มีอุปกรณ์ที่ยืมค้างส่งคืนหรือไม่
+          const unreturnedList = (typeof window.getEmployeeActiveUnreturnedList === 'function')
+            ? window.getEmployeeActiveUnreturnedList(emp.id, emp.name)
+            : [];
+          if (unreturnedList && unreturnedList.length > 0) {
+            window.scannerReturnMode = true;
+            window.scannerActiveReturnItems = unreturnedList;
+            if (typeof window.updateScannerEquipmentListUI === 'function') {
+              window.updateScannerEquipmentListUI();
+            }
+            if (isStaffOrAdmin) {
+              showToast(`👤 เจ้าหน้าที่/แอดมิน "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" มียืมค้าง ${unreturnedList.length} รายการ (กดปุ่มคืนทั้งหมดหรือยืมเพิ่มได้ทันที)`);
+            } else {
+              showToast(`📋 พนักงาน "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" มียืมอุปกรณ์ค้างส่งคืน ${unreturnedList.length} รายการ (สแกนบัตรเจ้าหน้าที่เพื่อบันทึก)`);
+            }
+          } else {
+            window.scannerReturnMode = false;
+            window.scannerActiveReturnItems = [];
+            if (typeof window.updateScannerEquipmentListUI === 'function') {
+              window.updateScannerEquipmentListUI();
+            }
+            if (isStaffOrAdmin) {
+              showToast(`👤 เจ้าหน้าที่/แอดมิน "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" พร้อมทำรายการ (กดปุ่มบันทึกได้ทันที)`);
+            } else {
+              showToast(`👤 สแกนพบผู้ทำรายการ: "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" [${emp.id}] (สแกนบัตรเจ้าหน้าที่เพื่อบันทึก)`);
+            }
+          }
           return;
         }
 
         activeScannerDetectedEmpId = emp.id;
         activeScannedItemId = null;
+        if (typeof window.isStaffOrAdminEmp === 'function' && window.isStaffOrAdminEmp(emp)) {
+          window.authorizedStaffOperator = emp;
+        }
         if (typeof window.updateScannerOperatorUI === 'function') {
           window.updateScannerOperatorUI(emp);
         }
@@ -17096,6 +18106,24 @@
 
       renderPrintableLabelsPreview();
 
+      // Setup collapse toggle listeners for label settings on mobile
+      const collapseEl = document.getElementById('labelSizeSettingsCollapse');
+      if (collapseEl && !collapseEl.dataset.listenerAttached) {
+        collapseEl.dataset.listenerAttached = 'true';
+        collapseEl.addEventListener('show.bs.collapse', () => {
+          const eye = document.getElementById('iconLabelSizeSettingsEye');
+          if (eye) eye.className = 'bi bi-eye-fill me-2 fs-6 text-primary';
+          const chev = document.getElementById('iconLabelSizeSettingsChevron');
+          if (chev) chev.style.transform = 'rotate(180deg)';
+        });
+        collapseEl.addEventListener('hide.bs.collapse', () => {
+          const eye = document.getElementById('iconLabelSizeSettingsEye');
+          if (eye) eye.className = 'bi bi-eye me-2 fs-6 text-primary';
+          const chev = document.getElementById('iconLabelSizeSettingsChevron');
+          if (chev) chev.style.transform = 'rotate(0deg)';
+        });
+      }
+
       const modalElem = document.getElementById('printableLabelModal');
       const modalInst = new bootstrap.Modal(modalElem);
       modalInst.show();
@@ -17123,8 +18151,8 @@
       window.lastLabelSizeMode = 'CUSTOM';
       const gapXMm = Math.max(0, parseFloat(document.getElementById('labelGapXMm')?.value) || 0);
       const gapYMm = Math.max(0, parseFloat(document.getElementById('labelGapYMm')?.value) || 0);
-      const customW = Math.max(15, parseFloat(document.getElementById('labelItemWidthMm')?.value) || 64.7);
-      const customH = Math.max(15, parseFloat(document.getElementById('labelItemHeightMm')?.value) || 39.1);
+      const customW = Math.max(15, parseFloat(document.getElementById('labelItemWidthMm')?.value) || 50.0);
+      const customH = Math.max(15, parseFloat(document.getElementById('labelItemHeightMm')?.value) || 52.8);
 
       const pageUsableW = 200.0;
       const pageUsableH = 286.0;
@@ -17161,7 +18189,7 @@
       const catSelect = document.getElementById('labelCategoryFilterSelect');
       const selectedCat = catSelect ? catSelect.value : 'ALL';
       const cols = Math.max(1, Math.min(6, parseInt(document.getElementById('labelColsSelect')?.value) || 3));
-      const rows = Math.max(2, Math.min(16, parseInt(document.getElementById('labelRowsSelect')?.value) || 7));
+      const rows = Math.max(2, Math.min(16, parseInt(document.getElementById('labelRowsSelect')?.value) || 4));
       const copiesCount = Math.max(1, parseInt(document.getElementById('labelCopiesInput')?.value) || 1);
 
       // Spacing between labels in mm (Default: X=3mm, Y=2mm)
@@ -17204,6 +18232,10 @@
       const badgeElem = document.getElementById('labelDimensionInfoBadge');
       if (badgeElem) {
         badgeElem.textContent = `${totalPerSheet} ดวง/แผ่น`;
+      }
+      const miniBadge = document.getElementById('labelSummaryMiniBadge');
+      if (miniBadge) {
+        miniBadge.textContent = `${cols}×${rows} (${totalPerSheet} ดวง/แผ่น)`;
       }
 
       // Clear or hide old calculated detail text if element exists
@@ -20254,8 +21286,13 @@
       const tbody = document.getElementById('categoryTableBody');
       if (!tbody) return;
 
+      const countBadge = document.getElementById('categoryCountBadge');
+      if (countBadge) {
+        countBadge.textContent = `ทั้งหมด ${categoriesList ? categoriesList.length : 0} หมวดหมู่`;
+      }
+
       if (!categoriesList || categoriesList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">ยังไม่มีหมวดหมู่อุปกรณ์</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">ยังไม่มีหมวดหมู่อุปกรณ์</td></tr>`;
         return;
       }
 
@@ -20268,7 +21305,23 @@
         const safePrefix = cat.prefix ? String(cat.prefix).toUpperCase() : '-';
 
         html += `
-          <tr id="category-row-${idx}">
+          <tr id="category-row-${idx}" class="category-row" data-cat-index="${idx}">
+            <td class="text-center text-nowrap">
+              <div class="d-flex align-items-center justify-content-center gap-1">
+                <span class="drag-handle text-muted cursor-grab px-1 py-1" style="touch-action: none; cursor: grab;" title="กดค้างแล้วลากด้วยเมาส์หรือนิ้วเพื่อเลื่อนลำดับ">
+                  <i class="bi bi-grip-vertical fs-5"></i>
+                </span>
+                <span class="badge bg-light text-secondary border fw-bold fs-8">${idx + 1}</span>
+                <div class="btn-group-vertical btn-group-sm ms-1" style="line-height: 1;">
+                  <button type="button" class="btn btn-link p-0 text-secondary text-decoration-none ${idx === 0 ? 'disabled opacity-25' : ''}" style="font-size: 11px; height: 12px;" onclick="moveCategoryOrder(${idx}, -1)" title="เลื่อนขึ้น">
+                    <i class="bi bi-chevron-up"></i>
+                  </button>
+                  <button type="button" class="btn btn-link p-0 text-secondary text-decoration-none ${idx === categoriesList.length - 1 ? 'disabled opacity-25' : ''}" style="font-size: 11px; height: 12px;" onclick="moveCategoryOrder(${idx}, 1)" title="เลื่อนลง">
+                    <i class="bi bi-chevron-down"></i>
+                  </button>
+                </div>
+              </div>
+            </td>
             <td class="text-center">
               <button type="button" class="btn btn-sm btn-outline-primary rounded-circle me-1" title="แก้ไขหมวดหมู่" onclick="editCategoryByIndex(${idx})">
                 <i class="bi bi-pencil-fill"></i>
@@ -20292,7 +21345,207 @@
       });
 
       tbody.innerHTML = html;
+      attachCategoryTableDragDrop();
     };
+
+    window.moveCategoryOrder = function(fromIndex, direction) {
+      if (!Array.isArray(categoriesList)) return;
+      const toIndex = fromIndex + direction;
+      if (toIndex < 0 || toIndex >= categoriesList.length) return;
+
+      const movedItem = categoriesList[fromIndex];
+      categoriesList.splice(fromIndex, 1);
+      categoriesList.splice(toIndex, 0, movedItem);
+
+      categoriesList.forEach((c, idx) => {
+        c.order = idx;
+      });
+
+      saveToLocalStorage();
+      syncCategoriesOrderToFirestore();
+      renderCategoryDropdowns();
+      renderCategoryManagementList();
+      renderCatalogGrid();
+
+      setTimeout(() => {
+        const movedRow = document.getElementById(`category-row-${toIndex}`);
+        if (movedRow) {
+          movedRow.classList.add('table-warning');
+          setTimeout(() => movedRow.classList.remove('table-warning'), 800);
+        }
+      }, 50);
+
+      showToast(`🔄 ปรับตำแหน่งหมวดหมู่ "${movedItem.name}" เรียบร้อยแล้ว`);
+    };
+
+    window.reorderCategoriesFromDOM = function() {
+      const tbody = document.getElementById('categoryTableBody');
+      if (!tbody || !Array.isArray(categoriesList)) return;
+
+      const rows = Array.from(tbody.querySelectorAll('tr[data-cat-index]'));
+      if (rows.length === 0) return;
+
+      const newCategoriesList = [];
+      rows.forEach((row, newIdx) => {
+        const origIdx = parseInt(row.getAttribute('data-cat-index'), 10);
+        const cat = categoriesList[origIdx];
+        if (cat) {
+          cat.order = newIdx;
+          newCategoriesList.push(cat);
+        }
+      });
+
+      if (newCategoriesList.length === categoriesList.length) {
+        categoriesList = newCategoriesList;
+        saveToLocalStorage();
+        syncCategoriesOrderToFirestore();
+        renderCategoryDropdowns();
+        renderCategoryManagementList();
+        renderCatalogGrid();
+        showToast("✅ บันทึกลำดับหมวดหมู่อุปกรณ์ใหม่เรียบร้อยแล้ว");
+      }
+    };
+
+    function attachCategoryTableDragDrop() {
+      const tbody = document.getElementById('categoryTableBody');
+      if (!tbody) return;
+
+      const rows = tbody.querySelectorAll('tr[data-cat-index]');
+      let draggedRow = null;
+      let touchActiveRow = null;
+      let touchStartY = 0;
+      let touchMoved = false;
+
+      rows.forEach(row => {
+        // --- 1. Mouse Drag & Drop (สำหรับคอมพิวเตอร์ / เมาส์) ---
+        row.setAttribute('draggable', 'true');
+
+        row.addEventListener('dragstart', (e) => {
+          if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) {
+            e.preventDefault();
+            return;
+          }
+          draggedRow = row;
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', row.getAttribute('data-cat-index') || '0');
+          row.classList.add('is-dragging');
+        });
+
+        row.addEventListener('dragend', () => {
+          row.classList.remove('is-dragging');
+          tbody.querySelectorAll('tr').forEach(r => {
+            r.classList.remove('drag-over-top', 'drag-over-bottom');
+          });
+          draggedRow = null;
+          if (typeof window.reorderCategoriesFromDOM === 'function') {
+            window.reorderCategoriesFromDOM();
+          }
+        });
+
+        row.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          if (!draggedRow || draggedRow === row) return;
+          e.dataTransfer.dropEffect = 'move';
+
+          const rect = row.getBoundingClientRect();
+          const isBelowMiddle = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+
+          tbody.querySelectorAll('tr').forEach(r => {
+            r.classList.remove('drag-over-top', 'drag-over-bottom');
+          });
+
+          if (isBelowMiddle) {
+            row.classList.add('drag-over-bottom');
+            tbody.insertBefore(draggedRow, row.nextSibling);
+          } else {
+            row.classList.add('drag-over-top');
+            tbody.insertBefore(draggedRow, row);
+          }
+        });
+
+        row.addEventListener('drop', (e) => {
+          e.preventDefault();
+          tbody.querySelectorAll('tr').forEach(r => {
+            r.classList.remove('drag-over-top', 'drag-over-bottom');
+          });
+        });
+
+        // --- 2. Touch Drag & Drop (สำหรับโทรศัพท์มือถือ / นิ้วสัมผัส) ---
+        const handle = row.querySelector('.drag-handle') || row;
+
+        handle.addEventListener('touchstart', (e) => {
+          if (e.touches.length !== 1) return;
+          if (e.target.closest('button') || e.target.closest('input')) return;
+
+          touchActiveRow = row;
+          touchStartY = e.touches[0].clientY;
+          touchMoved = false;
+          row.classList.add('is-touch-dragging');
+        }, { passive: false });
+
+        handle.addEventListener('touchmove', (e) => {
+          if (!touchActiveRow || touchActiveRow !== row) return;
+          if (e.touches.length !== 1) return;
+
+          const touchY = e.touches[0].clientY;
+          const touchX = e.touches[0].clientX;
+          const deltaY = Math.abs(touchY - touchStartY);
+
+          if (deltaY > 5) {
+            touchMoved = true;
+            // ป้องกันหน้าต่างเลื่อนหลุดขณะลากด้วยนิ้ว
+            if (e.cancelable) e.preventDefault();
+
+            const elemUnder = document.elementFromPoint(touchX, touchY);
+            if (elemUnder) {
+              const targetRow = elemUnder.closest('#categoryTableBody tr[data-cat-index]');
+              if (targetRow && targetRow !== touchActiveRow) {
+                const rect = targetRow.getBoundingClientRect();
+                const isBelowMiddle = (touchY - rect.top) / (rect.bottom - rect.top) > 0.5;
+                if (isBelowMiddle) {
+                  tbody.insertBefore(touchActiveRow, targetRow.nextSibling);
+                } else {
+                  tbody.insertBefore(touchActiveRow, targetRow);
+                }
+              }
+            }
+          }
+        }, { passive: false });
+
+        const endTouchDrag = () => {
+          if (touchActiveRow) {
+            touchActiveRow.classList.remove('is-touch-dragging');
+            if (touchMoved) {
+              if (typeof window.reorderCategoriesFromDOM === 'function') {
+                window.reorderCategoriesFromDOM();
+              }
+            }
+            touchActiveRow = null;
+            touchMoved = false;
+          }
+        };
+
+        handle.addEventListener('touchend', endTouchDrag);
+        handle.addEventListener('touchcancel', endTouchDrag);
+      });
+    }
+
+    async function syncCategoriesOrderToFirestore() {
+      if (!isFirebaseReady || !db || !Array.isArray(categoriesList)) return;
+      try {
+        for (let i = 0; i < categoriesList.length; i++) {
+          const c = categoriesList[i];
+          const docId = c.id || c.code || c.name;
+          if (docId) {
+            setDoc(doc(db, "categories", docId), { order: i }, { merge: true }).catch(err => {
+              console.warn("Firestore category order update notice:", err);
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("syncCategoriesOrderToFirestore error:", e);
+      }
+    }
 
     window.handleSaveCategory = async function(e) {
       if (e) e.preventDefault();
@@ -21422,6 +22675,9 @@
           }
           const fsCats = Array.from(fsCatsMap.values());
           fsCats.sort((a, b) => {
+            if (typeof a.order === 'number' && typeof b.order === 'number') return a.order - b.order;
+            if (typeof a.order === 'number') return -1;
+            if (typeof b.order === 'number') return 1;
             const numA = parseInt(((a.code || a.id || '').match(/^CAT-(\d+)$/i) || [0, 999999])[1], 10);
             const numB = parseInt(((b.code || b.id || '').match(/^CAT-(\d+)$/i) || [0, 999999])[1], 10);
             if (numA !== numB) return numA - numB;
@@ -21663,6 +22919,9 @@
 
             const fsCats = Array.from(fsCatsMap.values());
             fsCats.sort((a, b) => {
+              if (typeof a.order === 'number' && typeof b.order === 'number') return a.order - b.order;
+              if (typeof a.order === 'number') return -1;
+              if (typeof b.order === 'number') return 1;
               const numA = parseInt(((a.code || a.id || '').match(/^CAT-(\d+)$/i) || [0, 999999])[1], 10);
               const numB = parseInt(((b.code || b.id || '').match(/^CAT-(\d+)$/i) || [0, 999999])[1], 10);
               if (numA !== numB) return numA - numB;
