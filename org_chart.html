@@ -901,16 +901,18 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(15, 23, 42, 0.55);
-      backdrop-filter: blur(3px);
-      z-index: 1050;
+      background: transparent;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      z-index: 1040;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.25s ease;
+      transition: opacity 0.2s ease;
     }
     .unassigned-drawer-backdrop.show {
-      opacity: 1;
-      pointer-events: auto;
+      opacity: 0;
+      /* ปล่อยให้คลิกหรือลากผ่านไปยังผังโครงสร้างด้านหลังได้โดยตรง ไม่บล็อกหน้าจอ */
+      pointer-events: none;
     }
 
     .unassigned-drawer {
@@ -2120,6 +2122,42 @@
     </div>
   </div>
 
+
+  <!-- ==================== MODAL: DRAG & DROP ACTION CHOICE ==================== -->
+  <div class="modal fade" id="dragActionChoiceModal" tabindex="-1" aria-hidden="true" style="z-index: 1065;">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+        <div class="modal-header bg-primary text-white py-2.5 px-3">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-person-gear fs-5"></i>
+            <div>
+              <div class="fw-bold fs-7 mb-0">เลือกการดำเนินการ</div>
+              <small class="text-white-50 fs-9" id="dragChoiceEmpSubtitle">นายสมชาย ใจดี</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3 text-center bg-light">
+          <div class="mb-2 text-start p-2 bg-white rounded-3 border fs-8">
+            <div>ตำแหน่งเป้าหมาย: <strong class="text-primary" id="dragChoiceTargetDept">งานส่วนกลาง</strong></div>
+            <div class="text-muted fs-9" id="dragChoiceTargetPos">ตำแหน่ง: พนักงาน</div>
+          </div>
+          <div class="d-grid gap-2 mt-3">
+            <button type="button" class="btn btn-primary fw-bold rounded-pill py-2 fs-7 d-flex align-items-center justify-content-center gap-2 shadow-xs" onclick="confirmDragChoiceAction('move')">
+              <i class="bi bi-arrow-right-circle-fill"></i> ย้ายตำแหน่งหลัก
+            </button>
+            <button type="button" class="btn btn-warning text-dark fw-bold rounded-pill py-2 fs-7 d-flex align-items-center justify-content-center gap-2 shadow-xs" onclick="confirmDragChoiceAction('concurrent')">
+              <i class="bi bi-star-fill"></i> ดำรงตำแหน่งควบ / รักษาการ
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-1 mt-1 fs-8" data-bs-dismiss="modal">
+              ยกเลิก
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Employee Popup Context Menu (1-Click Action) -->
   <div id="empContextMenu">
     <div class="context-menu-header">
@@ -2136,6 +2174,10 @@
     <button type="button" class="context-menu-item" onclick="executeContextMenuAction('printBadge')">
       <i class="bi bi-person-badge text-success fs-6"></i>
       <span>พิมพ์บัตรประจำตัว (QR Code)</span>
+    </button>
+    <button type="button" class="context-menu-item" id="ctxMenuRemoveConcurrentBtn" style="display: none;" onclick="executeContextMenuAction('removeConcurrent')">
+      <i class="bi bi-star-half text-danger fs-6"></i>
+      <span>ยกเลิกตำแหน่งควบนี้</span>
     </button>
     <button type="button" class="context-menu-item" onclick="executeContextMenuAction('removeFromChart')">
       <i class="bi bi-person-x text-warning fs-6"></i>
@@ -4509,7 +4551,35 @@
 
     // ==================== 1. HIERARCHY POSTER (TARGET แผนผัง 2) ====================
     function renderHierarchyPoster(list, container) {
-      // Helper to check if an employee is unassigned (not placed on chart)
+  
+    // Helper to retrieve concurrent / acting positions for an employee
+    function getEmployeeConcurrentPositions(emp) {
+      if (!emp) return [];
+      if (Array.isArray(emp.concurrentPositions)) return emp.concurrentPositions;
+      return [];
+    }
+
+    // Helper to check if employee is assigned to a specific department/position (Primary or Concurrent)
+    function isEmployeeInDeptOrPos(emp, deptName, deptNodeId, posName, posNodeId) {
+      if (!emp) return false;
+      // Check Primary
+      if (deptNodeId && emp.departmentNodeId === deptNodeId) return true;
+      if (deptName && (emp.department === deptName || (emp.department && emp.department.includes(deptName)))) return true;
+      if (posNodeId && emp.positionNodeId === posNodeId) return true;
+      if (posName && emp.position === posName) return true;
+
+      // Check Concurrent / Acting
+      const concList = getEmployeeConcurrentPositions(emp);
+      return concList.some(c => {
+        if (deptNodeId && c.departmentNodeId === deptNodeId) return true;
+        if (deptName && (c.department === deptName || (c.department && c.department.includes(deptName)))) return true;
+        if (posNodeId && c.positionNodeId === posNodeId) return true;
+        if (posName && c.position === posName) return true;
+        return false;
+      });
+    }
+
+        // Helper to check if an employee is unassigned (not placed on chart)
       const isUnassigned = (e) => {
         if (!e) return true;
         if (typeof window.isUnassignedEmployee === 'function') {
@@ -4583,83 +4653,113 @@
         }
       });
 
-      // Section Heads for 4 Main Pillars (หัวหน้าส่วนงานทั้ง 4 - ต้องไม่เป็นบุคลากรรอลงผัง และให้สิทธิ์วางตำแหน่งก่อน)
-      const headCentral = list.find(e => {
-        if (isUnassigned(e)) return false;
-        const eid = String(e.id || e.code);
-        if (placedEmployeeIds.has(eid)) return false;
-        const pos = e.position || '';
-        const dept = e.department || '';
-        const posNode = e.positionNodeId || '';
-        const deptNode = e.departmentNodeId || '';
-        return (
-          posNode === 'pos-4-1' ||
-          pos === '4.1 หัวหน้างานส่วนกลาง' || 
-          pos === 'หัวหน้างานส่วนกลาง' || 
-          pos.includes('หัวหน้างานส่วนกลาง') ||
-          (deptNode === 'division-1' && pos.includes('หัวหน้า') && !posNode.startsWith('pos-5-')) ||
-          (dept.includes('งานส่วนกลาง') && pos.includes('หัวหน้า') && !pos.includes('1.1') && !pos.includes('1.2') && !pos.includes('1.3') && !pos.includes('1.4') && !posNode.startsWith('pos-5-'))
-        );
-      }) || null;
-      if (headCentral) markPlaced(headCentral);
+      // Section Heads for 4 Main Pillars (หัวหน้าส่วนงานทั้ง 4 - รองรับทั้งตำแหน่งหลัก และ ตำแหน่งควบ/รักษาการ)
+      function findPillarHead(divisionId, posNodeId, posLabels, deptKeywords) {
+        // 1. ตรวจสอบตำแหน่งหลัก (ต้องยังไม่ถูกวาดที่อื่น)
+        const primaryMatch = list.find(e => {
+          if (isUnassigned(e)) return false;
+          const eid = String(e.id || e.code);
+          if (placedEmployeeIds.has(eid)) return false;
+          const p = e.position || '';
+          const d = e.department || '';
+          const pn = e.positionNodeId || '';
+          const dn = e.departmentNodeId || '';
+          if (pn && pn === posNodeId) return true;
+          if (posLabels.some(l => p === l || p.includes(l))) return true;
+          if (dn === divisionId && p.includes('หัวหน้า') && !pn.startsWith('pos-5-')) return true;
+          if (deptKeywords.some(k => d.includes(k)) && p.includes('หัวหน้า') && !p.includes('1.1') && !p.includes('1.2') && !p.includes('1.3') && !p.includes('1.4') && !pn.startsWith('pos-5-')) return true;
+          return false;
+        });
+        if (primaryMatch) {
+          markPlaced(primaryMatch);
+          return primaryMatch;
+        }
 
-      const headRoseExp = list.find(e => {
-        if (isUnassigned(e)) return false;
-        const eid = String(e.id || e.code);
-        if (placedEmployeeIds.has(eid)) return false;
-        const pos = e.position || '';
-        const dept = e.department || '';
-        const posNode = e.positionNodeId || '';
-        const deptNode = e.departmentNodeId || '';
-        return (
-          posNode === 'pos-4-2' ||
-          pos === '4.2 หัวหน้างานกุหลาบ/งานทดลอง' || 
-          pos === 'หัวหน้างานกุหลาบ/งานทดลอง' || 
-          pos.includes('หัวหน้างานกุหลาบ/งานทดลอง') ||
-          (pos.includes('หัวหน้างานกุหลาบ') && !pos.includes('2.2')) ||
-          (deptNode === 'division-2' && pos.includes('หัวหน้า') && !posNode.startsWith('pos-5-')) ||
-          ((dept.includes('กุหลาบ') || dept.includes('ทดลอง')) && (dept.includes('2.') || dept.includes('2 ') || dept === 'งานกุหลาบ / งานทดลอง') && pos.includes('หัวหน้า') && !pos.includes('2.1') && !pos.includes('2.2') && !posNode.startsWith('pos-5-'))
-        );
-      }) || null;
-      if (headRoseExp) markPlaced(headRoseExp);
+        // 2. ตรวจสอบตำแหน่งควบ / รักษาการ (อนุญาตให้แสดงได้แม้จะมีตำแหน่งหลักอยู่ที่อื่น)
+        const concurrentMatch = (window.employees || list || []).find(e => {
+          if (!e) return false;
+          const concList = Array.isArray(e.concurrentPositions) ? e.concurrentPositions : [];
+          if (concList.length === 0) return false;
+          return concList.some(c => {
+            if (!c) return false;
+            if (c.positionNodeId && c.positionNodeId === posNodeId) return true;
+            if (c.departmentNodeId && c.departmentNodeId === divisionId) return true;
+            const cp = String(c.position || '').trim();
+            const cd = String(c.department || '').trim();
+            if (posLabels.some(l => cp === l || cp.includes(l))) return true;
+            if (deptKeywords.some(k => cd.includes(k)) && cp.includes('หัวหน้า')) return true;
+            return false;
+          });
+        });
 
-      const headRattanabuppha = list.find(e => {
-        if (isUnassigned(e)) return false;
-        const eid = String(e.id || e.code);
-        if (placedEmployeeIds.has(eid)) return false;
-        const pos = e.position || '';
-        const dept = e.department || '';
-        const posNode = e.positionNodeId || '';
-        const deptNode = e.departmentNodeId || '';
-        return (
-          posNode === 'pos-4-3' ||
-          pos === '4.3 หัวหน้างานรัตนบุปผา' || 
-          pos === 'หัวหน้างานรัตนบุปผา' || 
-          pos.includes('หัวหน้างานรัตนบุปผา') ||
-          (deptNode === 'division-3' && pos.includes('หัวหน้า') && !posNode.startsWith('pos-5-')) ||
-          (dept.includes('รัตนบุปผา') && (dept.includes('3.') || dept.includes('3 ') || dept === 'งานรัตนบุปผา') && pos.includes('หัวหน้า') && !pos.includes('3.1') && !pos.includes('3.2') && !pos.includes('3.3') && !pos.includes('3.4') && !posNode.startsWith('pos-5-'))
-        );
-      }) || null;
-      if (headRattanabuppha) markPlaced(headRattanabuppha);
+        if (concurrentMatch) {
+          return { ...concurrentMatch, isConcurrentInThisHead: true };
+        }
+        return null;
+      }
 
-      const headDhammayatra = list.find(e => {
-        if (isUnassigned(e)) return false;
-        const eid = String(e.id || e.code);
-        if (placedEmployeeIds.has(eid)) return false;
-        const pos = e.position || '';
-        const dept = e.department || '';
-        const posNode = e.positionNodeId || '';
-        const deptNode = e.departmentNodeId || '';
-        return (
-          posNode === 'pos-4-4' ||
-          pos === '4.4 หัวหน้างานธรรมยาตรา' || 
-          pos === 'หัวหน้างานธรรมยาตรา' || 
-          pos.includes('หัวหน้างานธรรมยาตรา') ||
-          (deptNode === 'division-4' && pos.includes('หัวหน้า') && !posNode.startsWith('pos-5-')) ||
-          (dept.includes('ธรรมยาตรา') && (dept.includes('4.') || dept.includes('4 ') || dept === 'งานธรรมยาตรา') && pos.includes('หัวหน้า') && !pos.includes('4.1') && !pos.includes('4.2') && !pos.includes('4.3') && !posNode.startsWith('pos-5-'))
-        );
-      }) || null;
-      if (headDhammayatra) markPlaced(headDhammayatra);
+      // หัวหน้าฝ่ายระดับ 4: ต้องไม่รวมตำแหน่งหัวหน้าทีมระดับ 5 (เช่น pos-5-5, 2.2 หัวหน้างานกุหลาบ)
+      function findPillarHeadStrict(divisionId, posNodeId, exactLabels, excludedLabels, deptKeywords) {
+        // 1. ตรวจสอบตำแหน่งหลัก
+        const primaryMatch = list.find(e => {
+          if (isUnassigned(e)) return false;
+          const eid = String(e.id || e.code);
+          if (placedEmployeeIds.has(eid)) return false;
+          const p = e.position || '';
+          const d = e.department || '';
+          const pn = e.positionNodeId || '';
+          const dn = e.departmentNodeId || '';
+
+          // ตรวจสอบการถูกคัดออกอย่างเด็ดขาด (ห้ามเป็นระดับ 5)
+          if (pn && pn.startsWith('pos-5-')) return false;
+          if (dn && dn.startsWith('dept-')) return false;
+          if (excludedLabels.some(ex => p === ex || p.includes(ex))) return false;
+
+          // ตรวจสอบตรงโหนด หรือตรงชื่อตำแหน่ง
+          if (pn && pn === posNodeId) return true;
+          if (exactLabels.some(l => p === l || (p.startsWith('4.') && p.includes(l)))) return true;
+          if (dn === divisionId && p.includes('หัวหน้า') && !p.includes('5.')) return true;
+          return false;
+        });
+
+        if (primaryMatch) {
+          markPlaced(primaryMatch);
+          return primaryMatch;
+        }
+
+        // 2. ตรวจสอบตำแหน่งควบ / รักษาการ
+        const concurrentMatch = (window.employees || list || []).find(e => {
+          if (!e) return false;
+          const concList = Array.isArray(e.concurrentPositions) ? e.concurrentPositions : [];
+          if (concList.length === 0) return false;
+          return concList.some(c => {
+            if (!c) return false;
+            const cpn = c.positionNodeId || '';
+            const cdn = c.departmentNodeId || '';
+            const cp = String(c.position || '').trim();
+
+            if (cpn && cpn.startsWith('pos-5-')) return false;
+            if (cdn && cdn.startsWith('dept-')) return false;
+            if (excludedLabels.some(ex => cp === ex || cp.includes(ex))) return false;
+
+            if (cpn && cpn === posNodeId) return true;
+            if (cdn === divisionId && cp.includes('หัวหน้า')) return true;
+            if (exactLabels.some(l => cp === l || (cp.startsWith('4.') && cp.includes(l)))) return true;
+            return false;
+          });
+        });
+
+        if (concurrentMatch) {
+          return { ...concurrentMatch, isConcurrentInThisHead: true };
+        }
+        return null;
+      }
+
+      const headCentral = findPillarHeadStrict('division-1', 'pos-4-1', ['4.1 หัวหน้างานส่วนกลาง', 'หัวหน้างานส่วนกลาง'], ['1.1', '1.2', '1.3', '1.4'], ['ส่วนกลาง']);
+      // 4.2 หัวหน้างานกุหลาบ/งานทดลอง (ระดับ 4) - แยกเด็ดขาดจาก 5.5 หัวหน้างานกุหลาบ (ระดับ 5)
+      const headRoseExp = findPillarHeadStrict('division-2', 'pos-4-2', ['4.2 หัวหน้างานกุหลาบ/งานทดลอง', 'หัวหน้างานกุหลาบ/งานทดลอง'], ['5.5', '2.2', 'หัวหน้างานกุหลาบ (ระดับ 5)'], ['กุหลาบ / งานทดลอง']);
+      const headRattanabuppha = findPillarHeadStrict('division-3', 'pos-4-3', ['4.3 หัวหน้างานรัตนบุปผา', 'หัวหน้างานรัตนบุปผา'], ['3.1', '3.2', '3.3', '3.4'], ['รัตนบุปผา']);
+      const headDhammayatra = findPillarHeadStrict('division-4', 'pos-4-4', ['4.4 หัวหน้างานธรรมยาตรา', 'หัวหน้างานธรรมยาตรา'], ['4.1', '4.2', '4.3'], ['ธรรมยาตรา']);
 
       // Academic Supervisor / Academic Staff (งานวิชาการ - เฉพาะผู้ที่ถูกกำหนดสังกัดงานวิชาการ และไม่เอาหัวหน้าส่วนงาน/ฝ่าย)
       const academicList = list.filter(e => {
@@ -4741,9 +4841,9 @@
                    ondrop="handleSlotDrop(event, '${safeTargetDept}', '${safeTargetPos}')"
                    onclick="handleAvatarClick(event, '${safeId}')"
                    title="[${safeCode}] ${safeName} (${escapeHtml(stripStructureCode(emp.position || emp.department || ''))}) - คลิกเพื่อเลือกเมนู หรือกดแช่/ลากเพื่อย้าย">
-                <div class="avatar-circle-ph has-emp">
+                <div class="avatar-circle-ph has-emp position-relative">
                   ${photoUrl ? `<img src="${photoUrl}" alt="${safeName}" onerror="this.parentElement.innerHTML='<i class=\\\'bi bi-person-fill text-primary\\\'></i>'" />` : `<i class="bi bi-person-fill text-primary"></i>`}
-                </div>
+                ${emp.isConcurrentInThisDept ? `<span class="position-absolute top-0 end-0 badge bg-warning text-dark border border-white p-0.5 rounded-circle" style="font-size: 7px; transform: translate(30%, -30%);" title="ดำรงตำแหน่งควบ/รักษาการ"><i class="bi bi-star-fill"></i></span>` : ''}</div>
                 <div class="avatar-name-label">${safeName}</div>
                 <div class="avatar-dots"></div>
               </div>
@@ -4808,34 +4908,47 @@
           keywords = [];
         }
 
-        // Match leader specifically (must not be unassigned and not already placed elsewhere)
+        // Match leader specifically (ตำแหน่งหลัก หรือ ตำแหน่งควบ/รักษาการหัวหน้าทีม)
         const leader = list.find(e => {
           if (isUnassigned(e)) return false;
           const eid = String(e.id || e.code);
-          if (placedEmployeeIds.has(eid)) return false;
           const pos = e.position || '';
           const dept = e.department || '';
 
-          // 1. Authoritative positionNodeId match
-          if (leaderNode && e.positionNodeId === leaderNode.id) return true;
+          // 1. ตรวจสอบตำแหน่งหลัก (ต้องไม่เป็นตำแหน่งระดับ 4 เช่น pos-4-2 หรือหัวหน้าฝ่าย)
+          if (!placedEmployeeIds.has(eid)) {
+            if (e.positionNodeId && e.positionNodeId.startsWith('pos-4-')) return false;
+            if (e.departmentNodeId && e.departmentNodeId.startsWith('division-')) return false;
+            if (pos.startsWith('4.') || pos.includes('หัวหน้างานกุหลาบ/งานทดลอง')) return false;
 
-          // 2. Exact match on leaderTitle within this department
-          if (leaderTitle && pos === leaderTitle && (e.departmentNodeId === nodeId || dept === deptName || dept === title)) return true;
-
-          // 3. Head title within this department
-          if ((e.departmentNodeId === nodeId || dept === deptName || (dept && deptName && (dept.includes(deptName) || deptName.includes(dept)))) && 
-              pos.includes('หัวหน้า') && !pos.startsWith('4.')) {
-            return true;
+            if (leaderNode && e.positionNodeId === leaderNode.id) return true;
+            if (leaderTitle && pos === leaderTitle && (e.departmentNodeId === nodeId || dept === deptName || dept === title)) return true;
+            if ((e.departmentNodeId === nodeId || dept === deptName || (dept && deptName && (dept.includes(deptName) || deptName.includes(dept)))) && 
+                pos.includes('หัวหน้า') && !pos.startsWith('4.')) {
+              return true;
+            }
+            if (isLegacyKnownDept && !e.departmentNodeId && leaderCode && pos.includes(leaderCode)) return true;
           }
 
-          // 4. Substring matching allowed ONLY for legacy seed departments without explicit departmentNodeId
-          if (isLegacyKnownDept && !e.departmentNodeId) {
-            if (leaderCode && pos.includes(leaderCode)) return true;
-          }
+          // 2. ตรวจสอบตำแหน่งควบ/รักษาการ
+          const concList = Array.isArray(e.concurrentPositions) ? e.concurrentPositions : [];
+          const hasConcLeader = concList.some(c => {
+            if (!c) return false;
+            if (leaderNode && c.positionNodeId === leaderNode.id) return true;
+            const cDept = String(c.department || '').trim();
+            const targetD = String(deptName || title || '').trim();
+            const deptMatches = (nodeId && c.departmentNodeId === nodeId) || (cDept && targetD && (cDept === targetD || cDept.includes(targetD) || targetD.includes(cDept)));
+            if (deptMatches && (c.position === leaderTitle || (c.position && c.position.includes('หัวหน้า')))) return true;
+            return false;
+          });
+          if (hasConcLeader) return true;
+
           return false;
         }) || null;
-
-        if (leader) markPlaced(leader);
+        if (leader) {
+          const isConc = Array.isArray(leader.concurrentPositions) && leader.concurrentPositions.some(c => c.department === deptName || c.position === leaderTitle);
+          if (!isConc) markPlaced(leader);
+        }
 
         // Get members excluding section heads, executive tier, unassigned, and already placed employees
         const memberMap = new Map();
@@ -4871,16 +4984,59 @@
           });
         }
 
+        // 4. ค้นหาบุคลากรที่ดำรงตำแหน่งควบ / รักษาการ ในแผนกนี้
+        // (คัดกรองเฉพาะตำแหน่งพนักงาน/สมาชิกทีมเท่านั้น หากเป็นหัวหน้าทีมต้องไม่หลุดมาแสดงซ้ำที่ช่องสมาชิก)
+        const leaderIdStr = leader ? String(leader.id || leader.code) : '';
+
+        (window.employees || list || []).forEach(emp => {
+          if (!emp) return;
+          const eid = String(emp.id || emp.code);
+          // หากคนนี้เป็นหัวหน้าทีมของแผนกนี้อยู่แล้ว ห้ามนำมาใส่ในแถวสมาชิกซ้ำเด็ดขาด
+          if (leaderIdStr && eid === leaderIdStr) return;
+
+          const concList = Array.isArray(emp.concurrentPositions) ? emp.concurrentPositions : [];
+          if (concList.length === 0) return;
+
+          const isMatchingConcMember = concList.some(c => {
+            if (!c) return false;
+            // ตรวจสอบว่าตำแหน่งที่ควบมา เป็นตำแหน่งหัวหน้าหรือไม่ (ถ้าเป็นหัวหน้า จะแสดงที่ช่องหัวหน้าทีมเท่านั้น)
+            const cPos = String(c.position || '').trim();
+            if (cPos.includes('หัวหน้า') || (c.positionNodeId && c.positionNodeId.includes('lead'))) {
+              return false;
+            }
+
+            // เทียบด้วย nodeId ของแผนก
+            if (nodeId && c.departmentNodeId && c.departmentNodeId === nodeId) return true;
+            // เทียบด้วยชื่อแผนก
+            const cDept = String(c.department || '').trim();
+            const targetD = String(deptName || title || '').trim();
+            if (cDept && targetD && (cDept === targetD || cDept.includes(targetD) || targetD.includes(cDept))) return true;
+            return false;
+          });
+
+          if (isMatchingConcMember) {
+            const concKey = eid + '_conc_' + (nodeId || deptName);
+            memberMap.set(concKey, {
+              ...emp,
+              isConcurrentInThisDept: true
+            });
+          }
+        });
+
         const rawMembers = Array.from(memberMap.values());
         const members = rawMembers.filter(e => {
           if (isUnassigned(e)) return false;
           const eid = String(e.id || e.code);
+          // ถ้าคนนี้เป็นหัวหน้าทีมของแผนกนี้อยู่แล้ว ไม่แสดงในแถวสมาชิกซ้ำ
+          if (leaderIdStr && eid === leaderIdStr) return false;
+          // ถ้าเป็นตำแหน่งควบ อนุญาตให้แสดงผลในแผนกนี้ได้เสมอ
+          if (e.isConcurrentInThisDept) return true;
           if (placedEmployeeIds.has(eid)) return false;
           return true;
         });
 
-        // Register all members placed in this card so they won't appear in subsequent cards
-        members.forEach(markPlaced);
+        // Register only primary members so primary position won't duplicate across cards
+        members.filter(m => !m.isConcurrentInThisDept).forEach(markPlaced);
 
         const cardBorderClass = `dept-card-${theme}`;
         const badgeClass = `badge-${theme}`;
@@ -5117,9 +5273,14 @@
                          (divNode.children || []).find(c => ['position', 'role'].includes(c.kind)) || null;
         const headEmp = headNode ? list.find(e => {
           if (isUnassigned(e)) return false;
-          const eid = String(e.id || e.code);
-          if (placedEmployeeIds.has(eid)) return false;
-          return (e.positionNodeId === headNode.id || e.position === headNode.name);
+          // ตรวจสอบตำแหน่งหลัก
+          const isPrimary = (e.positionNodeId === headNode.id || e.position === headNode.name);
+          if (isPrimary && !placedEmployeeIds.has(String(e.id || e.code))) return true;
+          // ตรวจสอบตำแหน่งควบ
+          const concList = Array.isArray(e.concurrentPositions) ? e.concurrentPositions : [];
+          const isConc = concList.some(c => (c.positionNodeId === headNode.id) || (c.position === headNode.name) || (c.departmentNodeId === divNode.id));
+          if (isConc) return true;
+          return false;
         }) || null : null;
         if (headEmp) markPlaced(headEmp);
 
@@ -5228,9 +5389,10 @@
               <i class="bi bi-three-dots-vertical"></i>
             </button>
             <span class="head-tag tag-${col.theme}">หัวหน้างาน</span>
-            <div class="head-avatar avatar-bg-${col.theme}"
+            <div class="head-avatar avatar-bg-${col.theme} position-relative"
                  ${col.headEmp ? `draggable="true" ondragstart="handleAvatarDragStart(event, '${escapeHtml(col.headEmp.id || col.headEmp.code)}')"` : ''}>
               ${col.headEmp && (col.headEmp.photoUrl || col.headEmp.photo) ? `<img src="${col.headEmp.photoUrl || col.headEmp.photo}" alt="${escapeHtml(col.headEmp.name)}">` : `<i class="bi bi-person-badge-fill"></i>`}
+              ${col.headEmp && col.headEmp.isConcurrentInThisHead ? `<span class="position-absolute top-0 end-0 badge bg-warning text-dark border border-white p-0.5 rounded-circle" style="font-size: 7px; transform: translate(25%, -25%);" title="รักษาการ / ดำรงตำแหน่งควบ"><i class="bi bi-star-fill"></i></span>` : ''}
             </div>
             <div class="text-start">
               <div class="fw-bold fs-7 text-dark lh-1">${escapeHtml(col.headTitleText)}</div>
@@ -5747,9 +5909,14 @@
                   <i class="bi bi-check2-circle me-1"></i> อยู่ในแผนกนี้แล้ว
                 </button>
               ` : `
-                <button type="button" class="btn btn-success btn-sm rounded-pill px-3 py-1 fw-bold shadow-sm fs-8" onclick="assignExistingEmployeeToSlot('${safeId}')">
-                  <i class="bi bi-arrow-right-circle-fill me-1"></i> ย้ายลงตำแหน่งนี้
-                </button>
+                <div class="d-flex align-items-center gap-1">
+                  <button type="button" class="btn btn-success btn-sm rounded-pill px-2.5 py-1 fw-bold shadow-sm fs-8 text-nowrap" onclick="assignExistingEmployeeToSlot('${safeId}')" title="ย้ายตำแหน่งหลักมายังตำแหน่งนี้">
+                    <i class="bi bi-arrow-right-circle-fill me-1"></i> ย้ายตำแหน่งหลัก
+                  </button>
+                  <button type="button" class="btn btn-warning text-dark btn-sm rounded-pill px-2.5 py-1 fw-bold shadow-sm fs-8 text-nowrap" onclick="assignExistingEmployeeAsConcurrent('${safeId}')" title="คงตำแหน่งหลักเดิมไว้ และเพิ่มตำแหน่งนี้เป็นตำแหน่งควบ/รักษาการ">
+                    <i class="bi bi-plus-circle-fill me-1"></i> ดำรงตำแหน่งควบ
+                  </button>
+                </div>
               `}
             </div>
           </div>
@@ -5757,6 +5924,56 @@
       });
 
       container.innerHTML = html;
+    };
+
+
+    window.assignExistingEmployeeAsConcurrent = async function(empId) {
+      if (window.requirePersonnelAdmin && !window.requirePersonnelAdmin('กำหนดตำแหน่งควบ')) return;
+      const emp = window.employees.find(e => (e.id || e.code) === empId);
+      if (!emp) return;
+
+      const targetDept = window.targetAssignDept;
+      const targetPos = window.targetAssignPos || 'รักษาการ';
+      const targetDeptNodeId = window.targetAssignDeptNodeId || '';
+      const targetPosNodeId = window.targetAssignPosNodeId || '';
+
+      if (!emp.concurrentPositions) emp.concurrentPositions = [];
+      const alreadyHas = emp.concurrentPositions.some(c => 
+        (targetPosNodeId && c.positionNodeId === targetPosNodeId) || 
+        (c.department === targetDept && c.position === targetPos)
+      );
+
+      if (alreadyHas) {
+        showToast(`⚠️ [${emp.name}] ดำรงตำแหน่งควบนี้อยู่แล้ว`);
+        return;
+      }
+
+      emp.concurrentPositions.push({
+        department: targetDept,
+        departmentNodeId: targetDeptNodeId,
+        position: targetPos,
+        positionNodeId: targetPosNodeId,
+        assignedAt: new Date().toISOString()
+      });
+
+      emp.updatedAt = new Date().toISOString();
+      syncToLocalStorage();
+
+      if (window.db) {
+        try {
+          const docRef = doc(window.db, "employees", emp.id || emp.code);
+          await setDoc(docRef, { concurrentPositions: emp.concurrentPositions, updatedAt: emp.updatedAt }, { merge: true });
+        } catch (err) {
+          console.warn("Firestore save error:", err);
+        }
+      }
+
+      const modalEl = document.getElementById('empModal');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+
+      showToast(`🎉 กำหนดให้ [${emp.code || emp.id}] ${emp.name} ดำรงตำแหน่งควบ: "${targetPos}" สำเร็จ!`);
+      renderOrgChart(true);
     };
 
     window.assignExistingEmployeeToSlot = async function(empId) {
@@ -6792,14 +7009,34 @@
       }
       event.stopPropagation();
       window.activeContextMenuEmpId = empId;
+      const avatarEl = event.currentTarget;
+      const slotDept = avatarEl?.getAttribute('data-target-dept') || '';
+      const slotPos = avatarEl?.getAttribute('data-target-pos') || '';
+      window.activeContextMenuSlotDept = slotDept;
+      window.activeContextMenuSlotPos = slotPos;
+
       const emp = window.employees.find(e => (e.id || e.code) === empId);
       if (!emp) return;
 
       const menu = document.getElementById('empContextMenu');
       if (!menu) return;
 
+      // ตรวจสอบว่ารูปที่คลิกนี้ อยู่ในฐานะตำแหน่งควบหรือไม่
+      const concList = Array.isArray(emp.concurrentPositions) ? emp.concurrentPositions : [];
+      const isConcSlot = concList.some(c => 
+        (slotDept && (c.department === slotDept || (c.department && c.department.includes(slotDept)))) ||
+        (slotPos && c.position === slotPos)
+      );
+
+      const removeConcBtn = document.getElementById('ctxMenuRemoveConcurrentBtn');
+      if (removeConcBtn) {
+        removeConcBtn.style.display = isConcSlot ? 'flex' : 'none';
+      }
+
       document.getElementById('ctxMenuEmpName').textContent = emp.name || 'พนักงาน';
-      document.getElementById('ctxMenuEmpDept').textContent = `${emp.department || 'ยังไม่ระบุแผนก'} • ${emp.position || 'พนักงาน'}`;
+      document.getElementById('ctxMenuEmpDept').textContent = isConcSlot 
+        ? `⭐ ตำแหน่งควบ: ${slotDept || emp.department} • ${slotPos || 'รักษาการ'}`
+        : `${emp.department || 'ยังไม่ระบุแผนก'} • ${emp.position || 'พนักงาน'}`;
       
       const photo = emp.photoUrl || emp.photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80';
       document.getElementById('ctxMenuEmpPhoto').src = photo;
@@ -6830,7 +7067,29 @@
       hideContextMenu();
       if (!empId) return;
 
-      if (action === 'edit') {
+      if (action === 'removeConcurrent') {
+        const emp = window.employees.find(e => (e.id || e.code) === empId);
+        if (emp && Array.isArray(emp.concurrentPositions)) {
+          const slotDept = window.activeContextMenuSlotDept;
+          const slotPos = window.activeContextMenuSlotPos;
+          emp.concurrentPositions = emp.concurrentPositions.filter(c => {
+            if (slotDept && (c.department === slotDept || (c.department && c.department.includes(slotDept)))) return false;
+            if (slotPos && c.position === slotPos) return false;
+            return true;
+          });
+          emp.updatedAt = new Date().toISOString();
+          syncToLocalStorage();
+          if (window.db) {
+            try {
+              const docRef = doc(window.db, "employees", emp.id || emp.code);
+              setDoc(docRef, { concurrentPositions: emp.concurrentPositions, updatedAt: emp.updatedAt }, { merge: true }).catch(e => console.warn(e));
+            } catch (err) {}
+          }
+          showToast(`🗑️ ยกเลิกตำแหน่งควบของ "${emp.name}" ใน "${slotDept || 'แผนก'}" เรียบร้อยแล้ว`);
+          renderOrgChart(true);
+        }
+        return;
+      } else if (action === 'edit') {
         openEditModal(empId);
       } else if (action === 'printBadge') {
         if (typeof window.openPersonnelBadgePrint === 'function') {
@@ -7038,6 +7297,21 @@
       if (el) {
         el.classList.add('dragging');
       }
+
+      // เมื่อลากบุคลากรจากแถบ "รอลงผัง" ให้ซ่อนแผงรอลงผังทันที เพื่อไม่ให้บังผังองค์กร
+      const drawer = document.getElementById('unassignedDrawer');
+      if (drawer && drawer.classList.contains('show')) {
+        window.drawerWasOpenBeforeDrag = true;
+        // หน่วงเวลาเล็กน้อย 40ms เพื่อให้เบราว์เซอร์สร้าง drag image เสร็จสมบูรณ์ แล้วค่อยพับเก็บแถบ
+        setTimeout(() => {
+          if (typeof closeUnassignedDrawer === 'function') {
+            closeUnassignedDrawer();
+          }
+        }, 40);
+      } else {
+        window.drawerWasOpenBeforeDrag = false;
+      }
+
       hideContextMenu();
     };
 
@@ -7056,6 +7330,16 @@
       setTimeout(() => {
         window.lastDraggedEmpId = null;
       }, 400);
+
+      if (window.drawerWasOpenBeforeDrag) {
+        window.drawerWasOpenBeforeDrag = false;
+        setTimeout(() => {
+          const unassignedRemaining = (window.employees || []).filter(isUnassignedEmployee);
+          if (unassignedRemaining.length > 0 && typeof openUnassignedDrawer === 'function') {
+            openUnassignedDrawer();
+          }
+        }, 200);
+      }
     };
 
     window.handleSlotDragOver = function(event) {
@@ -7076,6 +7360,184 @@
       if (slot) {
         slot.classList.remove('drop-target-active');
       }
+    };
+
+
+    window.confirmDragChoiceAction = async function(choice) {
+      const modalEl = document.getElementById('dragActionChoiceModal');
+      if (modalEl) {
+        bootstrap.Modal.getInstance(modalEl)?.hide();
+      }
+
+      const pending = window.pendingDragDropAction;
+      if (!pending || !pending.emp) return;
+      window.pendingDragDropAction = null;
+
+      const { empIdStr, emp, nextDept, nextDeptNodeId, nextPos, nextPosNodeId } = pending;
+
+      if (choice === 'concurrent') {
+        // เพิ่มเป็นตำแหน่งควบ / รักษาการ
+        if (!emp.concurrentPositions) emp.concurrentPositions = [];
+        const alreadyHas = emp.concurrentPositions.some(c => 
+          (nextPosNodeId && c.positionNodeId === nextPosNodeId) || 
+          (c.department === nextDept && c.position === nextPos)
+        );
+
+        if (alreadyHas) {
+          showToast(`⚠️ [${emp.name}] ดำรงตำแหน่งควบนี้อยู่แล้ว`);
+          return;
+        }
+
+        // ตรวจสอบว่าตำแหน่งนี้ (โดยเฉพาะตำแหน่งหัวหน้างานหรือตำแหน่งเดี่ยว) มีคนอื่นครองตำแหน่งหรือดำรงตำแหน่งควบอยู่แล้วหรือไม่
+        const isLeadership = (nextPos || '').includes('หัวหน้า') || (nextPosNodeId && nextPosNodeId.includes('lead'));
+        if (isLeadership) {
+          const currentOccupant = (window.employees || []).find(other => {
+            if (other.id === emp.id || other.code === emp.code) return false;
+            // คนอื่นที่เป็นตำแหน่งหลัก
+            if (other.positionNodeId && nextPosNodeId && other.positionNodeId === nextPosNodeId) return true;
+            if (other.department === nextDept && other.position === nextPos) return true;
+            // หรือคนอื่นที่เป็นตำแหน่งควบ
+            const otherConc = Array.isArray(other.concurrentPositions) ? other.concurrentPositions : [];
+            return otherConc.some(c => (nextPosNodeId && c.positionNodeId === nextPosNodeId) || (c.department === nextDept && c.position === nextPos));
+          });
+
+          if (currentOccupant) {
+            const ok = confirm(`ตำแหน่ง "${nextPos}" มีคุณ "${currentOccupant.name}" ครองตำแหน่งอยู่แล้ว\nต้องการให้คุณ "${emp.name}" มารักษาการแทน และปลดตำแหน่งเดิมของ "${currentOccupant.name}" หรือไม่?`);
+            if (!ok) return;
+            // ปลดคนเดิมออกจากตำแหน่งควบนี้ หรือย้ายตำแหน่ง
+            if (Array.isArray(currentOccupant.concurrentPositions)) {
+              currentOccupant.concurrentPositions = currentOccupant.concurrentPositions.filter(c => 
+                !((nextPosNodeId && c.positionNodeId === nextPosNodeId) || (c.department === nextDept && c.position === nextPos))
+              );
+            }
+          }
+        }
+
+        emp.concurrentPositions.push({
+          department: nextDept,
+          departmentNodeId: nextDeptNodeId,
+          position: nextPos,
+          positionNodeId: nextPosNodeId,
+          assignedAt: new Date().toISOString()
+        });
+
+        emp.updatedAt = new Date().toISOString();
+        syncToLocalStorage();
+
+        if (window.db) {
+          try {
+            const docRef = doc(window.db, "employees", emp.id || emp.code);
+            await setDoc(docRef, { concurrentPositions: emp.concurrentPositions, updatedAt: emp.updatedAt }, { merge: true });
+          } catch (err) {
+            console.warn("Firestore save error:", err);
+          }
+        }
+
+        showToast(`⭐ เพิ่มตำแหน่งควบ: [${emp.code || emp.id}] ${emp.name} ใน "${nextDept}" สำเร็จ!`);
+        renderOrgChart(true);
+        return;
+      }
+
+      // choice === 'move': ย้ายตำแหน่งหลัก
+      // Snapshot before change
+      const prevSnapshot = {
+        id: String(emp.id || emp.code),
+        code: emp.code,
+        name: emp.name,
+        department: emp.department || '',
+        departmentNodeId: emp.departmentNodeId || '',
+        position: emp.position || 'พนักงาน',
+        positionNodeId: emp.positionNodeId || '',
+        role: emp.role || 'WORKER'
+      };
+
+      const isLeadRole = (nextPos || '').includes('หัวหน้า') || 
+                         (nextPos || '').includes('ประธาน') || 
+                         (nextPos || '').includes('ผู้ประสานงาน') ||
+                         (nextPosNodeId && (nextPosNodeId.includes('lead') || nextPosNodeId.startsWith('pos-4-') || nextPosNodeId.startsWith('pos-5-') || nextPosNodeId === 'pos-1' || nextPosNodeId === 'pos-3'));
+
+      const currentOccupants = (window.employees || []).filter(other => {
+        if (!other || String(other.id || other.code) === empIdStr) return false;
+        if (nextPosNodeId && other.positionNodeId === nextPosNodeId) return true;
+        if (other.department === nextDept && other.position === nextPos) return true;
+        return false;
+      });
+
+      if (isLeadRole && currentOccupants.length > 0) {
+        const occupantNames = currentOccupants.map(o => `[${o.code || o.id}] ${o.name}`).join(', ');
+        const confirmSwap = confirm(
+          `⚠️ ตำแหน่ง "${nextPos}" มีผู้ครองตำแหน่งอยู่แล้วคือ:
+${occupantNames}
+
+ต้องการให้ "${emp.name}" ขึ้นมารับตำแหน่งนี้แทน และสลับบุคลากรเดิมลงมาเป็น "พนักงานทั่วไป" หรือไม่?`
+        );
+        if (!confirmSwap) {
+          return;
+        }
+
+        currentOccupants.forEach(existing => {
+          existing.position = 'พนักงาน';
+          existing.positionNodeId = '';
+          existing.role = 'WORKER';
+          existing.updatedAt = new Date().toISOString();
+          if (window.db) {
+            try {
+              const docRef = doc(window.db, "employees", existing.id || existing.code);
+              setDoc(docRef, { position: 'พนักงาน', positionNodeId: '', role: 'WORKER', updatedAt: existing.updatedAt }, { merge: true }).catch(e => console.warn(e));
+            } catch (err) {}
+          }
+        });
+      } else if (nextPosNodeId && typeof window.getFloraLeadershipPositionConflict === 'function') {
+        const conflict = window.getFloraLeadershipPositionConflict(empIdStr, nextPosNodeId);
+        if (conflict && conflict.occupants.length >= conflict.capacity) {
+          conflict.occupants.forEach(existing => {
+            existing.position = 'พนักงาน';
+            existing.positionNodeId = '';
+            existing.role = 'WORKER';
+            existing.updatedAt = new Date().toISOString();
+          });
+        }
+      }
+
+      emp.department = nextDept;
+      emp.departmentNodeId = nextDeptNodeId;
+      emp.position = nextPos;
+      emp.positionNodeId = nextPosNodeId;
+      emp.role = window.getFloraRoleForPositionNode ? window.getFloraRoleForPositionNode(emp.positionNodeId, emp.positionNodeId ? emp.role : 'WORKER') : (emp.role || 'WORKER');
+      emp.updatedAt = new Date().toISOString();
+
+      const nextSnapshot = {
+        id: String(emp.id || emp.code),
+        code: emp.code,
+        name: emp.name,
+        department: emp.department,
+        departmentNodeId: emp.departmentNodeId,
+        position: emp.position,
+        positionNodeId: emp.positionNodeId,
+        role: emp.role
+      };
+
+      if (typeof window.createPersonnelMoveAction === 'function' && typeof window.pushFloraUndoAction === 'function') {
+        const desc = `ย้าย [${emp.name}] ไปยัง "${nextDept}"`;
+        const action = window.createPersonnelMoveAction(empIdStr, prevSnapshot, nextSnapshot, desc);
+        window.pushFloraUndoAction(action);
+      }
+
+      orgChartDirty = true;
+      syncToLocalStorage();
+      renderOrgChart(true);
+      if (typeof renderUnassignedDrawer === 'function') renderUnassignedDrawer();
+
+      if (window.db) {
+        try {
+          const docRef = doc(window.db, "employees", emp.id || emp.code);
+          await setDoc(docRef, { role: emp.role, department: emp.department, position: emp.position, departmentNodeId: emp.departmentNodeId, positionNodeId: emp.positionNodeId, updatedAt: emp.updatedAt }, { merge: true });
+        } catch (err) {
+          console.warn("Firestore sync notice:", err);
+        }
+      }
+
+      showToast(`🎯 ย้ายตำแหน่งหลัก: [${emp.code || emp.id}] ${emp.name} ไปยัง "${nextDept}" สำเร็จ!`);
     };
 
     window.handleSlotDrop = async function(event, targetDept, targetPos) {
@@ -7111,6 +7573,34 @@
         return;
       }
 
+      // ตรวจสอบว่าพนักงานมีตำแหน่งหลักเดิมอยู่แล้วหรือไม่ (ถ้ามาจากแถบรอลงผัง ให้ย้ายลงตำแหน่งได้เลยโดยไม่ต้องถาม)
+      const isCurrentlyAssigned = emp.department && emp.department !== 'ยังไม่ระบุ' && emp.department !== 'ยังไม่ระบุแผนก' && emp.department !== 'ทั่วไป';
+
+      if (isCurrentlyAssigned) {
+        // บันทึก context การโยกย้ายไว้รอการยืนยันจากหน้าต่างตัวเลือก
+        window.pendingDragDropAction = {
+          empIdStr,
+          emp,
+          nextDept,
+          nextDeptNodeId,
+          nextPos,
+          nextPosNodeId
+        };
+
+        const modalEl = document.getElementById('dragActionChoiceModal');
+        if (modalEl) {
+          const subEl = document.getElementById('dragChoiceEmpSubtitle');
+          const deptEl = document.getElementById('dragChoiceTargetDept');
+          const posEl = document.getElementById('dragChoiceTargetPos');
+          if (subEl) subEl.textContent = `[${emp.code || emp.id}] ${emp.name}`;
+          if (deptEl) deptEl.textContent = nextDept;
+          if (posEl) posEl.textContent = `ตำแหน่ง: ${nextPos}`;
+          const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+          bsModal.show();
+          return;
+        }
+      }
+
       // Snapshot before change
       const prevSnapshot = {
         id: String(emp.id || emp.code),
@@ -7123,8 +7613,47 @@
         role: emp.role || 'WORKER'
       };
 
-      // If assigning to a single-seat leadership role that already has an occupant, replace/swap cleanly
-      if (nextPosNodeId && typeof window.getFloraLeadershipPositionConflict === 'function') {
+      // ตรวจสอบตำแหน่งหัวหน้างาน / ผู้บริหาร: หากมีคนครองตำแหน่งอยู่แล้ว ให้แสดงหน้าต่างถามยืนยันก่อนสลับเก้าอี้
+      const isLeadershipRole = (nextPos || '').includes('หัวหน้า') || 
+                               (nextPos || '').includes('ประธาน') || 
+                               (nextPos || '').includes('ผู้ประสานงาน') ||
+                               (nextPosNodeId && (nextPosNodeId.includes('lead') || nextPosNodeId.startsWith('pos-4-') || nextPosNodeId.startsWith('pos-5-') || nextPosNodeId === 'pos-1' || nextPosNodeId === 'pos-3'));
+
+      // ค้นหาผู้ครองตำแหน่งเดิมในตำแหน่งนี้
+      const currentLeadershipOccupants = (window.employees || []).filter(other => {
+        if (!other || String(other.id || other.code) === empIdStr) return false;
+        if (nextPosNodeId && other.positionNodeId === nextPosNodeId) return true;
+        if (other.department === nextDept && other.position === nextPos) return true;
+        return false;
+      });
+
+      if (isLeadershipRole && currentLeadershipOccupants.length > 0) {
+        const occupantNames = currentLeadershipOccupants.map(o => `[${o.code || o.id}] ${o.name}`).join(', ');
+        const confirmSwap = confirm(
+          `⚠️ ตำแหน่ง "${nextPos}" มีผู้ครองตำแหน่งอยู่แล้วคือ:
+${occupantNames}
+
+ต้องการให้ "${emp.name}" ขึ้นมารับตำแหน่งนี้แทน และสลับบุคลากรเดิมลงมาเป็น "พนักงานทั่วไป" หรือไม่?`
+        );
+        if (!confirmSwap) {
+          // ผู้ใช้กดยกเลิก ไม่สลับเก้าอี้
+          return;
+        }
+
+        // ผู้ใช้กดยืนยัน สลับคนเดิมลงมาเป็นพนักงานทั่วไปในแผนกเดิม
+        currentLeadershipOccupants.forEach(existing => {
+          existing.position = 'พนักงาน';
+          existing.positionNodeId = '';
+          existing.role = 'WORKER';
+          existing.updatedAt = new Date().toISOString();
+          if (window.db) {
+            try {
+              const docRef = doc(window.db, "employees", existing.id || existing.code);
+              setDoc(docRef, { position: 'พนักงาน', positionNodeId: '', role: 'WORKER', updatedAt: existing.updatedAt }, { merge: true }).catch(e => console.warn(e));
+            } catch (err) {}
+          }
+        });
+      } else if (nextPosNodeId && typeof window.getFloraLeadershipPositionConflict === 'function') {
         const conflict = window.getFloraLeadershipPositionConflict(empIdStr, nextPosNodeId);
         if (conflict && conflict.occupants.length >= conflict.capacity) {
           conflict.occupants.forEach(existing => {
@@ -7796,6 +8325,27 @@
     window.handleCardDragEnd = function(event) {
       const card = event.currentTarget;
       if (card) card.classList.remove('dragging');
+      document.querySelectorAll('.avatar-item.dragging, .unassigned-card.dragging').forEach(item => {
+        item.classList.remove('dragging');
+      });
+      document.querySelectorAll('.drop-target-active').forEach(slot => {
+        slot.classList.remove('drop-target-active');
+      });
+      window.draggedEmpId = null;
+      setTimeout(() => {
+        window.lastDraggedEmpId = null;
+      }, 400);
+
+      // หากก่อนลากเปิดแผงรอลงผังไว้ และยังมีคนรอลงผังเหลืออยู่ ให้เปิดแผงกลับคืนมาเพื่อให้ทำงานต่อได้ต่อเนื่อง
+      if (window.drawerWasOpenBeforeDrag) {
+        window.drawerWasOpenBeforeDrag = false;
+        setTimeout(() => {
+          const unassignedRemaining = (window.employees || []).filter(isUnassignedEmployee);
+          if (unassignedRemaining.length > 0 && typeof openUnassignedDrawer === 'function') {
+            openUnassignedDrawer();
+          }
+        }, 200);
+      }
     };
 
     window.renderUnassignedDrawer = function() {

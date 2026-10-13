@@ -28,24 +28,27 @@ async function replaceCollectionInFirestore(collName, newList) {
   if (!window.db || !window.isFirebaseReady) return;
   try {
     const snap = await getDocs(collection(window.db, collName));
-    const newIds = new Set((newList || []).map(x => x && x.id).filter(Boolean));
-    const newImageUrls = new Set((newList || []).map(x => x && (x.imageUrl || x.photoUrl)).filter(Boolean));
+    const newIds = new Set((newList || []).map(x => x && (x.id || x.code)).filter(Boolean));
 
+    // ลบเอกสารเก่าในคลาวด์ที่ไม่มีอยู่ในจุดกู้คืน
     for (const docSnap of snap.docs) {
       if (!newIds.has(docSnap.id)) {
         await deleteDoc(doc(window.db, collName, docSnap.id));
       }
     }
+
+    // เขียนทับข้อมูลใหม่แบบ Clean Overwrite (merge: false เพื่อล้างฟิลด์ส่วนเกิน เช่น ตำแหน่งควบ ที่ไม่มีในจุดกู้คืนออกทั้งหมด)
     for (const item of (newList || [])) {
-      if (item && item.id) {
-        await setDoc(doc(window.db, collName, item.id), item);
+      if (item && (item.id || item.code)) {
+        const docId = String(item.id || item.code);
+        const cleanItem = JSON.parse(JSON.stringify(item));
+        await setDoc(doc(window.db, collName, docId), cleanItem, { merge: false });
       }
     }
   } catch (err) {
     console.warn(`Error replacing Firestore collection ${collName}:`, err);
   }
 }
-
 window.localImageBackupDirectoryHandle = null;
 window.localBackupFolderName = '';
 window.localFolderFilesList = [];
@@ -3905,7 +3908,16 @@ window.restoreCloudSnapshot = async function(pointId) {
     if (Array.isArray(data.employees)) {
       await replaceCollectionInFirestore("employees", data.employees);
       window.employeeList = data.employees;
+      window.employees = data.employees;
       localStorage.setItem('flora_employees', JSON.stringify(data.employees));
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('flora_employees')) {
+            localStorage.setItem(k, JSON.stringify(data.employees));
+          }
+        }
+      } catch (e) {}
     }
     if (Array.isArray(data.transactions)) {
       await replaceCollectionInFirestore("transactions", data.transactions);
