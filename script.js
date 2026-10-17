@@ -2690,6 +2690,26 @@
         document.querySelectorAll('.admin-only-element').forEach(el => el.classList.add('d-none'));
       }
 
+      // ซ่อนตัวเลือกรับเข้าสต๊อกสำหรับพนักงานทั่วไป (Worker)
+      const isStaffOrAdmin = (role === 'STAFF' || role === 'ADMIN' || role === 'MANAGER');
+      const stockInRadio = document.getElementById('typeStockIn');
+      if (stockInRadio && stockInRadio.parentElement) {
+        if (!isStaffOrAdmin) {
+          stockInRadio.parentElement.classList.add('d-none');
+          if (stockInRadio.checked) {
+            const issueRadio = document.getElementById('typeIssue');
+            if (issueRadio) issueRadio.checked = true;
+            if (typeof window.toggleTransTypeUI === 'function') window.toggleTransTypeUI();
+          }
+        } else {
+          stockInRadio.parentElement.classList.remove('d-none');
+        }
+      }
+
+      if (typeof window.updateScannerEquipmentListUI === 'function') {
+        window.updateScannerEquipmentListUI();
+      }
+
       if (typeof window.updateAuthUI === 'function') {
         window.updateAuthUI();
       }
@@ -5418,10 +5438,41 @@
     async function handleTransactionSubmit(e) {
       e.preventDefault();
 
+      // ป้องกันการกดบันทึกซ้ำ หรือกดรัวๆ
+      if (window._isTransactionSubmitInProgress) {
+        return;
+      }
+      window._isTransactionSubmitInProgress = true;
+
+      const submitBtn = document.getElementById('btnSubmitTransaction');
+      const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+      const originalBtnClass = submitBtn ? submitBtn.className : '';
+
+      const unlockSubmit = () => {
+        window._isTransactionSubmitInProgress = false;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnHtml;
+          submitBtn.className = originalBtnClass;
+          if (typeof toggleTransTypeUI === 'function') {
+            toggleTransTypeUI();
+          }
+        }
+      };
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> กำลังบันทึกข้อมูล...';
+      }
+
       // ตรวจสอบสิทธิ์เจ้าหน้าที่หรือผู้ดูแลระบบ
       const isAuthorized = (typeof window.hasStaffOrAdminAuthorization === 'function') && window.hasStaffOrAdminAuthorization();
       if (!isAuthorized) {
-        alert("🔒 พนักงานไม่มีสิทธิ์บันทึกข้อมูล (เบิก-รับเข้า-ยืม-คืน)\n\nต้องสแกนบัตรของเจ้าหน้าที่ หรือ ผู้ดูแลระบบ (Admin) เท่านั้น เพื่อยืนยันสิทธิ์ก่อนบันทึก");
+        unlockSubmit();
+        alert("🔒 พนักงานทั่วไปไม่มีสิทธิ์บันทึกข้อมูล (เบิก-รับเข้า-ยืม-คืน)\n\nต้องสแกนคิวอาร์โค้ดบัตรของบุคลากรในส่วนงานธุรการ เพื่อปลดล็อกสิทธิ์ก่อนบันทึก");
+        if (typeof openScanEmpBadgeModal === 'function') {
+          openScanEmpBadgeModal();
+        }
         return;
       }
 
@@ -5431,6 +5482,7 @@
       const note = document.getElementById('transNote').value.trim();
 
       if (!empId) {
+        unlockSubmit();
         const empEl = document.getElementById('empSelect');
         if (empEl) {
           empEl.setCustomValidity('กรุณาเลือก หรือ พิมพ์รายชื่อผู้ทำรายการก่อน');
@@ -5444,8 +5496,18 @@
 
       const emp = employeeList.find(x => x.id === empId);
       if (!emp) {
+        unlockSubmit();
         alert("ไม่พบข้อมูลพนักงานที่เลือก");
         return;
+      }
+
+      if (type === 'รับเข้าสต๊อก') {
+        const isOperatorStaff = (typeof window.isAdministrativeStaffEmp === 'function') && window.isAdministrativeStaffEmp(emp);
+        if (!isOperatorStaff) {
+          unlockSubmit();
+          alert(`❌ ไม่สามารถบันทึกรับเข้าสต๊อกได้!\n\nผู้ทำรายการ "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" ไม่ได้อยู่ในส่วนงานธุรการ\n\nการรับพัสดุเข้าสต๊อกต้องดำเนินการโดยบุคลากรในส่วนงานธุรการเท่านั้น`);
+          return;
+        }
       }
 
       let itemsToProcess = [];
@@ -5467,11 +5529,13 @@
         const equipId = document.getElementById('equipSelect').value;
         const qty = parseInt(document.getElementById('transQty').value) || 1;
         if (!equipId) {
+          unlockSubmit();
           alert("กรุณาเลือกอุปกรณ์การเกษตรอย่างน้อย 1 รายการเพื่อทำรายการ");
           return;
         }
         const item = equipmentList.find(x => x.id === equipId);
         if (!item) {
+          unlockSubmit();
           alert("ไม่พบอุปกรณ์ที่เลือก");
           return;
         }
@@ -5486,11 +5550,31 @@
         }];
       }
 
+      // ตรวจสอบรายการซ้ำซ้อนอย่างรวดเร็ว (ภายใน 2.5 วินาที)
+      const nowMs = Date.now();
+      const lastTx = (transactionHistory && transactionHistory.length > 0) ? transactionHistory[0] : null;
+      if (lastTx) {
+        const lastTime = lastTx.rawTimestamp || (lastTx.timestamp ? new Date(lastTx.timestamp).getTime() : 0);
+        const timeDiffSec = (nowMs - lastTime) / 1000;
+        if (timeDiffSec < 2.5 && lastTx.employeeId === emp.id && lastTx.type === type) {
+          const currentItemIds = itemsToProcess.map(x => x.equipmentId).sort().join(',');
+          const lastItemIds = (lastTx.items && Array.isArray(lastTx.items))
+            ? lastTx.items.map(x => x.equipmentId).sort().join(',')
+            : String(lastTx.equipmentId || '');
+          if (currentItemIds === lastItemIds) {
+            unlockSubmit();
+            showToast("⚠️ ระบบเพิ่งบันทึกรายการนี้ไปแล้ว เพื่อป้องกันข้อมูลซ้ำซ้อน กรุณารอสักครู่", { type: "warning" });
+            return;
+          }
+        }
+      }
+
       // Check borrowable equipment restriction in "เบิกจ่าย" (เบิกตัดสต๊อก)
       if (type === 'เบิกจ่าย') {
         for (const it of itemsToProcess) {
           const equipObj = equipmentList.find(x => x.id === it.equipmentId);
           if (equipObj && typeof window.isEquipmentBorrowType === 'function' && window.isEquipmentBorrowType(equipObj)) {
+            unlockSubmit();
             alert(`❌ ไม่สามารถบันทึกเบิกตัดสต๊อก "${equipObj.name}" [${equipObj.code || equipObj.id}] ได้!\n\nเนื่องจากอุปกรณ์นี้เป็น "ประเภทยืมใช้" (รหัสขึ้นต้นด้วย B เช่น หมวด BA งานเกษตร หรือ BT งานช่าง)\nจะนำมาเบิกตัดสต๊อกไม่ได้เด็ดขาด\n\nกรุณาทำรายการผ่านโหมด "ยืมอุปกรณ์" แทน`);
             return;
           }
@@ -5502,6 +5586,7 @@
         for (const it of itemsToProcess) {
           const equipObj = equipmentList.find(x => x.id === it.equipmentId);
           if (equipObj && typeof window.isEquipmentBorrowType === 'function' && !window.isEquipmentBorrowType(equipObj)) {
+            unlockSubmit();
             alert(`❌ ไม่สามารถบันทึกยืมอุปกรณ์ "${equipObj.name}" [${equipObj.code || equipObj.id}] ได้!\n\nเนื่องจากรายการนี้เป็น "วัสดุสิ้นเปลือง/ใช้แล้วหมดไป" (ไม่ใช่อุปกรณ์ประเภทยืมใช้ที่ขึ้นต้นด้วย B เช่น BA หรือ BT)\nจะนำมาบันทึกยืมไม่ได้เด็ดขาด\n\nกรุณาทำรายการผ่านโหมด "เบิกตัดสต็อก" แทน`);
             return;
           }
@@ -5510,6 +5595,7 @@
 
       // Check document type consistency: must match cart locked type
       if (selectedTransItems.length > 0 && currentTransCartType && currentTransCartType !== type) {
+        unlockSubmit();
         alert(`❌ ประเภทรายการที่เลือก (${type}) ไม่ตรงกับประเภทเอกสารที่บันทึกไว้ในตะกร้า (${currentTransCartType})`);
         return;
       }
@@ -5520,6 +5606,7 @@
           const equipObj = equipmentList.find(x => x.id === it.equipmentId);
           const currentStock = equipObj ? equipObj.quantity : 0;
           if (!equipObj || currentStock < it.quantity) {
+            unlockSubmit();
             const detail = `อุปกรณ์ "${it.equipmentName}" มีคงเหลือในคลังเพียง ${currentStock} ${it.unit} (ระบุในรายการ ${it.quantity} ${it.unit})`;
             window.showTransStockOverPopup(detail);
             return;
@@ -5534,11 +5621,13 @@
           const totalBorrowedRemaining = matchingBorrows.reduce((sum, b) => sum + b.remainingQty, 0);
 
           if (totalBorrowedRemaining <= 0) {
+            unlockSubmit();
             alert(`❌ ไม่สามารถทำรายการคืนได้: "${it.equipmentName}"\nเนื่องจากไม่มีประวัติการยืมอุปกรณ์รายการนี้ของพนักงาน (${emp.name}) ในระบบ`);
             return;
           }
 
           if (it.quantity > totalBorrowedRemaining) {
+            unlockSubmit();
             alert(`❌ จำนวนที่ส่งคืนเกินจำนวนที่ยืมจริง!\nอุปกรณ์: "${it.equipmentName}"\nจำนวนที่ค้างส่งคืน: ${totalBorrowedRemaining} ${it.unit}\nจำนวนที่ระบุในรายการ: ${it.quantity} ${it.unit}`);
             return;
           }
@@ -5713,6 +5802,15 @@
       if (requireVoucher && typeof openPrintTransactionVoucherModal === 'function') {
         openPrintTransactionVoucherModal(newTx.id);
       }
+
+      setTimeout(() => {
+        window._isTransactionSubmitInProgress = false;
+        const btn = document.getElementById('btnSubmitTransaction');
+        if (btn) {
+          btn.disabled = false;
+          if (typeof toggleTransTypeUI === 'function') toggleTransTypeUI();
+        }
+      }, 1000);
     }
 
     // ==================== FIRESTORE DATA VALIDATION FUNCTIONS ====================
@@ -6149,11 +6247,15 @@
           ? `<p class="text-secondary fs-7 mb-2 text-truncate-2" title="${escapeHtml(item.description)}">${escapeHtml(item.description)}</p>`
           : `<p class="text-secondary fs-7 mb-2 text-truncate-2 d-none d-md-block text-muted">ไม่มีรายละเอียดสเปกเพิ่มเติม</p>`;
 
+        const itemImageUrl = (item.id === 'BA-002' || item.code === 'BA-002')
+          ? (item.imageUrl && item.imageUrl !== DEFAULT_EQUIPMENT_IMAGE ? item.imageUrl : '/assets/images/regenerated_image_1791897840359.webp')
+          : (item.imageUrl || DEFAULT_EQUIPMENT_IMAGE);
+
         html += `
           <div class="col-12 col-sm-6 col-lg-4 col-xl-3" id="equip-card-${item.id}" data-equip-id="${item.id}">
             <div class="equipment-card">
               <div class="equipment-img-container position-relative">
-                <img src="${item.imageUrl}" loading="lazy" class="equipment-img cursor-zoom-in enlargeable-img" alt="${escapeHtml(item.name)}" onclick="event.stopPropagation(); openEnlargeImageModal('${item.imageUrl || DEFAULT_EQUIPMENT_IMAGE}', '${escapeHtml(item.name || '')}', 'รหัส: ${escapeHtml(item.code || '')}')" title="คลิกรูปภาพเพื่อขยายใหญ่" onerror="this.src='${DEFAULT_EQUIPMENT_IMAGE}'" />
+                <img src="${itemImageUrl}" loading="lazy" class="equipment-img cursor-zoom-in enlargeable-img" alt="${escapeHtml(item.name)}" onclick="event.stopPropagation(); openEnlargeImageModal('${itemImageUrl}', '${escapeHtml(item.name || '')}', 'รหัส: ${escapeHtml(item.code || '')}')" title="คลิกรูปภาพเพื่อขยายใหญ่" onerror="this.src='/assets/images/regenerated_image_1791897840359.webp'" />
                 <span class="badge-code">${highlightedCode}</span>
                 ${isStaff ? `
                   <button type="button" class="btn btn-dark bg-opacity-80 text-white position-absolute top-0 end-0 m-2 rounded-pill fs-8 shadow-sm border-0 py-1 px-2.5 d-inline-flex align-items-center gap-1 btn-equipment-menu" style="z-index: 35; pointer-events: auto;" onclick="event.stopPropagation(); openEquipmentPopupMenu('${item.id}')" title="คลิกเพื่อเปิดเมนูจัดการ (Popup Menu)">
@@ -7863,6 +7965,8 @@
       const filterType = document.getElementById('historyFilterType')?.value || 'ALL';
       const searchQuery = (document.getElementById('historySearchInput')?.value || '').toLowerCase().trim();
       const isAdmin = (typeof currentRole !== 'undefined' && currentRole === 'ADMIN');
+      const canEditTx = (typeof currentRole !== 'undefined' && (currentRole === 'ADMIN' || currentRole === 'MANAGER' || currentRole === 'STAFF')) ||
+                        ((typeof window.hasStaffOrAdminAuthorization === 'function') && window.hasStaffOrAdminAuthorization());
 
       // Update Daily Summary Overview Card
       if (typeof window.updateDailyTransactionSummary === 'function') {
@@ -8038,9 +8142,11 @@
                 <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-0.5 fs-8 fw-semibold" onclick="openPrintTransactionVoucherModal('${tx.id}')" title="พิมพ์เอกสาร">
                   พิมพ์
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-0.5 fs-8 fw-semibold" onclick="openEditTransactionModal('${tx.id}')" title="แก้ไขวันที่และจำนวน">
-                  แก้ไข
-                </button>
+                ${canEditTx ? `
+                  <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-0.5 fs-8 fw-semibold" onclick="openEditTransactionModal('${tx.id}')" title="แก้ไขวันที่และจำนวน">
+                    แก้ไข
+                  </button>
+                ` : ''}
                 ${isAdmin ? `
                   <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-0.5 fs-8 fw-semibold" onclick="deleteTransactionRecord('${tx.id}')" title="ลบรายการประวัตินี้">
                     ลบ
@@ -10466,6 +10572,14 @@
 
     window.openEditTransactionModal = function(txId) {
       if (!txId) return;
+
+      const isStaffOrAdmin = (typeof currentRole !== 'undefined' && (currentRole === 'ADMIN' || currentRole === 'MANAGER' || currentRole === 'STAFF')) ||
+                            ((typeof window.hasStaffOrAdminAuthorization === 'function') && window.hasStaffOrAdminAuthorization());
+      if (!isStaffOrAdmin) {
+        showToast("🔒 พนักงานทั่วไปไม่มีสิทธิ์แก้ไขประวัติรายการ (เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้น)", { type: "warning" });
+        return;
+      }
+
       const tx = (transactionHistory || []).find(x => x.id === txId);
       if (!tx) {
         showToast("❌ ไม่พบข้อมูลรายการประวัติที่ต้องการแก้ไข", { type: "danger" });
@@ -10704,6 +10818,98 @@
       showToast(`🎉 บันทึกการแก้ไขรายการประวัติเรียบร้อยแล้ว!${stockUpdatedMsg}`, { title: "แก้ไขสำเร็จ", type: "success" });
     };
 
+    // ฟังก์ชันคำนวณตัดสต๊อกย้อนกลับเมื่อลบรายการประวัติ (เบิกจ่าย, รับเข้าสต๊อก, ยืม, คืน)
+    window.revertTransactionStockImpact = async function(txObj) {
+      if (!txObj) return [];
+      let itemsToReverse = [];
+      if (txObj.items && Array.isArray(txObj.items) && txObj.items.length > 0) {
+        itemsToReverse = txObj.items.map(it => ({
+          equipmentId: it.equipmentId || it.id || it.code,
+          equipmentName: it.equipmentName || it.name,
+          quantity: Number(it.quantity || it.qty || 1),
+          unit: it.unit || 'ชิ้น'
+        }));
+      } else {
+        itemsToReverse = [{
+          equipmentId: txObj.equipmentId || txObj.code,
+          equipmentName: txObj.equipmentName,
+          quantity: Number(txObj.quantity || 1),
+          unit: txObj.unit || 'ชิ้น'
+        }];
+      }
+
+      const stockChanges = [];
+
+      for (const it of itemsToReverse) {
+        const eqId = it.equipmentId;
+        const equipItem = (equipmentList || []).find(x => x && (x.id === eqId || x.code === eqId || x.name === it.equipmentName));
+        if (!equipItem) continue;
+
+        const currentStock = Number(equipItem.quantity || 0);
+        const currentBorrowed = Number(equipItem.borrowedCount || 0);
+        const qty = Number(it.quantity || 1);
+        let newStock = currentStock;
+        let newBorrowed = currentBorrowed;
+
+        // คำนวณตัดสต๊อกย้อนกลับตามประเภทรายการ
+        if (txObj.type === 'เบิกจ่าย') {
+          // ลบรายการเบิกจ่าย -> คืนสต๊อกกลับเข้าคลัง
+          newStock = currentStock + qty;
+        } else if (txObj.type === 'รับเข้าสต๊อก' || txObj.type === 'รับเข้าสต๊อก (ขาเข้า)' || txObj.type === 'เติมสต๊อกด่วน') {
+          // ลบรายการรับเข้า -> หักลบสต๊อกที่เคยรับเข้าออกไป
+          newStock = Math.max(0, currentStock - qty);
+        } else if (txObj.type === 'ยืมอุปกรณ์') {
+          // ลบรายการยืม -> คืนสต๊อกกลับเข้าคลัง และลดยอดกำลังยืม
+          newStock = currentStock + qty;
+          newBorrowed = Math.max(0, currentBorrowed - qty);
+        } else if (txObj.type === 'คืนอุปกรณ์') {
+          // ลบรายการคืน -> หักลบสต๊อกออกจากคลัง และเพิ่มยอดกำลังยืมกลับคืนมา
+          newStock = Math.max(0, currentStock - qty);
+          newBorrowed = currentBorrowed + qty;
+        }
+
+        equipItem.quantity = Math.max(0, newStock);
+        if (txObj.type === 'ยืมอุปกรณ์' || txObj.type === 'คืนอุปกรณ์') {
+          equipItem.borrowedCount = newBorrowed;
+        }
+
+        stockChanges.push(`${equipItem.name} คงเหลือ ${equipItem.quantity} ${equipItem.unit || 'ชิ้น'}`);
+
+        // บันทึกลงฐานข้อมูล Firestore
+        if (isFirebaseReady && db && equipItem.id) {
+          try {
+            await setDoc(doc(db, "equipment", equipItem.id), equipItem, { merge: true });
+          } catch (err) {
+            console.warn("Firestore update equipment on revert error:", err);
+          }
+        }
+      }
+
+      return stockChanges;
+    };
+
+    // ฟังก์ชันรีเฟรชการแสดงผลข้อมูลสต๊อกและประวัติทุกจุดทั่วทั้งระบบ
+    window.refreshAllStockAndHistoryViews = function() {
+      // 1. ตารางประวัติ
+      if (typeof renderHistoryTable === 'function') renderHistoryTable();
+      if (typeof renderEquipmentHistoryModalTable === 'function') renderEquipmentHistoryModalTable();
+      // 2. หน้ารายการพัสดุและการ์ดอุปกรณ์
+      if (typeof renderCatalogGrid === 'function') renderCatalogGrid();
+      if (typeof renderStaffTable === 'function') renderStaffTable();
+      if (typeof renderEquipmentTable === 'function') renderEquipmentTable();
+      // 3. แผงสถิติสรุปภาพรวม
+      if (typeof updateStats === 'function') updateStats();
+      // 4. หน้าต่างทำเอกสารเบิกจ่ายและตัวเลือกอุปกรณ์
+      if (typeof populateEquipmentDropdown === 'function') populateEquipmentDropdown();
+      if (typeof updateEquipSelectPreview === 'function') updateEquipSelectPreview();
+      // 5. รายการยืม-คืนอุปกรณ์ และตารางสถานะ
+      if (typeof renderBorrowCartList === 'function') renderBorrowCartList();
+      if (typeof renderBorrowStatusTable === 'function') renderBorrowStatusTable();
+      // 6. หน้าต่างสแกนเนอร์ (ถ้าเปิดอยู่)
+      if (typeof window.updateScannerEquipmentListUI === 'function') window.updateScannerEquipmentListUI();
+      if (typeof window.updateScannerOperatorUI === 'function') window.updateScannerOperatorUI();
+    };
+
     window.deleteTransactionRecord = async function(txId) {
       if (!txId) return;
       if (typeof currentRole !== 'undefined' && currentRole !== 'ADMIN') {
@@ -10716,24 +10922,33 @@
       const desc = `${txObj.type || 'รายการ'} ${txObj.equipmentName || ''} จำนวน ${txObj.quantity || 1} ${txObj.unit || ''} (${txObj.employeeName || ''})`;
       const ok = await window.showConfirmDialog({
         title: "ยืนยันการลบรายการประวัติ",
-        message: `คุณต้องการลบรายการประวัตินี้ใช่หรือไม่?\n\n• ${desc}\n• วันที่: ${txObj.timestamp || '-'}\n\n⚠️ เมื่อลบแล้ว ข้อมูลประวัติการทำรายการนี้จะถูกนำออกจากระบบ`,
+        message: `คุณต้องการลบรายการประวัตินี้ใช่หรือไม่?\n\n• ${desc}\n• วันที่: ${txObj.timestamp || '-'}\n\n⚠️ เมื่อลบแล้ว ระบบจะตัดสต๊อกและปรับยอดคงเหลือของอุปกรณ์ย้อนกลับให้ถูกต้องโดยอัตโนมัติ`,
         type: "danger",
-        confirmText: "ลบรายการประวัติ"
+        confirmText: "ลบรายการและตัดสต๊อก"
       });
       if (!ok) return;
 
+      // 1. ปรับปรุงยอดสต๊อกย้อนกลับของอุปกรณ์ที่เกี่ยวข้องทั้งหมด
+      const stockChanges = await window.revertTransactionStockImpact(txObj);
+
+      // 2. ลบรายการประวัติออกจากหน่วยความจำและฐานข้อมูล Firestore
       transactionHistory = transactionHistory.filter(x => x.id !== txId);
       if (isFirebaseReady && db) {
         try { await deleteDoc(doc(db, "transactions", txId)); } catch(e){}
       }
       saveToLocalStorage();
-      renderHistoryTable();
-      if (typeof renderEquipmentHistoryModalTable === 'function') renderEquipmentHistoryModalTable();
-      if (typeof updateStats === 'function') updateStats();
+
+      // 3. รีเฟรชการแสดงผลทุกจุดในระบบ
+      window.refreshAllStockAndHistoryViews();
+
+      // 4. บันทึกประวัติการตรวจสอบ (Audit Log)
       if (typeof logAuditAction === 'function') {
-        logAuditAction('ประวัติรายการ', 'ลบ', `ลบรายการประวัติ #${txId} (${desc})`, txId);
+        const stockNote = stockChanges.length > 0 ? ` (ปรับสต๊อก: ${stockChanges.join(', ')})` : '';
+        logAuditAction('ประวัติรายการ', 'ลบ', `ลบรายการประวัติ #${txId} (${desc})${stockNote}`, txId);
       }
-      showToast(`🗑️ ลบรายการประวัติ #${txId} เรียบร้อยแล้ว`, { type: 'success' });
+
+      const stockToastMsg = stockChanges.length > 0 ? ` พร้อมปรับยอดสต๊อกเรียบร้อย` : '';
+      showToast(`🗑️ ลบรายการประวัติ #${txId} สำเร็จ${stockToastMsg}`, { type: 'success' });
     };
 
     window.printEmployeeHistoryReport = function() {
@@ -12555,6 +12770,8 @@
     window.renderEquipmentHistoryModalTable = function() {
       if (!currentEquipHistoryId) return;
       const isAdmin = (typeof currentRole !== 'undefined' && currentRole === 'ADMIN');
+      const canEditTx = (typeof currentRole !== 'undefined' && (currentRole === 'ADMIN' || currentRole === 'MANAGER' || currentRole === 'STAFF')) ||
+                        ((typeof window.hasStaffOrAdminAuthorization === 'function') && window.hasStaffOrAdminAuthorization());
       const item = (equipmentList || []).find(x => x.id === currentEquipHistoryId);
       if (!item) return;
 
@@ -12765,9 +12982,11 @@
                   <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2.5 py-0.5 shadow-2xs fw-semibold" onclick="openPrintTransactionVoucherModal('${tx.id}')" title="พิมพ์ใบเอกสาร">
                     พิมพ์
                   </button>
-                  <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-0.5 shadow-2xs fw-semibold" onclick="openEditTransactionModal('${tx.id}')" title="แก้ไขวันที่และจำนวน">
-                    แก้ไข
-                  </button>
+                  ${canEditTx ? `
+                    <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-0.5 shadow-2xs fw-semibold" onclick="openEditTransactionModal('${tx.id}')" title="แก้ไขวันที่และจำนวน">
+                      แก้ไข
+                    </button>
+                  ` : ''}
                   ${isAdmin ? `
                     <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2.5 py-0.5 shadow-2xs fw-semibold" onclick="deleteTransactionRecord('${tx.id}')" title="ลบรายการประวัตินี้">
                       ลบ
@@ -13022,9 +13241,15 @@
             html += `
               <tr class="${isOverdue ? 'overdue-pulse-row' : ''} ${isFiltered ? 'table-warning bg-warning bg-opacity-10 border border-warning' : ''}">
                 <td class="text-center">
-                  <button type="button" class="btn btn-sm ${isFiltered ? 'btn-success text-white' : 'btn-info text-dark'} rounded-pill px-3 py-1 fs-7 fw-bold shadow-sm" onclick="returnEquipmentFromBorrowersModal(event, '${item.id}', '${b.employeeId || ''}', ${b.borrowedQty})" title="บันทึกรับคืนอุปกรณ์นี้เข้าคลังทันที">
-                    <i class="bi bi-box-arrow-in-down me-0.5"></i> คืน
-                  </button>
+                  ${(typeof window.hasStaffOrAdminAuthorization === 'function' && window.hasStaffOrAdminAuthorization()) ? `
+                    <button type="button" class="btn btn-sm ${isFiltered ? 'btn-success text-white' : 'btn-info text-dark'} rounded-pill px-3 py-1 fs-7 fw-bold shadow-sm" onclick="returnEquipmentFromBorrowersModal(event, '${item.id}', '${b.employeeId || ''}', ${b.borrowedQty})" title="บันทึกรับคืนอุปกรณ์นี้เข้าคลังทันที">
+                      <i class="bi bi-box-arrow-in-down me-0.5"></i> คืน
+                    </button>
+                  ` : `
+                    <button type="button" class="btn btn-sm btn-secondary text-white opacity-75 rounded-pill px-2.5 py-1 fs-8 fw-semibold shadow-none" onclick="returnEquipmentFromBorrowersModal(event, '${item.id}', '${b.employeeId || ''}', ${b.borrowedQty})" title="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้น (คลิกเพื่อสแกนบัตรปลดล็อก)">
+                      <i class="bi bi-shield-lock-fill text-warning me-1"></i> ล็อก
+                    </button>
+                  `}
                 </td>
                 <td class="text-center text-nowrap">
                   <span class="badge bg-warning bg-opacity-25 text-dark border border-warning rounded-pill px-2.5 py-1 fw-bold fs-7">ยืม ${b.borrowedQty}</span>
@@ -13121,7 +13346,7 @@
 
       const modalElem = document.getElementById('equipmentBorrowersModal');
       if (modalElem) {
-        const modal = bootstrap.Modal.getOrCreateInstance(modalElem);
+        const modal = bootstrap.Modal.getOrCreateInstance(modalElem, { focus: false });
         modal.show();
       }
     };
@@ -13241,6 +13466,15 @@
     window.returnEquipmentFromBorrowersModal = async function(e, equipId, empId, returnQty) {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+
+      const isAuth = (typeof window.hasStaffOrAdminAuthorization === 'function') && window.hasStaffOrAdminAuthorization();
+      if (!isAuth) {
+        alert("🔒 พนักงานทั่วไปไม่มีสิทธิ์บันทึกรับคืนอุปกรณ์\n\nการคืนอุปกรณ์เข้าคลังต้องดำเนินการโดยเจ้าหน้าที่ธุรการ หรือผู้ดูแลระบบเท่านั้น\n\n(หรือสแกนบัตรเจ้าหน้าที่ธุรการเพื่อปลดล็อก)");
+        if (typeof openScanEmpBadgeModal === 'function') {
+          openScanEmpBadgeModal();
+        }
+        return;
+      }
 
       try {
         const equipObj = (equipmentList || []).find(x => String(x.id) === String(equipId) || String(x.code) === String(equipId));
@@ -13411,7 +13645,7 @@
       window.editBorrowerDueDatePicker = flatpickr(elem, {
         dateFormat: 'Y-m-d',
         altInput: true,
-        altInputClass: 'form-control rounded-end-3 border-start-0 fw-bold fs-7 bg-white cursor-pointer',
+        altInputClass: 'form-control rounded-end-3 border-start-0 fw-bold fs-7 bg-white cursor-pointer py-1.5',
         altFormat: 'd/m/Y',
         locale: thLocale,
         disableMobile: true,
@@ -13420,6 +13654,13 @@
         },
         onValueUpdate: function(selectedDates, dateStr, instance) {
           applyThaiBuddhistYearOnlyDate(instance);
+        },
+        onChange: function(selectedDates, dateStr, instance) {
+          applyThaiBuddhistYearOnlyDate(instance);
+          document.querySelectorAll('.quick-due-date-btn').forEach(b => {
+            b.classList.remove('btn-success', 'text-white');
+            b.classList.add('btn-outline-secondary');
+          });
         },
         onMonthChange: function(selectedDates, dateStr, instance) {
           applyThaiBuddhistYearOnlyDate(instance);
@@ -13520,14 +13761,50 @@
       const noteInp = document.getElementById('editDueDateNoteInput');
       if (noteInp) noteInp.value = '';
 
+      setupEditDueDateModalStacking();
+
       const modalElem = document.getElementById('editBorrowerDueDateModal');
       if (modalElem) {
-        const bsModal = bootstrap.Modal.getOrCreateInstance(modalElem);
+        const bsModal = bootstrap.Modal.getOrCreateInstance(modalElem, { focus: false });
         bsModal.show();
       }
     };
 
+    function setupEditDueDateModalStacking() {
+      const editModalElem = document.getElementById('editBorrowerDueDateModal');
+      if (!editModalElem || editModalElem._stackingSetup) return;
+      editModalElem._stackingSetup = true;
+
+      editModalElem.addEventListener('show.bs.modal', function() {
+        const borrowersModalElem = document.getElementById('equipmentBorrowersModal');
+        if (borrowersModalElem && (borrowersModalElem.classList.contains('show') || borrowersModalElem.style.display === 'block')) {
+          setTimeout(() => {
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            if (backdrops.length > 1) {
+              backdrops[backdrops.length - 1].style.zIndex = '1068';
+            }
+          }, 15);
+        }
+      });
+
+      editModalElem.addEventListener('hidden.bs.modal', function() {
+        const borrowersModalElem = document.getElementById('equipmentBorrowersModal');
+        if (borrowersModalElem && (borrowersModalElem.classList.contains('show') || borrowersModalElem.style.display === 'block')) {
+          document.body.classList.add('modal-open');
+          document.body.style.overflow = 'hidden';
+        }
+        document.querySelectorAll('.quick-due-date-btn').forEach(b => {
+          b.classList.remove('btn-success', 'text-white');
+          b.classList.add('btn-outline-secondary');
+        });
+      });
+    }
+
     window.applyQuickDueDateOffset = function(days) {
+      if (window.editBorrowerDueDatePicker && window.editBorrowerDueDatePicker.isOpen) {
+        window.editBorrowerDueDatePicker.close();
+      }
+
       const d = new Date();
       d.setDate(d.getDate() + Number(days));
       d.setHours(17, 0, 0, 0);
@@ -13545,6 +13822,17 @@
 
       const timeSelect = document.getElementById('editDueTimeSelect');
       if (timeSelect) timeSelect.value = '17:00';
+
+      // Highlight active quick button
+      document.querySelectorAll('.quick-due-date-btn').forEach(b => {
+        if (Number(b.getAttribute('data-offset')) === Number(days)) {
+          b.classList.remove('btn-outline-secondary');
+          b.classList.add('btn-success', 'text-white');
+        } else {
+          b.classList.remove('btn-success', 'text-white');
+          b.classList.add('btn-outline-secondary');
+        }
+      });
     };
 
     window.saveEditedBorrowerDueDate = async function() {
@@ -13780,6 +14068,54 @@
     window.toggleTransTypeUI = function() {
       const selectedType = document.querySelector('input[name="transType"]:checked')?.value || 'เบิกจ่าย';
 
+      // ป้องกันพนักงานทั่วไปเลือกโหมดรับเข้าสต๊อก
+      if (selectedType === 'รับเข้าสต๊อก' || selectedType === 'รับเข้าสต๊อก (ขาเข้า)') {
+        const isSessionStaff = (typeof currentRole !== 'undefined') && (currentRole === 'ADMIN' || currentRole === 'MANAGER' || currentRole === 'STAFF');
+        const empSelect = document.getElementById('empSelect');
+        const empId = empSelect ? empSelect.value : null;
+        let selectedEmp = null;
+        if (empId && empId !== 'ALL' && typeof employeeList !== 'undefined' && Array.isArray(employeeList)) {
+          selectedEmp = employeeList.find(e => e && e.id === empId);
+        }
+        const isSelectedEmpStaff = selectedEmp ? ((typeof window.isStaffOrAdminEmp === 'function') && window.isStaffOrAdminEmp(selectedEmp)) : true;
+        if (!isSessionStaff || (selectedEmp && !isSelectedEmpStaff)) {
+          alert('⚠️ สิทธิ์ไม่เพียงพอ! ฟังก์ชันรับเข้าสต๊อกใช้งานได้เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้น (พนักงานทั่วไปไม่สามารถทำรายการรับเข้าสต๊อกได้)');
+          const issueRadio = document.getElementById('typeIssue');
+          if (issueRadio) issueRadio.checked = true;
+          return;
+        }
+      }
+
+      // ป้องกันพนักงานทั่วไปเลือกโหมดคืนอุปกรณ์
+      const isAuthReturnUser = (typeof window.hasStaffOrAdminAuthorization === 'function') && window.hasStaffOrAdminAuthorization();
+      const returnRadio = document.getElementById('typeReturn');
+      const returnRadioLabel = returnRadio ? document.querySelector('label[for="typeReturn"]') : null;
+
+      if (returnRadio) {
+        if (!isAuthReturnUser && typeof currentRole !== 'undefined' && currentRole === 'WORKER') {
+          returnRadio.disabled = true;
+          if (returnRadioLabel) {
+            returnRadioLabel.classList.add('disabled', 'opacity-50');
+            returnRadioLabel.title = '🔒 เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่มีสิทธิ์บันทึกรับคืนอุปกรณ์';
+          }
+          if (selectedType === 'คืนอุปกรณ์') {
+            alert('🔒 สิทธิ์ไม่เพียงพอ! การบันทึกรับคืนอุปกรณ์เข้าคลัง ต้องดำเนินการโดยเจ้าหน้าที่ธุรการ หรือผู้ดูแลระบบเท่านั้น\n\n(หรือสแกนบัตรเจ้าหน้าที่ธุรการเพื่อปลดล็อก)');
+            const issueRadio = document.getElementById('typeIssue');
+            if (issueRadio) issueRadio.checked = true;
+            if (typeof openScanEmpBadgeModal === 'function') {
+              openScanEmpBadgeModal();
+            }
+            return;
+          }
+        } else {
+          returnRadio.disabled = false;
+          if (returnRadioLabel) {
+            returnRadioLabel.classList.remove('disabled', 'opacity-50');
+            returnRadioLabel.title = '';
+          }
+        }
+      }
+
       // Enforce single-type document constraint: prevent switching type if cart already has items
       if (selectedTransItems.length > 0 && currentTransCartType && currentTransCartType !== selectedType) {
         const typeNameMap = {
@@ -13942,8 +14278,12 @@
       }
 
       const submitBtn = document.getElementById('btnSubmitTransaction');
+      const isAuthorizedTx = (typeof window.hasStaffOrAdminAuthorization === 'function') && window.hasStaffOrAdminAuthorization();
       if (submitBtn) {
-        if (selectedType === 'ยืมอุปกรณ์') {
+        if (!isAuthorizedTx && typeof currentRole !== 'undefined' && currentRole === 'WORKER') {
+          submitBtn.className = 'btn btn-secondary btn-lg flex-grow-1 py-3 rounded-3 fw-bold shadow-sm';
+          submitBtn.innerHTML = '<i class="bi bi-shield-lock-fill me-2 text-warning"></i> สแกนบัตรเจ้าหน้าที่ธุรการเพื่อปลดล็อก';
+        } else if (selectedType === 'ยืมอุปกรณ์') {
           submitBtn.className = 'btn btn-warning btn-lg flex-grow-1 py-3 rounded-3 fw-bold shadow-sm';
           submitBtn.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i> บันทึกยืมอุปกรณ์';
         } else if (selectedType === 'คืนอุปกรณ์') {
@@ -14563,9 +14903,15 @@
         html += `
           <tr class="${it.daysOverdue > 0 ? 'overdue-pulse-row' : ''}">
             <td class="text-center ps-3">
-              <button type="button" class="btn btn-sm btn-info text-dark rounded-pill px-3 py-1 fs-7 fw-bold shadow-sm" onclick="quickReturnOverdueTransaction(event, '${it.employeeId || ''}', '${it.equipmentId || ''}', ${it.remainingQty})" title="บันทึกรับคืนอุปกรณ์นี้เข้าคลังทันที">
-                คืน
-              </button>
+              ${(typeof window.hasStaffOrAdminAuthorization === 'function' && window.hasStaffOrAdminAuthorization()) ? `
+                <button type="button" class="btn btn-sm btn-info text-dark rounded-pill px-3 py-1 fs-7 fw-bold shadow-sm" onclick="quickReturnOverdueTransaction(event, '${it.employeeId || ''}', '${it.equipmentId || ''}', ${it.remainingQty})" title="บันทึกรับคืนอุปกรณ์นี้เข้าคลังทันที">
+                  คืน
+                </button>
+              ` : `
+                <button type="button" class="btn btn-sm btn-secondary text-white opacity-75 rounded-pill px-2.5 py-1 fs-8 fw-semibold shadow-none" onclick="quickReturnOverdueTransaction(event, '${it.employeeId || ''}', '${it.equipmentId || ''}', ${it.remainingQty})" title="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้น (คลิกเพื่อสแกนบัตรปลดล็อก)">
+                  <i class="bi bi-shield-lock-fill text-warning me-1"></i> ล็อก
+                </button>
+              `}
             </td>
             <td class="text-center text-nowrap">
               <span class="badge bg-warning bg-opacity-25 text-dark border border-warning rounded-pill px-2.5 py-1 fw-bold fs-7">ยืม ${it.remainingQty}</span>
@@ -14732,6 +15078,15 @@
     window.quickReturnOverdueTransaction = async function(e, empId, equipId, returnQty) {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+
+      const isAuth = (typeof window.hasStaffOrAdminAuthorization === 'function') && window.hasStaffOrAdminAuthorization();
+      if (!isAuth) {
+        alert("🔒 พนักงานทั่วไปไม่มีสิทธิ์บันทึกรับคืนอุปกรณ์\n\nการคืนอุปกรณ์เข้าคลังต้องดำเนินการโดยเจ้าหน้าที่ธุรการ หรือผู้ดูแลระบบเท่านั้น\n\n(หรือสแกนบัตรเจ้าหน้าที่ธุรการเพื่อปลดล็อก)");
+        if (typeof openScanEmpBadgeModal === 'function') {
+          openScanEmpBadgeModal();
+        }
+        return;
+      }
 
       try {
         const equipObj = (equipmentList || []).find(x => String(x.id) === String(equipId) || String(x.code) === String(equipId));
@@ -14917,6 +15272,77 @@
         showToast("❌ ไม่สามารถคัดลอกข้อความได้");
       });
     };
+
+    // ==================== AUTO REFRESH OVERDUE COMPONENTS ENGINE ====================
+    window._lastOverdueCheckSignature = '';
+    window._lastOverdueCount = -1;
+
+    // ฟังก์ชันตรวจสอบและรีเฟรชเฉพาะส่วนเกินกำหนดแบบทันทีโดยไม่ต้องโหลดทั้งหน้า
+    window.checkAndRefreshOverdueComponents = function(silent = true) {
+      if (typeof calculateOverdueBorrowings !== 'function') return;
+
+      const thresh = window.currentOverdueThresholdDays !== undefined ? window.currentOverdueThresholdDays : 3;
+      const overdueList = calculateOverdueBorrowings(thresh) || [];
+      const currentCount = overdueList.length;
+
+      // สร้างลายเซ็นเพื่อตรวจสอบว่ามีรายการใดเปลี่ยนสถานะหรือถึงเวลาเกินกำหนดหรือไม่
+      const currentSignature = overdueList.map(x => `${x.txId}_${x.equipmentId}_${x.remainingQty}_${x.daysOverdue}`).sort().join('|');
+
+      if (window._lastOverdueCheckSignature !== '' && window._lastOverdueCheckSignature !== currentSignature) {
+        // มีการเปลี่ยนแปลงสถานะรายการเกินกำหนด!
+        // ๑. อัปเดตตัวเลขและแถบแจ้งเตือนด้านบน
+        if (typeof updateStats === 'function') {
+          updateStats();
+        }
+
+        // ๒. หากเปิดหน้าต่างรายการเกินกำหนดค้างไว้ ให้รีเฟรชตารางเฉพาะหน้าต่างนั้นทันที
+        const overdueModalElem = document.getElementById('overdueBorrowingsModal');
+        if (overdueModalElem && overdueModalElem.classList.contains('show')) {
+          if (typeof renderOverdueTable === 'function') {
+            renderOverdueTable();
+          }
+        }
+
+        // ๓. หากตัวกรองในแท็บพัสดุกำลังเลือกโหมด "ยืมเกินกำหนด" อยู่ ให้รีเฟรชเฉพาะตาราง/การ์ดพัสดุ
+        const statusFilter = document.getElementById('statusFilter');
+        if (statusFilter && statusFilter.value === 'OVERDUE') {
+          if (typeof renderCatalogGrid === 'function') {
+            renderCatalogGrid();
+          }
+        }
+
+        // ๔. แจ้งเตือนข้อความเตือนเมื่อมีรายการเกินกำหนดเพิ่มขึ้นมาใหม่
+        if (window._lastOverdueCount !== -1 && currentCount > window._lastOverdueCount && !silent) {
+          const diff = currentCount - window._lastOverdueCount;
+          showToast(`⏰ ถึงเวลาเกินกำหนดคืน: มีอุปกรณ์เกินกำหนดเพิ่มขึ้น ${diff} รายการ`, { type: 'warning' });
+        }
+      } else if (window._lastOverdueCheckSignature === '') {
+        // ครั้งแรกตอนโหลดระบบ
+        if (typeof updateStats === 'function') {
+          updateStats();
+        }
+      }
+
+      window._lastOverdueCheckSignature = currentSignature;
+      window._lastOverdueCount = currentCount;
+    };
+
+    // ตั้งเวลาตรวจสอบทุกๆ 30 วินาที เพื่อให้เมื่อถึงเวลาที่เกินกำหนด ระบบจะรีเฟรชเฉพาะส่วนนั้นขึ้นมาทันทีโดยไม่ต้องโหลดทั้งหน้า
+    if (window._overdueAutoCheckInterval) {
+      clearInterval(window._overdueAutoCheckInterval);
+    }
+    window._overdueAutoCheckInterval = setInterval(() => {
+      if (typeof window.checkAndRefreshOverdueComponents === 'function') {
+        window.checkAndRefreshOverdueComponents(false);
+      }
+    }, 30000);
+
+    // ตรวจสอบทันทีเมื่อผู้ใช้สลับกลับมาที่หน้าเว็บ
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && typeof window.checkAndRefreshOverdueComponents === 'function') {
+        window.checkAndRefreshOverdueComponents(true);
+      }
+    });
 
     window.handleQuickQrScanConfirm = function() {
       const equipId = document.getElementById('quickScanSelect').value;
@@ -15811,8 +16237,21 @@
     window.scannerActiveReturnEmployee = null;
     window.scannerStockActionType = 'เบิกตัดสต็อก'; // 'เบิกตัดสต็อก' | 'รับเข้าสต๊อก'
 
-    // สลับโหมดระหว่าง เบิกตัดสต็อก กับ รับเข้าสต๊อก ในหน้าต่างสแกน
+    // สลับโหมดระหว่าง เบิกตัดสต็อก กับ รับเข้าสต๊อก ในหน้าต่างสแกน (เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้น)
     window.toggleScannerReceiveIssueMode = function() {
+      // ตรวจสอบสิทธิ์: ผู้ใช้ที่ล็อกอินหรือบัตรเจ้าหน้าที่ที่สแกนเข้ามา ต้องเป็นเจ้าหน้าที่หรือแอดมินเท่านั้น และผู้ทำรายการต้องเป็นเจ้าหน้าที่/แอดมิน (พนักงานทั่วไปไม่มีสิทธิ์)
+      const canAccessStockIn = (typeof window.canAccessScannerStockIn === 'function')
+        ? window.canAccessScannerStockIn()
+        : false;
+
+      if (!canAccessStockIn) {
+        if (typeof window.playHardwareScanErrorSound === 'function') {
+          window.playHardwareScanErrorSound();
+        }
+        showToast('⚠️ สิทธิ์ไม่เพียงพอ! ฟังก์ชันรับเข้าสต๊อกใช้งานได้เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้น (พนักงานทั่วไปไม่สามารถทำรายการรับเข้าสต๊อกได้)');
+        return;
+      }
+
       if (window.scannerStockActionType === 'รับเข้าสต๊อก') {
         window.scannerStockActionType = 'เบิกตัดสต็อก';
         currentTransCartType = 'เบิกจ่าย';
@@ -15830,7 +16269,23 @@
         const issueRadio = document.getElementById('typeIssue');
         if (issueRadio) issueRadio.checked = false;
         if (typeof window.toggleTransTypeUI === 'function') window.toggleTransTypeUI();
-        showToast('📦 สลับเข้าสู่โหมด "รับเข้าสต๊อก" (บันทึกรับสินค้าเพิ่มเข้าคลัง)');
+
+        // ตรวจสอบผู้ทำรายการที่เลือกหรือสแกนไว้เดิม: ต้องเป็นเจ้าหน้าที่หรือแอดมินเท่านั้น
+        const curEmp = (typeof window.getScannerCurrentOperator === 'function') ? window.getScannerCurrentOperator() : null;
+        const isCurStaff = curEmp && (typeof window.isStaffOrAdminEmp === 'function') && window.isStaffOrAdminEmp(curEmp);
+
+        if (!isCurStaff) {
+          activeScannerDetectedEmpId = null;
+          window.scannerActiveReturnEmployee = null;
+          const empSelect = document.getElementById('empSelect');
+          if (empSelect) empSelect.value = '';
+          if (typeof window.updateScannerOperatorUI === 'function') {
+            window.updateScannerOperatorUI(null);
+          }
+          showToast('📦 เข้าสู่โหมด "รับเข้าสต๊อก" กรุณาสแกนบัตรเจ้าหน้าที่หรือผู้ดูแลระบบเพื่อเป็นผู้ทำรายการ');
+        } else {
+          showToast(`📦 เข้าสู่โหมด "รับเข้าสต๊อก" ผู้ทำรายการ: ${typeof formatEmpName === 'function' ? formatEmpName(curEmp) : curEmp.name}`);
+        }
       }
       if (typeof window.updateScannerEquipmentListUI === 'function') {
         window.updateScannerEquipmentListUI();
@@ -15936,6 +16391,27 @@
       }
     };
 
+    // พิมพ์แก้ไขจำนวนที่จะคืนโดยตรงในหน้าต่างสแกน
+    window.setScannerReturnItemQty = function(equipId, rawVal) {
+      if (!window.scannerActiveReturnItems || !Array.isArray(window.scannerActiveReturnItems)) return;
+      const target = window.scannerActiveReturnItems.find(x => x.equipmentId === equipId);
+      if (!target) return;
+
+      let val = parseInt(rawVal, 10);
+      if (isNaN(val) || val < 1) val = 1;
+      if (val > target.borrowedQty) {
+        val = target.borrowedQty;
+        if (typeof showToast === 'function') {
+          showToast(`⚠️ จำนวนที่คืนไม่สามารถเกินยอดที่ยืมได้ (${target.borrowedQty} ${target.unit || 'ชิ้น'})`);
+        }
+      }
+
+      target.returnQty = val;
+      if (typeof window.updateScannerEquipmentListUI === 'function') {
+        window.updateScannerEquipmentListUI();
+      }
+    };
+
     // สลับเข้าสู่โหมด "ยืมอุปกรณ์" ต่อเนื่องทันที (ขั้นตอนที่ ๒)
     window.switchToBorrowModeFromScanner = function() {
       window.scannerReturnMode = false;
@@ -15954,14 +16430,30 @@
         window.toggleTransTypeUI();
       }
 
+      // รักษาและผูกผู้ทำรายการเดิมลงใน empSelect และ input ค้นหาทันที
+      const curEmp = window.scannerActiveReturnEmployee || 
+                     (activeScannerDetectedEmpId && typeof employeeList !== 'undefined' ? employeeList.find(e => e.id === activeScannerDetectedEmpId) : null);
+      if (curEmp) {
+        window.scannerActiveReturnEmployee = curEmp;
+        activeScannerDetectedEmpId = curEmp.id;
+        const empSelect = document.getElementById('empSelect');
+        if (empSelect) {
+          empSelect.value = curEmp.id;
+        }
+        const searchInput = document.getElementById('transEmpSearchInput');
+        if (searchInput) {
+          searchInput.value = typeof formatEmpName === 'function' ? formatEmpName(curEmp) : curEmp.name;
+        }
+      }
+
       // แสดงกรอบกล้องและปรับความสูงกล่องรายการอุปกรณ์กลับคืน
       const cameraCard = document.getElementById('scannerViewCard');
       if (cameraCard) cameraCard.classList.remove('d-none');
       const itemsContainer = document.getElementById('scannerScannedItemsContainer');
       if (itemsContainer) itemsContainer.style.maxHeight = '230px';
 
-      if (window.scannerActiveReturnEmployee && typeof window.updateScannerOperatorUI === 'function') {
-        window.updateScannerOperatorUI(window.scannerActiveReturnEmployee);
+      if (curEmp && typeof window.updateScannerOperatorUI === 'function') {
+        window.updateScannerOperatorUI(curEmp);
       }
       if (typeof window.updateScannerEquipmentListUI === 'function') {
         window.updateScannerEquipmentListUI();
@@ -15979,14 +16471,25 @@
 
     // บันทึกคืนอุปกรณ์ชิ้นเดียวจากปุ่ม "คืน" ในแถว
     window.confirmSingleReturnFromScanner = async function(equipId) {
+      if (window._isSingleReturnLocked) return;
+      window._isSingleReturnLocked = true;
+      setTimeout(() => { window._isSingleReturnLocked = false; }, 2000);
+
       const isAuth = (typeof window.hasStaffOrAdminAuthorization === 'function') && window.hasStaffOrAdminAuthorization();
       if (!isAuth) {
-        alert("🔒 กรุณาสแกนบัตรเจ้าหน้าที่ (Staff) หรือ ผู้ดูแลระบบ (Admin) เพื่อปลดล็อกก่อนทำรายการคืน");
+        window._isSingleReturnLocked = false;
+        alert("🔒 กรุณาสแกนบัตรเจ้าหน้าที่ หรือ ผู้ดูแลระบบ เพื่อปลดล็อกก่อนทำรายการคืน");
         return;
       }
-      if (!window.scannerActiveReturnItems) return;
+      if (!window.scannerActiveReturnItems) {
+        window._isSingleReturnLocked = false;
+        return;
+      }
       const item = window.scannerActiveReturnItems.find(x => x.equipmentId === equipId);
-      if (!item) return;
+      if (!item) {
+        window._isSingleReturnLocked = false;
+        return;
+      }
 
       const emp = window.scannerActiveReturnEmployee || (typeof employeeList !== 'undefined' ? employeeList.find(e => e.id === activeScannerDetectedEmpId) : null);
       const empName = emp ? (typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name) : 'พนักงาน';
@@ -16186,17 +16689,72 @@
     window.authorizedStaffOperator = null;
     window.isScannerSavingInProgress = false; // ตัวล็อกป้องกันการสแกนหรือบันทึกซ้ำซ้อน
 
-    window.isStaffOrAdminEmp = function(emp) {
+    window.isAdministrativeStaffEmp = function(emp) {
       if (!emp) return false;
-      const role = String(emp.role || '').toUpperCase();
-      const pos = String(emp.position || '').toLowerCase();
-      const dept = String(emp.department || '').toLowerCase();
-      const isStaffRole = (role === 'ADMIN' || role === 'MANAGER' || role === 'STAFF');
-      const isStaffPos = pos.includes('admin') || pos.includes('manager') || pos.includes('staff') || 
-                         pos.includes('ผู้ดูแล') || pos.includes('ผู้จัดการ') || pos.includes('เจ้าหน้าที่') || 
-                         pos.includes('หัวหน้า') || pos.includes('บริหาร') || pos.includes('ธุรการ');
-      const isStaffDept = dept.includes('บริหาร') || dept.includes('อำนวยการ') || dept.includes('สำนักงาน');
-      return (isStaffRole || isStaffPos || isStaffDept || emp.accessInventory === true);
+      const dept = String(emp.department || '').toLowerCase().trim();
+      const pos = String(emp.position || '').toLowerCase().trim();
+      const role = String(emp.role || '').toUpperCase().trim();
+
+      // ตรวจสอบส่วนงาน/แผนกที่เกี่ยวข้องกับธุรการ
+      const isDeptAdmin = dept.includes('ธุรการ') || dept.includes('บริหาร') || dept.includes('อำนวยการ') || dept.includes('สำนักงาน') || dept.includes('พัสดุ') || dept.includes('ส่วนกลาง');
+
+      // ตรวจสอบตำแหน่งงานที่เกี่ยวข้องกับธุรการ
+      const isPosAdmin = pos.includes('ธุรการ') || pos.includes('เจ้าหน้าที่ธุรการ') || pos.includes('พัสดุ') || pos.includes('ผู้ดูแลระบบ') || pos.includes('admin') || pos.includes('เจ้าหน้าที่สำนักงาน');
+
+      // ตรวจสอบสิทธิ์คลังพัสดุหรือสิทธิ์ระดับผู้ดูแลระบบสูงสุด
+      const isSpecialAdmin = (emp.accessInventory === true) || (role === 'ADMIN');
+
+      return (isDeptAdmin || isPosAdmin || isSpecialAdmin);
+    };
+
+    window.isStaffOrAdminEmp = function(emp) {
+      return window.isAdministrativeStaffEmp(emp);
+    };
+
+    // ดึงข้อมูลผู้ทำรายการปัจจุบันที่ระบุในหน้าต่างสแกน
+    window.getScannerCurrentOperator = function() {
+      // 1. ตรวจสอบจากตัวแปรพนักงานที่สแกนในหน้าต่างสแกน
+      if (window.scannerActiveReturnEmployee) {
+        return window.scannerActiveReturnEmployee;
+      }
+      if (typeof activeScannerDetectedEmpId !== 'undefined' && activeScannerDetectedEmpId && typeof employeeList !== 'undefined' && Array.isArray(employeeList)) {
+        const found = employeeList.find(e => e && e.id === activeScannerDetectedEmpId);
+        if (found) return found;
+      }
+      // 2. ตรวจสอบจากตัวเลือกผู้ทำรายการในฟอร์ม (empSelect)
+      const empSelect = document.getElementById('empSelect');
+      const empId = empSelect ? empSelect.value : null;
+      if (empId && empId !== 'ALL' && typeof employeeList !== 'undefined' && Array.isArray(employeeList)) {
+        const found = employeeList.find(e => e && e.id === empId);
+        if (found) return found;
+      }
+      return null;
+    };
+
+    // ตรวจสอบสิทธิ์การเข้าถึงฟังก์ชัน "รับเข้าสต๊อก" ในหน้าสแกนอุปกรณ์
+    // ข้อกำหนด: ผู้ที่มีสิทธิ์เจ้าหน้าที่หรือแอดมินตอนเข้าสู่ระบบ หรือสแกนบัตรบุคลากรในส่วนงานธุรการเท่านั้น
+    window.canAccessScannerStockIn = function() {
+      // ตรวจสอบผู้ทำรายการปัจจุบัน
+      const currentOp = (typeof window.getScannerCurrentOperator === 'function') ? window.getScannerCurrentOperator() : null;
+
+      // กฎข้อที่ 1: หากมีการระบุผู้ทำรายการแล้ว ผู้ทำรายการต้องเป็นบุคลากรในส่วนงานธุรการเท่านั้น
+      if (currentOp) {
+        const isOpStaff = (typeof window.isAdministrativeStaffEmp === 'function') && window.isAdministrativeStaffEmp(currentOp);
+        if (!isOpStaff) {
+          return false; // บุคลากรนอกส่วนงานธุรการไม่มีสิทธิ์รับเข้าสต๊อกเด็ดขาด
+        }
+      }
+
+      // กฎข้อที่ 2: ตรวจสอบสิทธิ์ผู้มีอำนาจ
+      const isSessionStaff = (typeof currentRole !== 'undefined') && (currentRole === 'ADMIN' || currentRole === 'MANAGER' || currentRole === 'STAFF');
+      const isCardStaff = !!(window.authorizedStaffOperator && (typeof window.isAdministrativeStaffEmp === 'function') && window.isAdministrativeStaffEmp(window.authorizedStaffOperator));
+
+      // ถ้าล็อกอินเป็นพนักงานทั่วไป (WORKER) และยังไม่มีบัตรเจ้าหน้าที่ธุรการสแกนรับรอง -> ปฏิเสธทันที
+      if (!isSessionStaff && !isCardStaff) {
+        return false;
+      }
+
+      return true;
     };
 
     window.hasStaffOrAdminAuthorization = function() {
@@ -16204,18 +16762,10 @@
       if (typeof currentRole !== 'undefined' && (currentRole === 'ADMIN' || currentRole === 'MANAGER' || currentRole === 'STAFF')) {
         return true;
       }
-      // 2) ตรวจสอบบัตรเจ้าหน้าที่/แอดมินที่สแกนเข้ามาในหน้าสแกน (authorizedStaffOperator)
-      if (window.authorizedStaffOperator && window.isStaffOrAdminEmp(window.authorizedStaffOperator)) {
+      // 2) กรณีล็อกอินด้วยสิทธิ์พนักงานทั่วไป (WORKER):
+      // ไม่สามารถปลดล็อกเพียงแค่เลือกชื่อจากเมนูดรอปดาวน์ แต่ต้องมีการสแกนคิวอาร์โค้ดบัตรของคนใน "ส่วนงานธุรการ" เพื่อปลดล็อกเท่านั้น
+      if (window.authorizedStaffOperator && (typeof window.isAdministrativeStaffEmp === 'function') && window.isAdministrativeStaffEmp(window.authorizedStaffOperator)) {
         return true;
-      }
-      // 3) ตรวจสอบผู้ทำรายการที่เลือก/สแกน (ถ้าผู้ทำรายการเองเป็นเจ้าหน้าที่หรือแอดมิน)
-      const empSelect = document.getElementById('empSelect');
-      const empId = empSelect ? empSelect.value : (typeof activeScannerDetectedEmpId !== 'undefined' ? activeScannerDetectedEmpId : null);
-      if (empId && typeof employeeList !== 'undefined' && Array.isArray(employeeList)) {
-        const emp = employeeList.find(e => e && e.id === empId);
-        if (emp && window.isStaffOrAdminEmp(emp)) {
-          return true;
-        }
       }
       return false;
     };
@@ -16234,16 +16784,32 @@
         }
       }
 
+      const isStockIn = (window.scannerStockActionType === 'รับเข้าสต๊อก');
+
       if (emp) {
+        const isStaff = (typeof window.isStaffOrAdminEmp === 'function') && window.isStaffOrAdminEmp(emp);
         const empDisplayName = typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name;
         const empDept = emp.department || 'ทั่วไป';
-        statusElem.innerHTML = `<span class="fw-bold text-dark">${escapeHtml(empDisplayName)}</span> <span class="text-muted fs-8 font-monospace">[${escapeHtml(emp.id || emp.code || '')}]</span> <span class="text-secondary fs-8">(${escapeHtml(empDept)})</span>`;
-        badgeElem.className = 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8 text-nowrap';
-        badgeElem.textContent = 'ระบุแล้ว';
+
+        if (isStockIn && !isStaff) {
+          statusElem.innerHTML = `<span class="fw-bold text-danger">${escapeHtml(empDisplayName)}</span> <span class="text-danger fs-8">(ไม่ใช่เจ้าหน้าที่/แอดมิน ไม่สามารถรับเข้าสต๊อกได้)</span>`;
+          badgeElem.className = 'badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 fs-8 text-nowrap';
+          badgeElem.textContent = 'สิทธิ์ไม่พอ';
+        } else {
+          statusElem.innerHTML = `<span class="fw-bold text-dark">${escapeHtml(empDisplayName)}</span> <span class="text-muted fs-8 font-monospace">[${escapeHtml(emp.id || emp.code || '')}]</span> <span class="text-secondary fs-8">(${escapeHtml(empDept)})</span>`;
+          badgeElem.className = 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8 text-nowrap';
+          badgeElem.textContent = isStockIn ? 'เจ้าหน้าที่ผู้รับเข้า' : 'ระบุแล้ว';
+        }
       } else {
-        statusElem.textContent = 'รอสแกนผู้ทำรายการ';
-        badgeElem.className = 'badge bg-light text-muted border border-secondary border-opacity-25 fs-8 text-nowrap';
-        badgeElem.textContent = 'ยังไม่ระบุ';
+        if (isStockIn) {
+          statusElem.textContent = 'รอสแกนบัตรเจ้าหน้าที่/แอดมิน เพื่อรับเข้าสต๊อก';
+          badgeElem.className = 'badge bg-warning bg-opacity-10 text-dark border border-warning fs-8 text-nowrap';
+          badgeElem.textContent = 'ต้องเป็นเจ้าหน้าที่';
+        } else {
+          statusElem.textContent = 'รอสแกนผู้ทำรายการ';
+          badgeElem.className = 'badge bg-light text-muted border border-secondary border-opacity-25 fs-8 text-nowrap';
+          badgeElem.textContent = 'ยังไม่ระบุ';
+        }
       }
 
       // รีเซ็ตการแสดงผลป้ายอุปกรณ์ (ไม่ต้องแสดงป้าย "รอสแกนบัตรเจ้าหน้าที่" ด้านบน)
@@ -16348,7 +16914,7 @@
             <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-0.5 fs-8 fw-bold text-nowrap" onclick="switchToBorrowModeFromScanner()" title="สลับไปยืมอุปกรณ์เพิ่มโดยไม่คืน">
               ยืมเพิ่ม
             </button>
-            <button type="button" id="scannerClearAllBtn" class="btn btn-sm ${isAuthorizedReturn ? 'btn-info text-dark shadow-xs' : 'btn-secondary text-white opacity-75'} rounded-pill px-2.5 py-0.5 fs-8 fw-bold text-nowrap" ${isAuthorizedReturn ? '' : 'disabled'} onclick="confirmAllReturnsFromScanner()" title="${isAuthorizedReturn ? 'คืนอุปกรณ์ที่ยืมทั้งหมด' : 'สแกนบัตรเจ้าหน้าที่เพื่อปลดล็อกการคืน'}">
+            <button type="button" id="scannerClearAllBtn" class="btn btn-sm ${isAuthorizedReturn ? 'btn-info text-dark shadow-xs' : 'btn-secondary text-white opacity-75'} rounded-pill px-2.5 py-0.5 fs-8 fw-bold text-nowrap" ${isAuthorizedReturn ? '' : 'disabled'} onclick="confirmAllReturnsFromScanner()" title="${isAuthorizedReturn ? 'คืนอุปกรณ์ที่ยืมทั้งหมด' : 'สแกนบัตรเจ้าหน้าที่ธุรการเพื่อปลดล็อกการคืน'}">
               คืนทั้งหมด
             </button>
           `;
@@ -16358,7 +16924,7 @@
           if (!isAuthorizedReturn) {
             saveBtn.disabled = true;
             saveBtn.className = 'btn btn-secondary fw-bold rounded-pill px-4 py-2.5 shadow-sm fs-6 w-100';
-            saveBtn.innerHTML = 'สแกนบัตรเจ้าหน้าที่เพื่อปลดล็อกปุ่มคืน';
+            saveBtn.innerHTML = '<i class="bi bi-shield-lock-fill me-1.5 text-warning"></i> สแกนบัตรเจ้าหน้าที่ธุรการเพื่อปลดล็อกปุ่มคืน';
             saveBtn.onclick = null;
           } else {
             saveBtn.disabled = false;
@@ -16392,13 +16958,13 @@
                 <button type="button" class="btn btn-sm btn-link text-dark p-0 px-1.5 border-0 text-decoration-none lh-1" onclick="updateScannerReturnItemQty('${it.equipmentId}', -1)" ${isAtMin ? 'disabled style="opacity:0.35;"' : ''} title="ลดจำนวน">
                   <i class="bi bi-dash fw-bold fs-6"></i>
                 </button>
-                <span class="fw-bold text-dark px-1 fs-7 text-center" style="min-width: 20px;">${returnNum}</span>
+                <input type="number" class="form-control form-control-sm border-0 bg-transparent text-center fw-bold p-0 text-dark fs-7" style="width: 44px; min-width: 36px; -moz-appearance: textfield;" min="1" max="${borrowedNum}" value="${returnNum}" onchange="setScannerReturnItemQty('${it.equipmentId}', this.value)" onfocus="this.select()" title="คลิกเพื่อพิมพ์แก้ไขจำนวนคืน (ไม่เกินยอดที่ยืม ${borrowedNum})" />
                 <button type="button" class="btn btn-sm btn-link text-dark p-0 px-1.5 border-0 text-decoration-none lh-1" onclick="updateScannerReturnItemQty('${it.equipmentId}', 1)" ${isAtMax ? 'disabled style="opacity:0.35;"' : ''} title="เพิ่มจำนวน">
                   <i class="bi bi-plus fw-bold fs-6"></i>
                 </button>
               </div>
-              <button type="button" class="btn btn-sm ${isAuthorizedReturn ? 'btn-info text-dark fw-bold shadow-xs' : 'btn-secondary text-white opacity-75'} rounded-pill px-2.5 py-0.5 border-0 lh-1 text-nowrap fs-8" onclick="confirmSingleReturnFromScanner('${it.equipmentId}')" title="${isAuthorizedReturn ? 'กดเพื่อคืนอุปกรณ์นี้' : 'สแกนบัตรเจ้าหน้าที่เพื่อปลดล็อกการคืน'}">
-                คืน
+              <button type="button" class="btn btn-sm ${isAuthorizedReturn ? 'btn-info text-dark fw-bold shadow-xs' : 'btn-secondary text-white opacity-75'} rounded-pill px-2.5 py-0.5 border-0 lh-1 text-nowrap fs-8" ${isAuthorizedReturn ? '' : 'disabled'} onclick="confirmSingleReturnFromScanner('${it.equipmentId}')" title="${isAuthorizedReturn ? 'กดเพื่อคืนอุปกรณ์นี้' : 'สแกนบัตรเจ้าหน้าที่ธุรการเพื่อปลดล็อกการคืน'}">
+                ${isAuthorizedReturn ? 'คืน' : '<i class="bi bi-shield-lock-fill text-warning me-1"></i> ล็อก'}
               </button>
             </div>
           </div>
@@ -16463,7 +17029,7 @@
           } else if (!isAuthorized) {
             saveBtn.disabled = true;
             saveBtn.className = 'btn btn-secondary fw-bold rounded-pill px-4 py-2.5 shadow-sm fs-6 w-100';
-            saveBtn.innerHTML = '<i class="bi bi-shield-lock-fill me-1.5 text-warning"></i> สแกนบัตรเจ้าหน้าที่เพื่อบันทึกยืม';
+            saveBtn.innerHTML = '<i class="bi bi-shield-lock-fill me-1.5 text-warning"></i> สแกนบัตรเจ้าหน้าที่ธุรการ เพื่อบันทึกยืม';
           } else {
             saveBtn.disabled = false;
             saveBtn.className = 'btn btn-warning fw-bold rounded-pill px-4 py-2.5 shadow-sm text-dark fs-6 w-100';
@@ -16472,15 +17038,37 @@
         }
       } else {
         // โหมดเบิกตัดสต็อก / รับเข้าสต๊อก (วัสดุสิ้นเปลือง / รายการสินค้า)
-        // แสดงปุ่มสลับรับเข้าสต๊อก / สลับเบิกตัดสต๊อก
+        // แสดงปุ่มสลับรับเข้าสต๊อก / สลับเบิกตัดสต๊อก เฉพาะผู้ที่มีสิทธิ์เจ้าหน้าที่หรือแอดมิน และผู้ทำรายการต้องเป็นเจ้าหน้าที่/แอดมินเท่านั้น
+        const canUseStockIn = (typeof window.canAccessScannerStockIn === 'function')
+          ? window.canAccessScannerStockIn()
+          : false;
+
+        // หากไม่มีสิทธิ์รับเข้าสต๊อก (เช่น พนักงานทั่วไปกำลังทำรายการ) แต่หน้าสแกนค้างอยู่ในโหมดรับเข้าสต๊อก ให้รีเซ็ตกลับเป็นเบิกตัดสต็อกทันที
+        if (!canUseStockIn && window.scannerStockActionType === 'รับเข้าสต๊อก') {
+          window.scannerStockActionType = 'เบิกตัดสต็อก';
+          currentTransCartType = 'เบิกจ่าย';
+          const issueRadio = document.getElementById('typeIssue');
+          if (issueRadio) issueRadio.checked = true;
+          const stockInRadio = document.getElementById('typeStockIn');
+          if (stockInRadio) stockInRadio.checked = false;
+          if (typeof window.toggleTransTypeUI === 'function') window.toggleTransTypeUI();
+        }
+
         if (finishBtn) {
-          finishBtn.classList.remove('d-none');
-          if (window.scannerStockActionType === 'รับเข้าสต๊อก') {
-            finishBtn.className = 'btn btn-outline-danger fw-bold rounded-pill px-3 py-1 fs-7 shadow-sm text-nowrap';
-            finishBtn.innerHTML = 'สลับเบิกตัดสต๊อก';
+          if (!canUseStockIn) {
+            // หากไม่ใช่เจ้าหน้าที่หรือแอดมิน หรือผู้ทำรายการเป็นพนักงานทั่วไป ให้ซ่อนปุ่มสลับรับเข้าสต๊อกและปิดการใช้งานทันที
+            finishBtn.classList.add('d-none');
+            finishBtn.disabled = true;
           } else {
-            finishBtn.className = 'btn btn-outline-success fw-bold rounded-pill px-3 py-1 fs-7 shadow-sm text-nowrap';
-            finishBtn.innerHTML = 'สลับรับเข้าสต๊อก';
+            finishBtn.classList.remove('d-none');
+            finishBtn.disabled = false;
+            if (window.scannerStockActionType === 'รับเข้าสต๊อก') {
+              finishBtn.className = 'btn btn-outline-danger fw-bold rounded-pill px-3 py-1 fs-7 shadow-sm text-nowrap';
+              finishBtn.innerHTML = 'สลับเบิกตัดสต๊อก';
+            } else {
+              finishBtn.className = 'btn btn-outline-success fw-bold rounded-pill px-3 py-1 fs-7 shadow-sm text-nowrap';
+              finishBtn.innerHTML = 'สลับรับเข้าสต๊อก';
+            }
           }
         }
 
@@ -16490,20 +17078,32 @@
             saveBtn.disabled = true;
             saveBtn.className = 'btn btn-secondary fw-bold rounded-pill px-4 py-2.5 shadow-sm fs-6 w-100';
             saveBtn.innerHTML = 'บันทึกข้อมูล';
+          } else if (window.scannerStockActionType === 'รับเข้าสต๊อก') {
+            // ในโหมดรับเข้าสต๊อก ผู้ทำรายการต้องเป็นเจ้าหน้าที่หรือแอดมินเท่านั้น!
+            const empSelect = document.getElementById('empSelect');
+            const curEmpId = empSelect ? empSelect.value : (window.activeScannerDetectedEmpId || null);
+            const curEmp = (curEmpId && typeof employeeList !== 'undefined' && Array.isArray(employeeList)) 
+              ? employeeList.find(e => e && e.id === curEmpId) 
+              : (window.scannerActiveReturnEmployee || window.authorizedStaffOperator || null);
+            const isOperatorStaff = curEmp && (typeof window.isAdministrativeStaffEmp === 'function') && window.isAdministrativeStaffEmp(curEmp);
+
+            if (!isOperatorStaff) {
+              saveBtn.disabled = true;
+              saveBtn.className = 'btn btn-secondary fw-bold rounded-pill px-4 py-2.5 shadow-sm fs-6 w-100';
+              saveBtn.innerHTML = '<i class="bi bi-shield-lock-fill me-1.5 text-warning"></i> สแกนบัตรเจ้าหน้าที่ธุรการ เพื่อบันทึกรับเข้า';
+            } else {
+              saveBtn.disabled = false;
+              saveBtn.className = 'btn btn-success fw-bold rounded-pill px-4 py-2.5 shadow-sm text-white fs-6 w-100';
+              saveBtn.innerHTML = '<i class="bi bi-box-arrow-in-down me-1.5"></i> บันทึกรับเข้าสต๊อก';
+            }
           } else if (!isAuthorized) {
             saveBtn.disabled = true;
             saveBtn.className = 'btn btn-secondary fw-bold rounded-pill px-4 py-2.5 shadow-sm fs-6 w-100';
-            const actionLabel = (window.scannerStockActionType === 'รับเข้าสต๊อก') ? 'บันทึกรับเข้า' : 'บันทึกเบิก';
-            saveBtn.innerHTML = `<i class="bi bi-shield-lock-fill me-1.5 text-warning"></i> สแกนบัตรเจ้าหน้าที่เพื่อ${actionLabel}`;
+            saveBtn.innerHTML = '<i class="bi bi-shield-lock-fill me-1.5 text-warning"></i> สแกนบัตรเจ้าหน้าที่ธุรการ เพื่อบันทึกเบิก';
           } else {
             saveBtn.disabled = false;
-            if (window.scannerStockActionType === 'รับเข้าสต๊อก') {
-              saveBtn.className = 'btn btn-success fw-bold rounded-pill px-4 py-2.5 shadow-sm text-white fs-6 w-100';
-              saveBtn.innerHTML = '<i class="bi bi-box-arrow-in-down me-1.5"></i> บันทึกรับเข้าสต๊อก';
-            } else {
-              saveBtn.className = 'btn btn-danger fw-bold rounded-pill px-4 py-2.5 shadow-sm text-white fs-6 w-100';
-              saveBtn.innerHTML = '<i class="bi bi-box-arrow-up me-1.5"></i> บันทึกเบิกตัดสต็อก';
-            }
+            saveBtn.className = 'btn btn-danger fw-bold rounded-pill px-4 py-2.5 shadow-sm text-white fs-6 w-100';
+            saveBtn.innerHTML = '<i class="bi bi-box-arrow-up me-1.5"></i> บันทึกเบิกตัดสต็อก';
           }
         }
       }
@@ -16533,7 +17133,7 @@
                 <button type="button" class="btn btn-sm btn-link text-dark p-0 px-1.5 border-0 text-decoration-none lh-1" onclick="updateScannerItemQty('${it.id}', -1)" ${isAtMin ? 'disabled style="opacity:0.35;"' : ''} title="ลดจำนวน">
                   <i class="bi bi-dash fw-bold fs-6"></i>
                 </button>
-                <span class="fw-bold text-dark px-1 fs-7 text-center" style="min-width: 20px;">${it.qty || 1}</span>
+                <input type="number" class="form-control form-control-sm border-0 bg-transparent text-center fw-bold p-0 text-dark fs-7" style="width: 44px; min-width: 36px; -moz-appearance: textfield;" min="1" ${!isStockInRow ? `max="${currentStock}"` : ''} value="${it.qty || 1}" onchange="setScannerItemQty('${it.id}', this.value)" onfocus="this.select()" title="คลิกเพื่อพิมพ์แก้ไขจำนวน" />
                 <button type="button" class="btn btn-sm btn-link text-dark p-0 px-1.5 border-0 text-decoration-none lh-1" onclick="updateScannerItemQty('${it.id}', 1)" ${isAtMax ? 'disabled style="opacity:0.35;"' : ''} title="เพิ่มจำนวน">
                   <i class="bi bi-plus fw-bold fs-6"></i>
                 </button>
@@ -16558,6 +17158,37 @@
       }
     };
 
+    // พิมพ์แก้ไขจำนวนอุปกรณ์โดยตรงในหน้าต่างสแกน
+    window.setScannerItemQty = function(equipId, rawVal) {
+      let val = parseInt(rawVal, 10);
+      if (isNaN(val) || val < 1) val = 1;
+
+      const equipObj = (typeof equipmentList !== 'undefined' && Array.isArray(equipmentList)) ? equipmentList.find(e => e.id === equipId) : null;
+      const currentStock = equipObj ? (equipObj.quantity || 0) : 999;
+      const isStockInRow = (window.scannerStockActionType === 'รับเข้าสต๊อก' || currentTransCartType === 'รับเข้าสต๊อก');
+
+      if (!isStockInRow && val > currentStock) {
+        val = Math.max(1, currentStock);
+        if (typeof showToast === 'function') {
+          showToast(`⚠️ จำนวนที่ระบุเกินสต๊อกคงเหลือ (${currentStock} ${equipObj?.unit || 'ชิ้น'})`);
+        }
+      }
+
+      if (typeof selectedTransItems !== 'undefined' && Array.isArray(selectedTransItems)) {
+        const item = selectedTransItems.find(x => x.id === equipId);
+        if (item) {
+          item.qty = val;
+        }
+      }
+
+      if (typeof renderTransCartList === 'function') {
+        renderTransCartList();
+      }
+      if (typeof window.updateScannerEquipmentListUI === 'function') {
+        window.updateScannerEquipmentListUI();
+      }
+    };
+
     // บันทึกรายการโดยตรงจากหน้าสแกนอุปกรณ์ (เบิกตัดสต็อก, รับเข้าสต๊อก หรือ ยืมอุปกรณ์ อัตโนมัติ)
     window.saveTransactionDirectlyFromScanner = async function() {
       if (window._isDirectSaveLocked) return;
@@ -16570,15 +17201,23 @@
         return;
       }
 
-      // ตรวจสอบผู้ทำรายการ
+      // ตรวจสอบผู้ทำรายการ: ค้นหาจาก empSelect หรือดึงจากตัวแปรพนักงานที่สแกนไว้ในหน้าต่างสแกน
       const empSelect = document.getElementById('empSelect');
-      const empId = empSelect ? empSelect.value : null;
+      let empId = empSelect ? empSelect.value : null;
+      if (!empId) {
+        empId = activeScannerDetectedEmpId || (window.scannerActiveReturnEmployee ? window.scannerActiveReturnEmployee.id : null);
+        if (empId && empSelect) {
+          empSelect.value = empId;
+        }
+      }
       if (!empId) {
         alert("⚠️ กรุณาสแกนบัตรผู้ทำรายการ หรือเลือกผู้ทำรายการก่อนบันทึกข้อมูล");
         return;
       }
 
-      const emp = (typeof employeeList !== 'undefined' && Array.isArray(employeeList)) ? employeeList.find(x => x.id === empId) : null;
+      const emp = (typeof employeeList !== 'undefined' && Array.isArray(employeeList)) 
+        ? employeeList.find(x => x.id === empId) 
+        : (window.scannerActiveReturnEmployee || null);
       if (!emp) {
         alert("❌ ไม่พบข้อมูลผู้ทำรายการในระบบ");
         return;
@@ -16595,6 +17234,15 @@
       });
 
       const isStockIn = (window.scannerStockActionType === 'รับเข้าสต๊อก');
+
+      // ตรวจสอบสิทธิ์ผู้ทำรายการในโหมดรับเข้าสต๊อก
+      if (isStockIn) {
+        const isOperatorStaff = (typeof window.isAdministrativeStaffEmp === 'function') && window.isAdministrativeStaffEmp(emp);
+        if (!isOperatorStaff) {
+          alert(`❌ ไม่สามารถบันทึกรับเข้าสต๊อกได้!\n\nผู้ทำรายการ "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" ไม่ได้อยู่ในส่วนงานธุรการ\n\nการรับพัสดุเข้าสต๊อกต้องดำเนินการโดยบุคลากรในส่วนงานธุรการเท่านั้น`);
+          return;
+        }
+      }
 
       // ถ้าไม่ใช่โหมดรับเข้าสต๊อก และมีอุปกรณ์ยืมใช้ปะปนกับวัสดุสิ้นเปลือง
       if (!isStockIn && hasBorrowItem && hasConsumableItem) {
@@ -16687,9 +17335,16 @@
       window.scannerActiveReturnItems = [];
       window.scannerActiveReturnEmployee = null;
       window.authorizedStaffOperator = null;
+      window.scannerStockActionType = 'เบิกตัดสต็อก';
       window.isScannerSavingInProgress = false;
       window._isDirectSaveLocked = false;
       window._isDirectReturnLocked = false;
+
+      const finishBtn = document.getElementById('btnHeaderFinishScanner');
+      if (finishBtn) {
+        finishBtn.classList.add('d-none');
+        finishBtn.disabled = true;
+      }
 
       const promptState = document.getElementById('scannedItemPromptState');
       const resultCard = document.getElementById('scannedItemResultCard');
@@ -16944,8 +17599,11 @@
       } else if (res && res.type === 'EQUIPMENT' && res.entity) {
         item = res.entity;
       } else {
-        // Fallback resolution with both original and prefix-stripped matching
+        // Helper to strip hyphens, spaces, and underscores for normalized matching
+        const cleanAlphaNum = (s) => String(s || '').toLowerCase().replace(/[\s\-_]/g, '');
+
         const lowerRaw = cleanCode.toLowerCase();
+        const normRaw = cleanAlphaNum(cleanCode);
         let lookupCode = cleanCode;
         if (/^(EQUIPMENT|EQ|TOOL|ASSET)\s*[:=\-_\/]\s*/i.test(lookupCode)) {
           lookupCode = lookupCode.replace(/^(EQUIPMENT|EQ|TOOL|ASSET)\s*[:=\-_\/]\s*/i, '').trim();
@@ -16955,31 +17613,63 @@
         }
 
         const lowerLookup = lookupCode.toLowerCase();
-        // Check equipment list first
+        const normLookup = cleanAlphaNum(lookupCode);
+
+        // 1. Check equipment list (ทั้งรหัสมี/ไม่มีขีดคั่น ชื่ออุปกรณ์ และไอดี)
         item = (equipmentList || []).find(x => {
           const xId = String(x.id || '').trim().toLowerCase();
           const xCode = String(x.code || '').trim().toLowerCase();
           const xName = String(x.name || '').trim().toLowerCase();
-          return xCode === lowerRaw || xId === lowerRaw || xName === lowerRaw ||
-                 xCode === lowerLookup || xId === lowerLookup || xName.includes(lowerLookup);
+          const xNormId = cleanAlphaNum(x.id);
+          const xNormCode = cleanAlphaNum(x.code);
+
+          // ค้นหาแบบตรงตัว
+          if (xCode === lowerRaw || xId === lowerRaw || xName === lowerRaw) return true;
+          if (xCode === lowerLookup || xId === lowerLookup || xName.includes(lowerLookup)) return true;
+
+          // ค้นหาแบบไม่ใส่เครื่องหมายขีดคั่น (-) หรือเว้นวรรค เช่น BT002 ค้นหา BT-002
+          if (normRaw && (xNormCode === normRaw || xNormId === normRaw)) return true;
+          if (normLookup && (xNormCode === normLookup || xNormId === normLookup)) return true;
+
+          return false;
         });
 
-        // Check employee list
+        // 2. Check employee list (ชื่อจริง, ชื่อเล่น, รหัสมี/ไม่มีขีดคั่น, เบอร์โทรศัพท์)
         if (!item) {
           emp = (employeeList || []).find(e => {
             const eId = String(e.id || '').trim().toLowerCase();
             const eCode = String(e.code || '').trim().toLowerCase();
             const eName = String(e.name || '').trim().toLowerCase();
+            const eNick = String(e.nickname || '').trim().toLowerCase();
             const ePhone = String(e.phone || '').replace(/[^0-9]/g, '');
             const cleanPhone = lookupCode.replace(/[^0-9]/g, '');
 
+            const eNormId = cleanAlphaNum(e.id);
+            const eNormCode = cleanAlphaNum(e.code);
+
+            // 2.1 ค้นหาจากชื่อเล่น (Nickname) ตรงตัว หรือมีในคำค้นหา
+            if (eNick && (eNick === lowerRaw || eNick === lowerLookup || lowerRaw === eNick || lowerLookup.includes(eNick) || eNick.includes(lowerLookup))) {
+              return true;
+            }
+
+            // 2.2 ค้นหาจากชื่อจริง หรือรหัสแบบตรงตัว
             if (eId === lowerRaw || eCode === lowerRaw || eName === lowerRaw) return true;
             if (eId === lowerLookup || eCode === lowerLookup || eName.includes(lowerLookup)) return true;
+
+            // 2.3 ค้นหารหัสพนักงานแบบไม่ใส่เครื่องหมายขีดคั่น (-) หรือเว้นวรรค เช่น WK61 ค้นหา WK-61
+            if (normRaw && (eNormCode === normRaw || eNormId === normRaw)) return true;
+            if (normLookup && (eNormCode === normLookup || eNormId === normLookup)) return true;
+
+            // 2.4 ค้นหาจากเบอร์โทรศัพท์
             if (cleanPhone && cleanPhone.length >= 9 && ePhone === cleanPhone) return true;
 
+            // 2.5 ค้นหาแบบตัด prefix เช่น employee:, staff:
             const strippedEId = eId.replace(/^(employee|ee|emp|personnel|staff|id|code)\s*[:=\-_\/]\s*/i, '');
             const strippedECode = eCode.replace(/^(employee|ee|emp|personnel|staff|id|code)\s*[:=\-_\/]\s*/i, '');
-            return strippedEId === lowerLookup || strippedECode === lowerLookup || strippedEId === lowerRaw || strippedECode === lowerRaw;
+            if (strippedEId === lowerLookup || strippedECode === lowerLookup || strippedEId === lowerRaw || strippedECode === lowerRaw) return true;
+            if (cleanAlphaNum(strippedEId) === normLookup || cleanAlphaNum(strippedECode) === normLookup) return true;
+
+            return false;
           });
         }
       }
@@ -17199,18 +17889,41 @@
 
         // Continuous scanning mode for employee badge
         if (window.isContinuousCartScanning || isTransModalActive || isScannerModalOpen) {
-          const isStaffOrAdmin = (typeof window.isStaffOrAdminEmp === 'function') && window.isStaffOrAdminEmp(emp);
+          const isStaffOrAdmin = (typeof window.isAdministrativeStaffEmp === 'function') && window.isAdministrativeStaffEmp(emp);
           const currentEmpSelect = document.getElementById('empSelect');
           const existingEmpId = currentEmpSelect ? currentEmpSelect.value : (activeScannerDetectedEmpId || null);
           const existingEmp = (existingEmpId && typeof employeeList !== 'undefined' && Array.isArray(employeeList)) 
             ? employeeList.find(e => e && e.id === existingEmpId) 
             : null;
-          const hasExistingWorker = existingEmp && !(typeof window.isStaffOrAdminEmp === 'function' && window.isStaffOrAdminEmp(existingEmp));
+          const hasExistingWorker = existingEmp && !(typeof window.isAdministrativeStaffEmp === 'function' && window.isAdministrativeStaffEmp(existingEmp));
           const hasItems = (typeof selectedTransItems !== 'undefined' && Array.isArray(selectedTransItems) && selectedTransItems.length > 0) ||
                            (window.scannerReturnMode && window.scannerActiveReturnItems && window.scannerActiveReturnItems.length > 0);
 
-          // กรณีที่ 1: พนักงานทั่วไปสแกนของและบัตรตัวเองไว้แล้ว และมีเจ้าหน้าที่/แอดมินมาสแกนบัตรเพื่ออนุมัติ
-          // สำคัญมาก: ห้ามเขียนทับชื่อพนักงานที่เป็นผู้ทำรายการ แต่ให้เก็บเจ้าหน้าที่เป็นผู้อนุมัติ (authorizedStaffOperator) และบันทึกทันที!
+          // กรณีโหมดรับเข้าสต๊อก: ผู้ทำรายการต้องเป็นบุคลากรในส่วนงานธุรการเท่านั้น!
+          if (window.scannerStockActionType === 'รับเข้าสต๊อก') {
+            if (!isStaffOrAdmin) {
+              if (typeof window.playHardwareScanErrorSound === 'function') {
+                window.playHardwareScanErrorSound();
+              }
+              showToast(`⚠️ บุคลากร "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" ไม่ได้อยู่ในส่วนงานธุรการ ไม่สามารถรับเข้าสต๊อกได้`);
+              return;
+            }
+            activeScannerDetectedEmpId = emp.id;
+            window.scannerActiveReturnEmployee = emp;
+            window.authorizedStaffOperator = emp;
+            if (currentEmpSelect) currentEmpSelect.value = emp.id;
+            if (typeof window.updateScannerOperatorUI === 'function') {
+              window.updateScannerOperatorUI(emp);
+            }
+            if (typeof window.updateScannerEquipmentListUI === 'function') {
+              window.updateScannerEquipmentListUI();
+            }
+            showToast(`📦 บุคลากรส่วนงานธุรการ "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" เป็นผู้ทำรายการรับเข้าสต๊อก (พร้อมบันทึก)`);
+            return;
+          }
+
+          // กรณีที่ 1: พนักงานทั่วไปสแกนของและบัตรตัวเองไว้แล้ว และมีบุคลากรส่วนงานธุรการมาสแกนบัตรเพื่ออนุมัติ
+          // สำคัญมาก: ห้ามเขียนทับชื่อพนักงานที่เป็นผู้ทำรายการ แต่ให้เก็บเจ้าหน้าที่ธุรการเป็นผู้อนุมัติ (authorizedStaffOperator) และบันทึกทันที!
           if (isStaffOrAdmin && hasExistingWorker && hasItems) {
             if (window.isScannerSavingInProgress) {
               return; // ป้องกันการยิงซ้ำขณะกำลังประมวลผลบันทึก
@@ -17225,7 +17938,7 @@
 
             const staffDisplayName = typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name;
             const workerDisplayName = typeof formatEmpName === 'function' ? formatEmpName(existingEmp) : existingEmp.name;
-            showToast(`⚡ เจ้าหน้าที่ "${staffDisplayName}" อนุมัติการทำรายการให้คุณ "${workerDisplayName}" เรียบร้อยแล้ว! กำลังบันทึกข้อมูล...`);
+            showToast(`⚡ บุคลากรส่วนงานธุรการ "${staffDisplayName}" อนุมัติการทำรายการให้คุณ "${workerDisplayName}" เรียบร้อยแล้ว! กำลังบันทึกข้อมูล...`);
 
             setTimeout(async () => {
               try {
@@ -17238,7 +17951,7 @@
                   if (typeof window.updateScannerOperatorUI === 'function') {
                     window.updateScannerOperatorUI();
                   }
-                  showToast(`🔓 ปลดล็อกสิทธิ์สำเร็จ! เจ้าหน้าที่ "${staffDisplayName}" อนุมัติแล้ว สามารถปรับจำนวน (+ / -) และกดปุ่มคืนได้ทันที`);
+                  showToast(`🔓 ปลดล็อกสิทธิ์สำเร็จ! เจ้าหน้าที่ธุรการ "${staffDisplayName}" อนุมัติแล้ว สามารถปรับจำนวน (+ / -) และกดปุ่มคืนได้ทันที`);
                 } else {
                   // ในโหมดยืม หรือ เบิกตัดสต็อก: บันทึกข้อมูลและตัดสต็อกลงระบบอัตโนมัติทันที
                   if (typeof window.saveTransactionDirectlyFromScanner === 'function') {
@@ -17304,9 +18017,9 @@
               window.updateScannerEquipmentListUI();
             }
             if (isStaffOrAdmin) {
-              showToast(`👤 เจ้าหน้าที่/แอดมิน "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" มียืมค้าง ${unreturnedList.length} รายการ (กดปุ่มคืนทั้งหมดหรือยืมเพิ่มได้ทันที)`);
+              showToast(`👤 บุคลากรส่วนงานธุรการ "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" มียืมค้าง ${unreturnedList.length} รายการ (กดปุ่มคืนทั้งหมดหรือยืมเพิ่มได้ทันที)`);
             } else {
-              showToast(`📋 พนักงาน "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" มียืมอุปกรณ์ค้างส่งคืน ${unreturnedList.length} รายการ (สแกนบัตรเจ้าหน้าที่เพื่อบันทึก)`);
+              showToast(`📋 พนักงาน "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" มียืมอุปกรณ์ค้างส่งคืน ${unreturnedList.length} รายการ (สแกนบัตรเจ้าหน้าที่ธุรการเพื่อบันทึก)`);
             }
           } else {
             window.scannerReturnMode = false;
@@ -17315,17 +18028,25 @@
               window.updateScannerEquipmentListUI();
             }
             if (isStaffOrAdmin) {
-              showToast(`👤 เจ้าหน้าที่/แอดมิน "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" พร้อมทำรายการ (กดปุ่มบันทึกได้ทันที)`);
+              showToast(`👤 บุคลากรส่วนงานธุรการ "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" พร้อมทำรายการ (กดปุ่มบันทึกได้ทันที)`);
             } else {
-              showToast(`👤 สแกนพบผู้ทำรายการ: "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" [${emp.id}] (สแกนบัตรเจ้าหน้าที่เพื่อบันทึก)`);
+              showToast(`👤 สแกนพบผู้ทำรายการ: "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" [${emp.id}] (สแกนบัตรเจ้าหน้าที่ธุรการเพื่อบันทึก)`);
             }
           }
           return;
         }
 
+        if (window.scannerStockActionType === 'รับเข้าสต๊อก' && !((typeof window.isAdministrativeStaffEmp === 'function') && window.isAdministrativeStaffEmp(emp))) {
+          if (typeof window.playHardwareScanErrorSound === 'function') {
+            window.playHardwareScanErrorSound();
+          }
+          showToast(`⚠️ บุคลากร "${typeof formatEmpName === 'function' ? formatEmpName(emp) : emp.name}" ไม่ได้อยู่ในส่วนงานธุรการ ไม่สามารถรับเข้าสต๊อกได้`);
+          return;
+        }
+
         activeScannerDetectedEmpId = emp.id;
         activeScannedItemId = null;
-        if (typeof window.isStaffOrAdminEmp === 'function' && window.isStaffOrAdminEmp(emp)) {
+        if (typeof window.isAdministrativeStaffEmp === 'function' && window.isAdministrativeStaffEmp(emp)) {
           window.authorizedStaffOperator = emp;
         }
         if (typeof window.updateScannerOperatorUI === 'function') {
@@ -19260,6 +19981,16 @@
         if (posElem) posElem.textContent = emp.position || '-';
 
         showToast(`🪪 สแกน QR พบพนักงาน: "${emp.name}" [${emp.id}] (${emp.department || 'ทั่วไป'})`);
+
+        // หากบุคลากรที่สแกนอยู่ในส่วนงานธุรการ ให้ปลดล็อกสิทธิ์การบันทึกเอกสารทันที
+        const isStaffAdmin = (typeof window.isAdministrativeStaffEmp === 'function') && window.isAdministrativeStaffEmp(emp);
+        if (isStaffAdmin) {
+          window.authorizedStaffOperator = emp;
+          showToast(`🔓 บุคลากรส่วนงานธุรการ "${formatEmpName(emp)}" ปลดล็อกสิทธิ์การบันทึกเรียบร้อยแล้ว`);
+          if (typeof window.toggleTransTypeUI === 'function') {
+            window.toggleTransTypeUI();
+          }
+        }
 
         const autoSelectEmpCheck = document.getElementById('autoSelectEmpScannerCheckbox');
         if (autoSelectEmpCheck && autoSelectEmpCheck.checked) {
@@ -22529,11 +23260,24 @@
       } else if (coll === 'transactions') {
         const txObj = (transactionHistory || []).find(x => x.id === recordId);
         const txDetails = txObj ? `${txObj.type || 'รายการ'} (${txObj.equipmentName || ''} - ${txObj.employeeName || ''})` : `ID: ${recordId}`;
+        
+        // ปรับปรุงยอดสต๊อกย้อนกลับ
+        let stockChanges = [];
+        if (txObj && typeof window.revertTransactionStockImpact === 'function') {
+          stockChanges = await window.revertTransactionStockImpact(txObj);
+        }
+
         transactionHistory = transactionHistory.filter(x => x.id !== recordId);
         if (isFirebaseReady && db) { try { await deleteDoc(doc(db, "transactions", recordId)); } catch(e){} }
-        renderHistoryTable();
+        saveToLocalStorage();
+        if (typeof window.refreshAllStockAndHistoryViews === 'function') {
+          window.refreshAllStockAndHistoryViews();
+        } else {
+          renderHistoryTable();
+        }
         if (typeof logAuditAction === 'function') {
-          logAuditAction('ประวัติรายการ', 'ลบ', `ลบรายการประวัติการเบิก/ยืม/คืน #${recordId} (${txDetails})`, recordId);
+          const stockNote = stockChanges.length > 0 ? ` (ปรับสต๊อก: ${stockChanges.join(', ')})` : '';
+          logAuditAction('ประวัติรายการ', 'ลบ', `ลบรายการประวัติการเบิก/ยืม/คืน #${recordId} (${txDetails})${stockNote}`, recordId);
         }
       } else if (coll === 'attendance') {
         attendanceLogs = attendanceLogs.filter(x => x.id !== recordId);

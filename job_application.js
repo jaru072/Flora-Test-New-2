@@ -218,7 +218,7 @@ export async function initJobApplicationFirebase() {
   };
 
   try {
-    const res = await fetch('firebase-applet-config.json');
+    const res = await fetch('/firebase-applet-config.json');
     if (res.ok) {
       const cfg = await res.json();
       if (cfg && cfg.projectId) {

@@ -1097,10 +1097,10 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="org_tree.css">
-  <link rel="stylesheet" href="personnel_tools.css">
-  <link rel="stylesheet" href="global_logo.css">
-  <link rel="stylesheet" href="chat_hub.css">
+  <link rel="stylesheet" href="/org_tree.css">
+  <link rel="stylesheet" href="/personnel_tools.css">
+  <link rel="stylesheet" href="/global_logo.css">
+  <link rel="stylesheet" href="/chat_hub.css">
 </head>
 <body>
 
@@ -2158,11 +2158,41 @@
     </div>
   </div>
 
+  <!-- ==================== MODAL: ZOOM EMPLOYEE PHOTO ==================== -->
+  <div class="modal fade" id="zoomEmpPhotoModal" tabindex="-1" aria-hidden="true" style="z-index: 1080;">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-0 shadow-2xl rounded-4 overflow-hidden bg-dark text-white">
+        <div class="modal-header border-0 pb-0 pt-3 px-3 d-flex align-items-center justify-content-between">
+          <div class="overflow-hidden pe-2">
+            <h6 class="fw-bold mb-0 text-white fs-7 text-truncate" id="zoomEmpPhotoName">ชื่อพนักงาน</h6>
+            <small class="text-white-50 fs-9 text-truncate d-block" id="zoomEmpPhotoDept">แผนก • ตำแหน่ง</small>
+          </div>
+          <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3 text-center">
+          <div class="position-relative d-inline-block rounded-3 overflow-hidden shadow border border-secondary" style="max-width: 100%; max-height: 70vh;">
+            <img id="zoomEmpPhotoImg" src="" alt="รูปถ่ายบุคลากร" style="width: 100%; max-width: 320px; height: auto; max-height: 65vh; object-fit: contain; display: block;" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'" />
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0 pb-3 px-3 justify-content-center">
+          <button type="button" class="btn btn-outline-light btn-sm rounded-pill px-4 fw-semibold fs-8" data-bs-dismiss="modal">
+            <i class="bi bi-x-lg me-1"></i> ปิด
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Employee Popup Context Menu (1-Click Action) -->
   <div id="empContextMenu">
     <div class="context-menu-header">
-      <img id="ctxMenuEmpPhoto" src="" class="rounded-circle border" style="width: 36px; height: 36px; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'" />
-      <div class="overflow-hidden">
+      <div class="position-relative flex-shrink-0" style="cursor: pointer;" onclick="openZoomEmpPhoto()" title="คลิกเพื่อดูรูปภาพขนาดใหญ่">
+        <img id="ctxMenuEmpPhoto" src="" class="rounded-circle border shadow-xs" style="width: 40px; height: 40px; object-fit: cover; transition: transform 0.15s ease;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'" />
+        <span class="position-absolute bottom-0 end-0 badge bg-dark bg-opacity-75 p-1 rounded-circle border border-white" style="font-size: 7px; transform: translate(15%, 15%);">
+          <i class="bi bi-arrows-fullscreen"></i>
+        </span>
+      </div>
+      <div class="overflow-hidden flex-grow-1">
         <div id="ctxMenuEmpName" class="fw-bold text-dark fs-7 text-truncate">ชื่อพนักงาน</div>
         <div id="ctxMenuEmpDept" class="fs-9 text-muted text-truncate">แผนก</div>
       </div>
@@ -2658,16 +2688,16 @@
 
   <!-- Bootstrap Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="/undo_redo_manager.js"></script>
   <script type="module" src="/global_logo.js"></script>
-  <script type="module" src="personnel_backup_restore.js"></script>
-  <script type="module" src="personnel_tools.js"></script>
-  <script type="module" src="org_tree.js"></script>
-  <script type="module" src="chat_hub.js"></script>
+  <script type="module" src="/personnel_backup_restore.js"></script>
+  <script type="module" src="/personnel_tools.js"></script>
+  <script type="module" src="/org_tree.js"></script>
+  <script type="module" src="/chat_hub.js"></script>
 
   <!-- Firebase Modular Scripts -->
   <script type="module">
@@ -2822,7 +2852,7 @@
         const fallbackDatabaseId = window.firebaseConfig?.firestoreDatabaseId || window.floraFirebaseConfig?.firestoreDatabaseId || "ai-studio-remixfloratestne-7fc63c6e-7cdb-49cc-b006-9bd6ab3a7926";
         let config = null;
         try {
-          const resp = await fetch('firebase-applet-config.json');
+          const resp = await fetch('/firebase-applet-config.json');
           if (resp.ok) {
             config = await resp.json();
           }
@@ -7062,6 +7092,35 @@
       menu.style.display = 'block';
     };
 
+    window.openZoomEmpPhoto = function() {
+      const empId = window.activeContextMenuEmpId;
+      if (!empId) return;
+      const emp = (window.employees || []).find(e => (e.id || e.code) === empId);
+      if (!emp) return;
+
+      const photo = emp.photoUrl || emp.photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80';
+      const name = emp.name || 'พนักงาน';
+      const code = emp.code || emp.id || '';
+      const dept = emp.department || 'ยังไม่ระบุแผนก';
+      const pos = emp.position || 'พนักงาน';
+
+      const imgEl = document.getElementById('zoomEmpPhotoImg');
+      const nameEl = document.getElementById('zoomEmpPhotoName');
+      const deptEl = document.getElementById('zoomEmpPhotoDept');
+
+      if (imgEl) imgEl.src = photo;
+      if (nameEl) nameEl.textContent = `[${code}] ${name}`;
+      if (deptEl) deptEl.textContent = `${dept} • ${pos}`;
+
+      hideContextMenu();
+
+      const modalEl = document.getElementById('zoomEmpPhotoModal');
+      if (modalEl) {
+        const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        bsModal.show();
+      }
+    };
+
     window.executeContextMenuAction = function(action) {
       const empId = window.activeContextMenuEmpId;
       hideContextMenu();
@@ -8930,6 +8989,23 @@ ${occupantNames}
     window.addEventListener('resize', () => {
       applyZoom();
     });
+  </script>
+  <!-- Service Worker Cleanup -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) {
+          registration.unregister();
+        }
+      }).catch(() => {});
+    }
+    if ('caches' in window) {
+      caches.keys().then((names) => {
+        for (const name of names) {
+          caches.delete(name);
+        }
+      }).catch(() => {});
+    }
   </script>
 </body>
 </html>

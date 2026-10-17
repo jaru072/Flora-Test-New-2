@@ -72,7 +72,7 @@
       let cfg = window.firebaseConfig || window.floraFirebaseConfig;
       if (!cfg || !cfg.projectId) {
         try {
-          const res = await fetch('firebase-applet-config.json');
+          const res = await fetch('/firebase-applet-config.json');
           if (res.ok) {
             cfg = await res.json();
             window.firebaseConfig = cfg;

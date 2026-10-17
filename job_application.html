@@ -19,12 +19,12 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   
   <!-- QRCode.js Library -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="job_application.css">
-  <link rel="stylesheet" href="global_logo.css">
-  <link rel="stylesheet" href="chat_hub.css">
+  <link rel="stylesheet" href="/job_application.css">
+  <link rel="stylesheet" href="/global_logo.css">
+  <link rel="stylesheet" href="/chat_hub.css">
 </head>
 <body>
 
@@ -631,9 +631,9 @@
 
   <!-- Global Logo & Application Scripts -->
   <script type="module" src="/global_logo.js"></script>
-  <script type="module" src="org_tree.js"></script>
+  <script type="module" src="/org_tree.js"></script>
   <script type="module" src="/job_application.js"></script>
-  <script type="module" src="chat_hub.js"></script>
+  <script type="module" src="/chat_hub.js"></script>
 
   <script>
     // QR Code & Share modal helpers
@@ -669,6 +669,23 @@
         alert("คัดลอกลิงก์ใบสมัครงานแล้ว สามารถนำไปแชร์ให้ผู้สมัครได้ทันที");
       }
     };
+  </script>
+  <!-- Service Worker Cleanup -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) {
+          registration.unregister();
+        }
+      }).catch(() => {});
+    }
+    if ('caches' in window) {
+      caches.keys().then((names) => {
+        for (const name of names) {
+          caches.delete(name);
+        }
+      }).catch(() => {});
+    }
   </script>
 </body>
 </html>

@@ -86,9 +86,9 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_green.css">
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="global_logo.css">
-  <link rel="stylesheet" href="chat_hub.css">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/global_logo.css">
+  <link rel="stylesheet" href="/chat_hub.css">
 </head>
 <body class="is-catalog-active">
 
@@ -2717,8 +2717,8 @@
   </div>
 
   <!-- ==================== MODAL: EQUIPMENT BORROWERS LIST ==================== -->
-  <div class="modal fade" id="equipmentBorrowersModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable equipment-borrowers-dialog">
+  <div class="modal fade" id="equipmentBorrowersModal" tabindex="-1" aria-hidden="true" data-bs-focus="false">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-md-down modal-dialog-scrollable equipment-borrowers-dialog">
       <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
         <div class="modal-header bg-warning bg-gradient text-dark py-3">
           <div class="d-flex align-items-center gap-2">
@@ -2881,8 +2881,8 @@
   </div>
 
   <!-- ==================== MODAL: EDIT BORROWER DUE DATE ==================== -->
-  <div class="modal fade" id="editBorrowerDueDateModal" tabindex="-1" aria-hidden="true" style="z-index: 1065;">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+  <div class="modal fade" id="editBorrowerDueDateModal" tabindex="-1" aria-hidden="true" data-bs-focus="false" style="z-index: 1070;">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-md-down modal-dialog-scrollable">
       <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
         <div class="modal-header bg-success bg-gradient text-white py-2.5 px-3 px-md-4">
           <div class="d-flex align-items-center gap-2">
@@ -2980,19 +2980,19 @@
                 <i class="bi bi-lightning-charge-fill text-warning me-1"></i>ปุ่มลัดเลือกด่วน:
               </span>
               <div class="d-flex flex-wrap gap-1.5 align-items-center">
-                <button type="button" class="btn btn-outline-secondary btn-xs rounded-pill fs-8 fw-semibold px-2 py-0.5" onclick="applyQuickDueDateOffset(1)">
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill fs-8 fw-semibold px-2.5 py-1 quick-due-date-btn" data-offset="1" onclick="applyQuickDueDateOffset(1)">
                   +1 วัน
                 </button>
-                <button type="button" class="btn btn-outline-secondary btn-xs rounded-pill fs-8 fw-semibold px-2 py-0.5" onclick="applyQuickDueDateOffset(3)">
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill fs-8 fw-semibold px-2.5 py-1 quick-due-date-btn" data-offset="3" onclick="applyQuickDueDateOffset(3)">
                   +3 วัน
                 </button>
-                <button type="button" class="btn btn-outline-secondary btn-xs rounded-pill fs-8 fw-semibold px-2 py-0.5" onclick="applyQuickDueDateOffset(7)">
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill fs-8 fw-semibold px-2.5 py-1 quick-due-date-btn" data-offset="7" onclick="applyQuickDueDateOffset(7)">
                   +7 วัน (1 สัปดาห์)
                 </button>
-                <button type="button" class="btn btn-outline-secondary btn-xs rounded-pill fs-8 fw-semibold px-2 py-0.5" onclick="applyQuickDueDateOffset(14)">
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill fs-8 fw-semibold px-2.5 py-1 quick-due-date-btn" data-offset="14" onclick="applyQuickDueDateOffset(14)">
                   +14 วัน (2 สัปดาห์)
                 </button>
-                <button type="button" class="btn btn-outline-secondary btn-xs rounded-pill fs-8 fw-semibold px-2 py-0.5" onclick="applyQuickDueDateOffset(30)">
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill fs-8 fw-semibold px-2.5 py-1 quick-due-date-btn" data-offset="30" onclick="applyQuickDueDateOffset(30)">
                   +30 วัน (1 เดือน)
                 </button>
               </div>
@@ -3535,7 +3535,7 @@
             <!-- Manual Code Input Fallback -->
             <div class="p-2 bg-dark border-top">
               <div class="input-group input-group-sm">
-                <input type="text" id="manualScannerBarcodeInput" class="form-control bg-secondary bg-opacity-25 text-white border-0" placeholder="พิมพ์ชื่ออุปกรณ์, รหัสสินค้า หรือชื่อ/รหัสผู้ทำรายการ..." onkeydown="if(event.key==='Enter'){event.preventDefault();handleManualBarcodeSearch();}" />
+                <input type="text" id="manualScannerBarcodeInput" class="form-control bg-secondary bg-opacity-25 text-white border-0" placeholder="พิมพ์ชื่ออุปกรณ์, รหัสสินค้า, ชื่อ/ชื่อเล่น/รหัสพนักงาน (ไม่ต้องมีขีด - ก็ได้)..." onkeydown="if(event.key==='Enter'){event.preventDefault();handleManualBarcodeSearch();}" />
                 <button class="btn btn-warning fw-bold text-dark shadow-sm" type="button" onclick="handleManualBarcodeSearch()">
                   ค้นหา / สแกน
                 </button>
@@ -6206,7 +6206,7 @@
   <!-- JsBarcode Library for 1D Barcodes -->
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <!-- QRCode.js Library for 2D QR Codes -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <!-- JSZip Library for ZIP Backup/Restore Packages -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <!-- SheetJS Library for Excel (.xlsx, .xls, .csv) Import/Export -->
@@ -6223,24 +6223,27 @@
   <!-- Application Main Logic -->
   <script src="/undo_redo_manager.js"></script>
   <script type="module" src="/global_logo.js"></script>
-  <script type="module" src="org_tree.js"></script>
-  <script type="module" src="script.js"></script>
-  <script type="module" src="backup_restore.js"></script>
-  <script type="module" src="equipment_backup_restore.js"></script>
-  <script type="module" src="chat_hub.js"></script>
+  <script type="module" src="/org_tree.js"></script>
+  <script type="module" src="/script.js"></script>
+  <script type="module" src="/backup_restore.js"></script>
+  <script type="module" src="/equipment_backup_restore.js"></script>
+  <script type="module" src="/chat_hub.js"></script>
 
-  <!-- Service Worker Image Caching Registration -->
+  <!-- Service Worker Cleanup -->
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then((reg) => {
-            console.log('✅ Flora Service Worker Registered for Image Caching:', reg.scope);
-          })
-          .catch((err) => {
-            console.log('ℹ️ Service Worker registration skipped or not supported:', err);
-          });
-      });
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) {
+          registration.unregister();
+        }
+      }).catch(() => {});
+    }
+    if ('caches' in window) {
+      caches.keys().then((names) => {
+        for (const name of names) {
+          caches.delete(name);
+        }
+      }).catch(() => {});
     }
   </script>
 </body>

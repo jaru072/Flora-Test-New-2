@@ -5,7 +5,7 @@ import { createServer as createViteServer } from 'vite';
 import JSZip from 'jszip';
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 function getStorageBucketName(): string {
   try {
@@ -504,9 +504,17 @@ app.get('/api/list-storage-files', async (req, res) => {
 // VITE / STATIC FILE SERVING
 // ----------------------------------------------------
 async function main() {
+  // Dedicated Service Worker Route (Self-Unregistering & Cache Cleanup)
+  app.get(['/sw.js', '/service-worker.js', '/firebase-messaging-sw.js', '/workbox-*.js'], (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    res.setHeader('Service-Worker-Allowed', '/');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.send(`self.addEventListener('install',()=>self.skipWaiting());self.addEventListener('activate',e=>{e.waitUntil(self.registration.unregister());});`);
+  });
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: false },
       appType: 'custom',
     });
     app.use(vite.middlewares);
@@ -560,6 +568,14 @@ async function main() {
     });
 
     app.get('*', async (req, res, next) => {
+      if (req.path.startsWith('/@') || req.path.startsWith('/node_modules')) {
+        return next();
+      }
+      const ext = path.extname(req.path).toLowerCase();
+      // Never return index.html for missing JavaScript, CSS, JSON, or media assets
+      if (['.js', '.mjs', '.ts', '.css', '.json', '.png', '.jpg', '.jpeg', '.svg', '.gif', '.ico', '.map', '.woff', '.woff2', '.ttf'].includes(ext)) {
+        return res.status(404).set({ 'Content-Type': 'text/plain' }).end('Not found');
+      }
       try {
         const filePath = path.resolve(process.cwd(), 'index.html');
         let html = fs.readFileSync(filePath, 'utf-8');
@@ -571,8 +587,11 @@ async function main() {
       }
     });
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = fs.existsSync(path.join(process.cwd(), 'dist'))
+      ? path.join(process.cwd(), 'dist')
+      : (fs.existsSync(path.join(process.cwd(), 'build')) ? path.join(process.cwd(), 'build') : process.cwd());
     app.use(express.static(distPath));
+
     app.get(['/org_chart.html', '/org_chart'], (req, res) => {
       res.sendFile(path.join(distPath, 'org_chart.html'));
     });
@@ -586,6 +605,13 @@ async function main() {
       res.sendFile(path.join(distPath, 'procurement.html'));
     });
     app.get('*', (req, res) => {
+      if (req.path.startsWith('/@') || req.path.startsWith('/node_modules')) {
+        return res.status(404).set({ 'Content-Type': 'text/plain' }).end('Not found');
+      }
+      const ext = path.extname(req.path).toLowerCase();
+      if (['.js', '.mjs', '.ts', '.css', '.json', '.png', '.jpg', '.jpeg', '.svg', '.gif', '.ico', '.map', '.woff', '.woff2', '.ttf'].includes(ext)) {
+        return res.status(404).set({ 'Content-Type': 'text/plain' }).end('Not found');
+      }
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

@@ -1276,6 +1276,93 @@ body:has(.modal[style*="display: block"]) .floating-scroll-nav,
   filter: brightness(1.06);
 }
 
+#equip-card-BT-002 .equipment-card .card-body p {
+  font-family: "Times New Roman", Times, serif !important;
+}
 
+/* ==========================================================================
+   Multi-Modal Stacking & Mobile Fullscreen Optimization for Equipment Borrowers & Due Date
+   ========================================================================== */
+#equipmentBorrowersModal {
+  z-index: 1055 !important;
+}
 
+#editBorrowerDueDateModal {
+  z-index: 1070 !important;
+}
 
+.quick-due-date-btn {
+  touch-action: manipulation !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+.quick-due-date-btn:active {
+  transform: scale(0.96);
+}
+
+/* Mobile Fullscreen Optimization for Equipment Borrowers and Edit Due Date Modals */
+@media (max-width: 767.98px) {
+  #equipmentBorrowersModal.modal,
+  #editBorrowerDueDateModal.modal {
+    padding: 0 !important;
+  }
+
+  #equipmentBorrowersModal .modal-dialog,
+  #equipmentBorrowersModal .modal-dialog-centered,
+  #editBorrowerDueDateModal .modal-dialog,
+  #editBorrowerDueDateModal .modal-dialog-centered {
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    min-height: 100% !important;
+    min-height: 100dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    top: 0 !important;
+    transform: none !important;
+  }
+
+  #equipmentBorrowersModal .modal-content,
+  #editBorrowerDueDateModal .modal-content {
+    height: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    min-height: 100% !important;
+    border-radius: 0 !important;
+    border: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    top: 0 !important;
+  }
+
+  #equipmentBorrowersModal .modal-header,
+  #editBorrowerDueDateModal .modal-header {
+    flex-shrink: 0 !important;
+    border-radius: 0 !important;
+    padding-top: max(14px, env(safe-area-inset-top, 14px)) !important;
+    padding-left: max(16px, env(safe-area-inset-left, 16px)) !important;
+    padding-right: max(16px, env(safe-area-inset-right, 16px)) !important;
+  }
+
+  #equipmentBorrowersModal .modal-body,
+  #editBorrowerDueDateModal .modal-body {
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain !important;
+    padding-bottom: max(24px, env(safe-area-inset-bottom, 24px)) !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #equipmentBorrowersModal .modal-footer,
+  #editBorrowerDueDateModal .modal-footer {
+    flex-shrink: 0 !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px)) !important;
+  }
+}
