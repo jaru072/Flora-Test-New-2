@@ -50,6 +50,12 @@
       JSON.stringify = function(value, replacer, space) {
         return window.safeJsonStringify(value, replacer, space);
       };
+
+      window.handleGoogleSignInAndClose = function() {
+        if (typeof window.handleGoogleSignIn === 'function') {
+          return window.handleGoogleSignIn();
+        }
+      };
     })();
   </script>
 

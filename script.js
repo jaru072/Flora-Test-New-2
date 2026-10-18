@@ -827,6 +827,7 @@
         showToast(`🔴 ${errorTitle} (${err.code || err.message})`);
       }
     };
+    window.handleGoogleSignInAndClose = window.handleGoogleSignIn;
 
     // Helper to get Google Drive Access Token (cached with mutex to prevent duplicate popups)
     let driveAuthPromise = null;
@@ -2309,24 +2310,36 @@
         window.lastInteractedEquipmentId = equipId;
         const item = (equipmentList || []).find(x => x.id === equipId);
 
-        // Auto-select "ยืมอุปกรณ์" immediately if the equipment is loanable (อุปกรณ์ประเภทยืมใช้)
         const isBorrow = item && (typeof window.isEquipmentBorrowType === 'function') && window.isEquipmentBorrowType(item);
+        const issueRadio = document.getElementById('typeIssue');
+        const issueRadioLabel = issueRadio ? document.querySelector('label[for="typeIssue"]') : null;
+
         if (isBorrow) {
-          const borrowRadio = document.getElementById('typeBorrow');
-          if (borrowRadio && (typeof selectedTransItems === 'undefined' || selectedTransItems.length === 0 || currentTransCartType === 'ยืมอุปกรณ์')) {
-            borrowRadio.checked = true;
-            if (typeof window.toggleTransTypeUI === 'function') {
-              window.toggleTransTypeUI();
+          if (issueRadio) {
+            issueRadio.disabled = true;
+            if (issueRadioLabel) {
+              issueRadioLabel.classList.add('disabled', 'opacity-50');
+              issueRadioLabel.title = '🔒 อุปกรณ์ประเภทยืมใช้ ไม่สามารถเบิกตัดสต๊อกได้';
             }
           }
-        } else if (typeof selectedTransItems === 'undefined' || selectedTransItems.length === 0) {
-          // General equipment defaults to issue (เบิกจ่าย) if cart is empty
-          const issueRadio = document.getElementById('typeIssue');
           const borrowRadio = document.getElementById('typeBorrow');
-          if (issueRadio && borrowRadio && borrowRadio.checked) {
-            issueRadio.checked = true;
-            if (typeof window.toggleTransTypeUI === 'function') {
-              window.toggleTransTypeUI();
+          const stockInRadio = document.getElementById('typeStockIn');
+          if (borrowRadio && (!stockInRadio || !stockInRadio.checked) && (typeof selectedTransItems === 'undefined' || selectedTransItems.length === 0 || currentTransCartType === 'ยืมอุปกรณ์')) {
+            borrowRadio.checked = true;
+          }
+        } else {
+          if (issueRadio) {
+            issueRadio.disabled = false;
+            if (issueRadioLabel) {
+              issueRadioLabel.classList.remove('disabled', 'opacity-50');
+              issueRadioLabel.title = '';
+            }
+          }
+          if (typeof selectedTransItems === 'undefined' || selectedTransItems.length === 0) {
+            const borrowRadio = document.getElementById('typeBorrow');
+            const stockInRadio = document.getElementById('typeStockIn');
+            if (borrowRadio && borrowRadio.checked && issueRadio && (!stockInRadio || !stockInRadio.checked)) {
+              issueRadio.checked = true;
             }
           }
         }
@@ -2339,6 +2352,10 @@
         const equipSearch = document.getElementById('equipSearchInput');
         if (equipSearch && item) {
           equipSearch.value = item.name;
+        }
+
+        if (typeof window.toggleTransTypeUI === 'function') {
+          window.toggleTransTypeUI();
         }
         if (typeof updateEquipSelectPreview === 'function') {
           updateEquipSelectPreview();
@@ -6297,7 +6314,7 @@
 
                   ${isStaff ? `
                     <div class="d-grid gap-1.5">
-                      <button class="btn btn-outline-success btn-sm rounded-pill fw-semibold" onclick="quickSelectTransaction('${item.id}')">
+                      <button class="btn btn-outline-success btn-sm rounded-pill fw-semibold" onclick="openTransactionModal('${item.id}')">
                         <i class="bi bi-pencil-square me-1"></i> เบิก-รับเข้า-ยืม-คืน
                       </button>
                     </div>
@@ -9837,10 +9854,22 @@
         }
 
         // Auto-select "ยืมอุปกรณ์" if the equipment is loanable (ขึ้นต้นด้วย B / BA / BT)
+        const issueRadio = document.getElementById('typeIssue');
+        const issueRadioLabel = issueRadio ? document.querySelector('label[for="typeIssue"]') : null;
+
         if (isBorrow) {
+          if (issueRadio) {
+            issueRadio.disabled = true;
+            if (issueRadioLabel) {
+              issueRadioLabel.classList.add('disabled', 'opacity-50');
+              issueRadioLabel.title = '🔒 อุปกรณ์ประเภทยืมใช้ ไม่สามารถเบิกตัดสต๊อกได้';
+            }
+          }
           if (typeof selectedTransItems === 'undefined' || selectedTransItems.length === 0 || currentTransCartType === 'ยืมอุปกรณ์') {
             const borrowRadio = document.getElementById('typeBorrow');
-            if (borrowRadio && !borrowRadio.checked) {
+            const stockInRadio = document.getElementById('typeStockIn');
+            // ถ้าไม่ได้อยู่ในโหมดรับเข้าสต๊อก ให้สลับไปโหมดยืมอุปกรณ์
+            if (borrowRadio && !borrowRadio.checked && (!stockInRadio || !stockInRadio.checked)) {
               borrowRadio.checked = true;
               if (typeof window.toggleTransTypeUI === 'function') {
                 window.toggleTransTypeUI();
@@ -9848,11 +9877,18 @@
             }
           }
         } else {
+          if (issueRadio) {
+            issueRadio.disabled = false;
+            if (issueRadioLabel) {
+              issueRadioLabel.classList.remove('disabled', 'opacity-50');
+              issueRadioLabel.title = '';
+            }
+          }
           // If consumable equipment and cart is empty, auto-select "เบิกจ่าย" if currently on "ยืมอุปกรณ์"
           if (typeof selectedTransItems === 'undefined' || selectedTransItems.length === 0) {
             const borrowRadio = document.getElementById('typeBorrow');
-            const issueRadio = document.getElementById('typeIssue');
-            if (borrowRadio && borrowRadio.checked && issueRadio) {
+            const stockInRadio = document.getElementById('typeStockIn');
+            if (borrowRadio && borrowRadio.checked && issueRadio && (!stockInRadio || !stockInRadio.checked)) {
               issueRadio.checked = true;
               if (typeof window.toggleTransTypeUI === 'function') {
                 window.toggleTransTypeUI();
@@ -14071,6 +14107,13 @@
       // ป้องกันพนักงานทั่วไปเลือกโหมดรับเข้าสต๊อก
       if (selectedType === 'รับเข้าสต๊อก' || selectedType === 'รับเข้าสต๊อก (ขาเข้า)') {
         const isSessionStaff = (typeof currentRole !== 'undefined') && (currentRole === 'ADMIN' || currentRole === 'MANAGER' || currentRole === 'STAFF');
+        if (!isSessionStaff) {
+          alert('⚠️ สิทธิ์ไม่เพียงพอ! ฟังก์ชันรับเข้าสต๊อกใช้งานได้เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้น (พนักงานทั่วไปไม่สามารถทำรายการรับเข้าสต๊อกได้)');
+          const borrowRadio = document.getElementById('typeBorrow');
+          if (borrowRadio) borrowRadio.checked = true;
+          return;
+        }
+        // ถ้าเป็นเจ้าหน้าที่/แอดมิน แต่ช่องพนักงานค้างชื่อพนักงานทั่วไป ให้ล้างชื่อออก เพื่อให้เลือกเจ้าหน้าที่รับเข้าใหม่ แทนการบล็อกและดีดกลับ
         const empSelect = document.getElementById('empSelect');
         const empId = empSelect ? empSelect.value : null;
         let selectedEmp = null;
@@ -14078,11 +14121,46 @@
           selectedEmp = employeeList.find(e => e && e.id === empId);
         }
         const isSelectedEmpStaff = selectedEmp ? ((typeof window.isStaffOrAdminEmp === 'function') && window.isStaffOrAdminEmp(selectedEmp)) : true;
-        if (!isSessionStaff || (selectedEmp && !isSelectedEmpStaff)) {
-          alert('⚠️ สิทธิ์ไม่เพียงพอ! ฟังก์ชันรับเข้าสต๊อกใช้งานได้เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้น (พนักงานทั่วไปไม่สามารถทำรายการรับเข้าสต๊อกได้)');
-          const issueRadio = document.getElementById('typeIssue');
-          if (issueRadio) issueRadio.checked = true;
-          return;
+        if (selectedEmp && !isSelectedEmpStaff) {
+          if (empSelect) empSelect.value = '';
+          const empSearch = document.getElementById('transEmpSearchInput');
+          if (empSearch) empSearch.value = '';
+        }
+      }
+
+      // ป้องกันการเลือก "เบิกจ่าย" (เบิกตัดสต๊อก) สำหรับอุปกรณ์ประเภทยืมใช้
+      const currentEquipId = document.getElementById('equipSelect')?.value;
+      const currentEquipObj = currentEquipId ? (equipmentList || []).find(x => x.id === currentEquipId) : null;
+      const isBorrowEquip = currentEquipObj && (typeof window.isEquipmentBorrowType === 'function') && window.isEquipmentBorrowType(currentEquipObj);
+      const hasBorrowInCart = (typeof selectedTransItems !== 'undefined') && selectedTransItems.some(it => {
+        const eq = (equipmentList || []).find(e => e.id === it.id);
+        return eq && (typeof window.isEquipmentBorrowType === 'function') && window.isEquipmentBorrowType(eq);
+      });
+
+      const issueRadio = document.getElementById('typeIssue');
+      const issueRadioLabel = issueRadio ? document.querySelector('label[for="typeIssue"]') : null;
+
+      if (isBorrowEquip || hasBorrowInCart) {
+        if (issueRadio) {
+          issueRadio.disabled = true;
+          if (issueRadioLabel) {
+            issueRadioLabel.classList.add('disabled', 'opacity-50');
+            issueRadioLabel.title = '🔒 อุปกรณ์ประเภทยืมใช้ ไม่สามารถเบิกตัดสต๊อกได้';
+          }
+        }
+        if (selectedType === 'เบิกจ่าย') {
+          alert('❌ อุปกรณ์นี้เป็น "ประเภทยืมใช้" (รหัสขึ้นต้นด้วย B เช่น BA หรือ BT)\nไม่สามารถเบิกตัดสต๊อกได้เด็ดขาด\n\nกรุณาทำรายการผ่านโหมด "ยืมอุปกรณ์" หรือ "รับเข้าสต๊อก"');
+          const borrowRadio = document.getElementById('typeBorrow');
+          if (borrowRadio) borrowRadio.checked = true;
+          return window.toggleTransTypeUI();
+        }
+      } else {
+        if (issueRadio) {
+          issueRadio.disabled = false;
+          if (issueRadioLabel) {
+            issueRadioLabel.classList.remove('disabled', 'opacity-50');
+            issueRadioLabel.title = '';
+          }
         }
       }
 
@@ -14293,8 +14371,17 @@
           submitBtn.className = 'btn btn-success btn-lg flex-grow-1 py-3 rounded-3 fw-bold shadow-sm';
           submitBtn.innerHTML = '<i class="bi bi-box-arrow-in-down-left me-2"></i> บันทึกรับเข้าสต๊อก';
         } else {
-          submitBtn.className = 'btn btn-danger btn-lg flex-grow-1 py-3 rounded-3 fw-bold shadow-sm';
-          submitBtn.innerHTML = '<i class="bi bi-box-arrow-up me-2"></i> บันทึกเบิกตัดสต๊อก';
+          if (isBorrowEquip || hasBorrowInCart) {
+            submitBtn.disabled = true;
+            submitBtn.className = 'btn btn-secondary btn-lg flex-grow-1 py-3 rounded-3 fw-bold shadow-sm';
+            submitBtn.innerHTML = '<i class="bi bi-slash-circle me-2 text-danger"></i> ไม่สามารถเบิกตัดสต๊อกอุปกรณ์ยืมใช้ได้';
+            submitBtn.title = 'อุปกรณ์ประเภทยืมใช้ ต้องทำรายการผ่านโหมด ยืมอุปกรณ์ หรือ รับเข้าสต๊อก เท่านั้น';
+          } else {
+            submitBtn.disabled = false;
+            submitBtn.className = 'btn btn-danger btn-lg flex-grow-1 py-3 rounded-3 fw-bold shadow-sm';
+            submitBtn.innerHTML = '<i class="bi bi-box-arrow-up me-2"></i> บันทึกเบิกตัดสต๊อก';
+            submitBtn.title = '';
+          }
         }
       }
 
