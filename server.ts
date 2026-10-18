@@ -515,15 +515,16 @@ async function main() {
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true, hmr: false },
-      appType: 'custom',
+      appType: 'spa',
     });
     app.use(vite.middlewares);
 
     app.get(['/org_chart', '/org_chart.html'], async (req, res, next) => {
+      if (req.query['html-proxy'] !== undefined || req.url.includes('html-proxy')) return next();
       try {
         const filePath = path.resolve(process.cwd(), 'org_chart.html');
         let html = fs.readFileSync(filePath, 'utf-8');
-        html = await vite.transformIndexHtml(req.originalUrl || req.url, html);
+        html = await vite.transformIndexHtml('/org_chart.html', html);
         res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
       } catch (e) {
         vite.ssrFixStacktrace(e as Error);
@@ -532,10 +533,11 @@ async function main() {
     });
 
     app.get(['/job_application', '/job_application.html'], async (req, res, next) => {
+      if (req.query['html-proxy'] !== undefined || req.url.includes('html-proxy')) return next();
       try {
         const filePath = path.resolve(process.cwd(), 'job_application.html');
         let html = fs.readFileSync(filePath, 'utf-8');
-        html = await vite.transformIndexHtml(req.originalUrl || req.url, html);
+        html = await vite.transformIndexHtml('/job_application.html', html);
         res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
       } catch (e) {
         vite.ssrFixStacktrace(e as Error);
@@ -544,10 +546,11 @@ async function main() {
     });
 
     app.get(['/payroll', '/payroll.html'], async (req, res, next) => {
+      if (req.query['html-proxy'] !== undefined || req.url.includes('html-proxy')) return next();
       try {
         const filePath = path.resolve(process.cwd(), 'payroll.html');
         let html = fs.readFileSync(filePath, 'utf-8');
-        html = await vite.transformIndexHtml(req.originalUrl || req.url, html);
+        html = await vite.transformIndexHtml('/payroll.html', html);
         res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
       } catch (e) {
         vite.ssrFixStacktrace(e as Error);
@@ -556,10 +559,11 @@ async function main() {
     });
 
     app.get(['/procurement', '/procurement.html'], async (req, res, next) => {
+      if (req.query['html-proxy'] !== undefined || req.url.includes('html-proxy')) return next();
       try {
         const filePath = path.resolve(process.cwd(), 'procurement.html');
         let html = fs.readFileSync(filePath, 'utf-8');
-        html = await vite.transformIndexHtml(req.originalUrl || req.url, html);
+        html = await vite.transformIndexHtml('/procurement.html', html);
         res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
       } catch (e) {
         vite.ssrFixStacktrace(e as Error);
@@ -568,7 +572,7 @@ async function main() {
     });
 
     app.get('*', async (req, res, next) => {
-      if (req.path.startsWith('/@') || req.path.startsWith('/node_modules')) {
+      if (req.path.startsWith('/@') || req.path.startsWith('/node_modules') || req.url.includes('html-proxy')) {
         return next();
       }
       const ext = path.extname(req.path).toLowerCase();
@@ -579,7 +583,7 @@ async function main() {
       try {
         const filePath = path.resolve(process.cwd(), 'index.html');
         let html = fs.readFileSync(filePath, 'utf-8');
-        html = await vite.transformIndexHtml(req.originalUrl || req.url, html);
+        html = await vite.transformIndexHtml('/index.html', html);
         res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
       } catch (e) {
         vite.ssrFixStacktrace(e as Error);

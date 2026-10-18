@@ -12894,8 +12894,35 @@
 
         if (!searchQuery) return true;
 
+        // Retrieve the Logged-in Operator's Email (เหมือนกับแถบ 2. เพิ่ม แก้ไข ลบ อื่นๆ)
+        let operatorEmail = '';
+        if (Array.isArray(auditLogs) && auditLogs.length > 0) {
+          const matchLog = auditLogs.find(a => 
+            (tx.id && a.recordId === tx.id) || 
+            (tx.docNo && a.recordId === tx.docNo) ||
+            (tx.docNo && typeof a.details === 'string' && a.details.includes(tx.docNo)) ||
+            (tx.id && typeof a.details === 'string' && a.details.includes(tx.id))
+          );
+          if (matchLog && matchLog.userEmail) {
+            operatorEmail = matchLog.userEmail;
+          }
+        }
+        if (!operatorEmail && tx.approvedByName) {
+          const matchedUser = (typeof allUsersList !== 'undefined' && Array.isArray(allUsersList))
+            ? allUsersList.find(u => u.displayName && u.displayName.trim().toLowerCase() === tx.approvedByName.trim().toLowerCase())
+            : null;
+          if (matchedUser && matchedUser.email) {
+            operatorEmail = matchedUser.email;
+          }
+        }
+        if (!operatorEmail) {
+          const curUser = (typeof currentAuthUser !== 'undefined' && currentAuthUser) || (typeof currentUserProfile !== 'undefined' && currentUserProfile) || null;
+          operatorEmail = curUser?.email || 'jaru072@gmail.com';
+        }
+
         const empName = String(tx.employeeName || '').toLowerCase();
         const empCode = String(tx.employeeCode || tx.employeeId || '').toLowerCase();
+        const opEmailStr = String(operatorEmail || '').toLowerCase();
         const locStr = String(tx.location || '').toLowerCase();
         const noteStr = String(tx.note || '').toLowerCase();
         const timeStr = String(tx.timestamp || '').toLowerCase();
@@ -12904,6 +12931,7 @@
 
         return empName.includes(searchQuery) ||
                empCode.includes(searchQuery) ||
+               opEmailStr.includes(searchQuery) ||
                locStr.includes(searchQuery) ||
                noteStr.includes(searchQuery) ||
                timeStr.includes(searchQuery) ||
@@ -12945,11 +12973,40 @@
           typeBadge = `<span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1">${escapeHtml(t || '-')}</span>`;
         }
 
-        // Employee Info
+        // Employee Info & Logged-in Operator Email (เหมือนกับแถบ 2. เพิ่ม แก้ไข ลบ อื่นๆ)
         const empObj = (employeeList || []).find(e => e.id === tx.employeeId || (e.name && tx.employeeName && tx.employeeName.includes(e.name)));
         const empAvatar = empObj?.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80';
         const empName = empObj ? empObj.name : (tx.employeeName || 'พนักงาน');
         const empDept = empObj ? empObj.department : (tx.employeeDepartment || 'ทั่วไป');
+
+        let operatorEmail = '';
+        let operatorName = '';
+        if (Array.isArray(auditLogs) && auditLogs.length > 0) {
+          const matchLog = auditLogs.find(a => 
+            (tx.id && a.recordId === tx.id) || 
+            (tx.docNo && a.recordId === tx.docNo) ||
+            (tx.docNo && typeof a.details === 'string' && a.details.includes(tx.docNo)) ||
+            (tx.id && typeof a.details === 'string' && a.details.includes(tx.id))
+          );
+          if (matchLog && matchLog.userEmail) {
+            operatorEmail = matchLog.userEmail;
+            operatorName = matchLog.userName || '';
+          }
+        }
+        if (!operatorEmail && tx.approvedByName) {
+          const matchedUser = (typeof allUsersList !== 'undefined' && Array.isArray(allUsersList))
+            ? allUsersList.find(u => u.displayName && u.displayName.trim().toLowerCase() === tx.approvedByName.trim().toLowerCase())
+            : null;
+          if (matchedUser && matchedUser.email) {
+            operatorEmail = matchedUser.email;
+            operatorName = matchedUser.displayName || tx.approvedByName;
+          }
+        }
+        if (!operatorEmail) {
+          const curUser = (typeof currentAuthUser !== 'undefined' && currentAuthUser) || (typeof currentUserProfile !== 'undefined' && currentUserProfile) || null;
+          operatorEmail = curUser?.email || 'jaru072@gmail.com';
+          operatorName = curUser?.displayName || 'Thamma Srithong';
+        }
 
         // Due Date / Status
         let dueOrStatus = '-';
@@ -13011,6 +13068,15 @@
                   ${escapeHtml(tx.note)}
                 </div>
               ` : '<span class="text-muted">-</span>'}
+            </td>
+            <td class="fs-8 text-secondary text-truncate" style="max-width: 200px; min-width: 150px;">
+              ${operatorEmail ? `
+                <div class="d-flex align-items-center gap-1.5 text-truncate" title="${escapeHtml(operatorEmail)}${operatorName ? ' (' + escapeHtml(operatorName) + ')' : ''}">
+                  <i class="bi bi-envelope-at text-secondary fs-8 flex-shrink-0"></i>
+                  <span class="text-dark fw-semibold font-monospace text-truncate">${escapeHtml(operatorEmail)}</span>
+                </div>
+                ${operatorName ? `<div class="text-muted fs-9 text-truncate ps-3.5">${escapeHtml(operatorName)}</div>` : ''}
+              ` : '<span class="text-muted fs-9">-</span>'}
             </td>
             <td class="text-center pe-3">
               ${tx.id ? `
