@@ -2702,21 +2702,6 @@
   <!-- Firebase Modular Scripts -->
   <script type="module" src="/org_chart_main.js"></script>
   <!-- Service Worker Cleanup -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (const registration of registrations) {
-          registration.unregister();
-        }
-      }).catch(() => {});
-    }
-    if ('caches' in window) {
-      caches.keys().then((names) => {
-        for (const name of names) {
-          caches.delete(name);
-        }
-      }).catch(() => {});
-    }
-  </script>
+  <script type="module" src="/sw_cleanup.js"></script>
 </body>
 </html>

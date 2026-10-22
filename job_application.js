@@ -2228,3 +2228,38 @@ document.addEventListener("DOMContentLoaded", async () => {
   const mainForm = document.getElementById("applicantMainForm");
   if (mainForm) mainForm.addEventListener("submit", submitApplicantForm);
 });
+
+// QR Code & Share modal helpers
+window.openShareLinkModal = function() {
+  const url = window.location.href.split('#')[0];
+  const input = document.getElementById("shareFormUrlInput");
+  if (input) input.value = url;
+
+  const qrContainer = document.getElementById("shareQrCodeContainer");
+  if (qrContainer) {
+    qrContainer.innerHTML = "";
+    if (typeof QRCode !== "undefined") {
+      new QRCode(qrContainer, {
+        text: url,
+        width: 180,
+        height: 180,
+        colorDark : "#0d2258",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+      });
+    }
+  }
+
+  const modal = new bootstrap.Modal(document.getElementById("shareLinkModal"));
+  modal.show();
+};
+
+window.copyShareFormUrl = function() {
+  const input = document.getElementById("shareFormUrlInput");
+  if (input) {
+    input.select();
+    navigator.clipboard.writeText(input.value);
+    alert("คัดลอกลิงก์ใบสมัครงานแล้ว สามารถนำไปแชร์ให้ผู้สมัครได้ทันที");
+  }
+};
+

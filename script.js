@@ -3177,9 +3177,201 @@
     }
     window.autoOptimizeAndResizeImage = autoOptimizeAndResizeImage;
 
-    async function compressImageFileOrBlob(fileOrBlob, presetKey = 'MEDIUM', presetType = 'EQUIPMENT') {
-      return await autoOptimizeAndResizeImage(fileOrBlob, { presetKey, presetType });
+    async function compressImageFileOrBlob(fileOrBlob, presetKey = 'MEDIUM', presetType = 'EQUIPMENT', extraOptions = {}) {
+      let skipLandscapeFit = false;
+      if (presetType === 'EQUIPMENT') {
+        const orientMode = document.querySelector('input[name="equipOrientationMode"]:checked')?.value;
+        if (orientMode === 'PORTRAIT') {
+          skipLandscapeFit = true;
+        }
+      }
+      return await autoOptimizeAndResizeImage(fileOrBlob, { presetKey, presetType, skipLandscapeFit, ...extraOptions });
     }
+
+    window.equipRawSourceBlob = null;
+    window.equipCurrentRotation = 0;
+
+    window.changeEquipmentOrientation = async function(mode) {
+      const lblLandscape = document.getElementById('lblEquipOrientLandscape');
+      const lblPortrait = document.getElementById('lblEquipOrientPortrait');
+      const badge = document.getElementById('equipOrientationBadge');
+
+      if (mode === 'PORTRAIT') {
+        if (lblLandscape) lblLandscape.className = 'btn btn-outline-secondary fs-8 py-1';
+        if (lblPortrait) lblPortrait.className = 'btn btn-outline-success fw-bold fs-8 py-1';
+        if (badge) {
+          badge.className = 'badge bg-info text-white';
+          badge.innerHTML = '<i class="bi bi-phone me-1"></i> แนวตั้งพร้อมบันทึก';
+        }
+      } else {
+        if (lblLandscape) lblLandscape.className = 'btn btn-outline-success fw-bold fs-8 py-1';
+        if (lblPortrait) lblPortrait.className = 'btn btn-outline-secondary fs-8 py-1';
+        if (badge) {
+          badge.className = 'badge bg-success text-white';
+          badge.innerHTML = '<i class="bi bi-check-circle me-1"></i> แนวนอนพร้อมบันทึก';
+        }
+      }
+
+      // Re-process image from raw blob with preserved rotation
+      const fileInput = document.getElementById('equipImageFileInput');
+      const img = document.getElementById('equipImgPreview');
+      if (img && img.src && !img.src.includes('placeholder')) {
+        try {
+          let baseBlob = window.equipRawSourceBlob;
+          if (!baseBlob) {
+            const res = await fetch(img.src);
+            baseBlob = await res.blob();
+            window.equipRawSourceBlob = baseBlob;
+          }
+
+          const rot = window.equipCurrentRotation || 0;
+          let blobToCompress = baseBlob;
+
+          if (rot !== 0) {
+            const bmp = await createImageBitmap(baseBlob);
+            const canvas = document.createElement('canvas');
+            if (rot === 90 || rot === 270) {
+              canvas.width = bmp.height;
+              canvas.height = bmp.width;
+            } else {
+              canvas.width = bmp.width;
+              canvas.height = bmp.height;
+            }
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate((rot * Math.PI) / 180);
+            ctx.drawImage(bmp, -bmp.width / 2, -bmp.height / 2);
+            blobToCompress = await new Promise(r => canvas.toBlob(r, 'image/webp', 0.90));
+          }
+
+          const presetRadio = document.querySelector('input[name="equipCompressPreset"]:checked');
+          const presetKey = presetRadio ? presetRadio.value : 'SMALL';
+          const opt = await compressImageFileOrBlob(blobToCompress, presetKey, 'EQUIPMENT', {
+            skipLandscapeFit: (mode === 'PORTRAIT')
+          });
+
+          if (opt && opt.dataUrl) {
+            img.src = opt.dataUrl;
+            if (opt.file && fileInput) {
+              const dt = new DataTransfer();
+              dt.items.add(opt.file);
+              fileInput.files = dt.files;
+            }
+            const box = document.getElementById('equipImgPreviewBox');
+            if (box) {
+              const infoBadge = box.querySelector('.compress-info-badge');
+              if (infoBadge) {
+                const fmtName = opt.extension ? opt.extension.toUpperCase() : 'WEBP';
+                infoBadge.innerHTML = `<i class="bi bi-lightning-charge-fill text-warning me-1"></i> ย่อภาพ (${opt.presetName} ${fmtName}): ${opt.compressedSizeFormatted} [${opt.width}x${opt.height}]`;
+                infoBadge.classList.remove('d-none');
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("Recompress orientation error:", e);
+        }
+      }
+    };
+
+    window.rotateEquipmentImage = async function() {
+      const img = document.getElementById('equipImgPreview');
+      if (!img || !img.src) {
+        showToast("⚠️ ยังไม่มีรูปภาพให้หมุน");
+        return;
+      }
+
+      try {
+        window.equipCurrentRotation = ((window.equipCurrentRotation || 0) + 90) % 360;
+        const rot = window.equipCurrentRotation;
+
+        let baseBlob = window.equipRawSourceBlob;
+        if (!baseBlob) {
+          const res = await fetch(img.src);
+          baseBlob = await res.blob();
+          window.equipRawSourceBlob = baseBlob;
+        }
+
+        const bmp = await createImageBitmap(baseBlob);
+        const canvas = document.createElement('canvas');
+
+        if (rot === 90 || rot === 270) {
+          canvas.width = bmp.height;
+          canvas.height = bmp.width;
+        } else {
+          canvas.width = bmp.width;
+          canvas.height = bmp.height;
+        }
+
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((rot * Math.PI) / 180);
+        ctx.drawImage(bmp, -bmp.width / 2, -bmp.height / 2);
+
+        const isLandscape = canvas.width >= canvas.height;
+        const orientMode = document.querySelector('input[name="equipOrientationMode"]:checked')?.value || 'LANDSCAPE';
+
+        const lblLandscape = document.getElementById('lblEquipOrientLandscape');
+        const lblPortrait = document.getElementById('lblEquipOrientPortrait');
+        const badge = document.getElementById('equipOrientationBadge');
+        const radLandscape = document.getElementById('equipOrientLandscape');
+        const radPortrait = document.getElementById('equipOrientPortrait');
+
+        if (isLandscape) {
+          if (radLandscape) radLandscape.checked = true;
+          if (lblLandscape) lblLandscape.className = 'btn btn-outline-success fw-bold fs-8 py-1';
+          if (lblPortrait) lblPortrait.className = 'btn btn-outline-secondary fs-8 py-1';
+          if (badge) {
+            badge.className = 'badge bg-success text-white';
+            badge.innerHTML = '<i class="bi bi-check-circle me-1"></i> แนวนอนพร้อมบันทึก';
+          }
+        } else {
+          if (radPortrait) radPortrait.checked = true;
+          if (lblLandscape) lblLandscape.className = 'btn btn-outline-secondary fs-8 py-1';
+          if (lblPortrait) lblPortrait.className = 'btn btn-outline-success fw-bold fs-8 py-1';
+          if (badge) {
+            badge.className = 'badge bg-info text-white';
+            badge.innerHTML = '<i class="bi bi-phone me-1"></i> แนวตั้งพร้อมบันทึก';
+          }
+        }
+
+        canvas.toBlob(async (rotatedBlob) => {
+          if (!rotatedBlob) return;
+          const presetRadio = document.querySelector('input[name="equipCompressPreset"]:checked');
+          const presetKey = presetRadio ? presetRadio.value : 'SMALL';
+
+          // ข้ามการเติมกรอบเบลอ 16:9 ขณะหมุน เพื่อให้เนื้อหาภาพเต็มและขนาดใหญ่ไม่หดเล็กลง
+          const opt = await compressImageFileOrBlob(rotatedBlob, presetKey, 'EQUIPMENT', { skipLandscapeFit: true });
+
+          if (opt && opt.dataUrl) {
+            img.src = opt.dataUrl;
+            const fileInput = document.getElementById('equipImageFileInput');
+            if (fileInput && opt.file) {
+              const dt = new DataTransfer();
+              dt.items.add(opt.file);
+              fileInput.files = dt.files;
+            }
+
+            const box = document.getElementById('equipImgPreviewBox');
+            if (box) {
+              const infoBadge = box.querySelector('.compress-info-badge');
+              if (infoBadge) {
+                const fmtName = opt.extension ? opt.extension.toUpperCase() : 'WEBP';
+                infoBadge.innerHTML = `<i class="bi bi-lightning-charge-fill text-warning me-1"></i> ย่อภาพ (${opt.presetName} ${fmtName}): ${opt.compressedSizeFormatted} [${opt.width}x${opt.height}]`;
+                infoBadge.classList.remove('d-none');
+              }
+            }
+          }
+          showToast(`🔄 หมุนรูปภาพเป็น ${rot}° เรียบร้อยแล้ว (ขนาดเต็มคมชัด)`);
+        }, 'image/webp', 0.88);
+      } catch (err) {
+        console.warn("Rotate equipment image error:", err);
+        showToast("⚠️ ไม่สามารถหมุนรูปภาพได้ในขณะนี้");
+      }
+    };
 
     window.previewSelectedImage = async function(input, imgElementId, boxElementId, presetRadioName = null) {
       if (input.files && input.files[0]) {
@@ -3194,6 +3386,12 @@
         if (input.id === 'empPhotoFileInput' || input.id === 'empPhotoCameraInput') {
           const urlInput = document.getElementById('empPhotoUrlInput');
           if (urlInput) urlInput.value = '';
+        }
+
+        const isEquip = (imgElementId === 'equipImgPreview' || input.id.includes('equip'));
+        if (isEquip) {
+          window.equipRawSourceBlob = rawFile;
+          window.equipCurrentRotation = 0;
         }
 
         const presetType = (presetRadioName === 'empCompressPreset' || input.id === 'empPhotoFileInput' || input.id === 'empPhotoCameraInput') ? 'EMPLOYEE' : 'EQUIPMENT';
@@ -4007,7 +4205,14 @@
       let optStats = null;
       try {
         const presetType = (folderName === 'employee_photos') ? 'EMPLOYEE' : 'EQUIPMENT';
-        optStats = await autoOptimizeAndResizeImage(file, { presetKey, presetType });
+        let skipLandscapeFit = false;
+        if (presetType === 'EQUIPMENT') {
+          const orientMode = document.querySelector('input[name="equipOrientationMode"]:checked')?.value;
+          if (orientMode === 'PORTRAIT') {
+            skipLandscapeFit = true;
+          }
+        }
+        optStats = await autoOptimizeAndResizeImage(file, { presetKey, presetType, skipLandscapeFit });
         if (optStats && optStats.file) {
           targetFile = optStats.file;
         }
@@ -4520,7 +4725,7 @@
             }
           }
 
-          const presetKey = document.querySelector('input[name="equipCompressPreset"]:checked')?.value || 'MEDIUM';
+          const presetKey = document.querySelector('input[name="equipCompressPreset"]:checked')?.value || 'SMALL';
           if (stepTitle) stepTitle.textContent = "กำลังอัปโหลดและบีบอัดรูปภาพไปยัง Firebase Storage...";
           if (stepDetail) stepDetail.textContent = `ระบบกำลังบีบอัดไฟล์รูปภาพและจัดเก็บเข้า Storage ในชื่อ ${equipFileName}...`;
           try {
@@ -5652,6 +5857,7 @@
       }
 
       // Process inventory stock changes
+      const stockUpdatePromises = [];
       itemsToProcess.forEach(it => {
         const equipObj = equipmentList.find(x => x.id === it.equipmentId);
         if (equipObj) {
@@ -5668,12 +5874,17 @@
           }
 
           if (isFirebaseReady && db && equipObj.id) {
-            setDoc(doc(db, "equipment", equipObj.id), equipObj, { merge: true }).catch(err => {
-              console.warn("Firestore update equipment stock error:", err);
-            });
+            stockUpdatePromises.push(
+              setDoc(doc(db, "equipment", equipObj.id), equipObj, { merge: true }).catch(err => {
+                console.warn("Firestore update equipment stock error:", err);
+              })
+            );
           }
         }
       });
+      if (stockUpdatePromises.length > 0) {
+        await Promise.all(stockUpdatePromises);
+      }
 
       let dueDateVal = null;
       let dueDateStr = null;
@@ -5765,6 +5976,11 @@
           await setDoc(doc(db, "transactions", newTx.id), newTx, { merge: true });
         } catch (err) {
           console.warn("Firestore add transaction error:", err);
+          if (!navigator.onLine) {
+            window.showNetworkStatusAlert('OFFLINE');
+          } else {
+            window.showNetworkStatusAlert('UNSTABLE');
+          }
         }
       }
 
@@ -7993,7 +8209,7 @@
       if (!tbody) return;
 
       // Update sort header icons
-      ['timestamp', 'type', 'employee', 'equipment', 'quantity', 'location'].forEach(col => {
+      ['timestamp', 'type', 'employee', 'equipment', 'quantity', 'location', 'operatorEmail'].forEach(col => {
         const iconElem = document.getElementById(`sort-icon-history-${col}`);
         if (iconElem) {
           if (historySortColumn === col) {
@@ -8040,7 +8256,11 @@
           tx.note,
           tx.timestamp,
           tx.unit,
-          tx.quantity !== undefined ? String(tx.quantity) : ''
+          tx.quantity !== undefined ? String(tx.quantity) : '',
+          tx.operatorEmail,
+          tx.operatorName,
+          tx.userEmail,
+          tx.createdByEmail
         ];
 
         if (Array.isArray(tx.items)) {
@@ -8081,6 +8301,10 @@
           const locA = (a.location || '') + ' ' + (a.note || '');
           const locB = (b.location || '') + ' ' + (b.note || '');
           return dir * locA.localeCompare(locB, 'th');
+        } else if (historySortColumn === 'operatorEmail') {
+          const emailA = (a.operatorEmail || a.userEmail || a.createdByEmail || a.operatorName || '').toLowerCase();
+          const emailB = (b.operatorEmail || b.userEmail || b.createdByEmail || b.operatorName || '').toLowerCase();
+          return dir * emailA.localeCompare(emailB, 'th');
         }
         return 0;
       });
@@ -8088,7 +8312,7 @@
       const totalItems = filtered.length;
 
       if (totalItems === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">ไม่พบประวัติการทำรายการที่ตรงกับคำค้นหา</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">ไม่พบประวัติการทำรายการที่ตรงกับคำค้นหา</td></tr>`;
         const pagInfo = document.getElementById('historyPaginationInfo');
         if (pagInfo) pagInfo.textContent = 'แสดง 0 - 0 จาก 0 รายการ';
         const pagNav = document.getElementById('historyPaginationNav');
@@ -8136,6 +8360,25 @@
           itemsDisplay = `<span class="fw-bold text-success">${tx.equipmentName || '-'}</span>`;
         }
 
+        // ผู้ทำรายการ / อีเมลผู้ทำรายการ
+        let operatorEmail = tx.operatorEmail || tx.userEmail || tx.createdByEmail || '';
+        let operatorName = tx.operatorName || tx.userName || tx.createdByName || '';
+        if (!operatorEmail && tx.approvedByName) {
+          const allUsersList = (typeof systemUsersList !== 'undefined' && Array.isArray(systemUsersList)) ? systemUsersList : [];
+          const matchedUser = allUsersList.length > 0
+            ? allUsersList.find(u => u.displayName && u.displayName.trim().toLowerCase() === tx.approvedByName.trim().toLowerCase())
+            : null;
+          if (matchedUser && matchedUser.email) {
+            operatorEmail = matchedUser.email;
+            operatorName = matchedUser.displayName || tx.approvedByName;
+          }
+        }
+        if (!operatorEmail) {
+          const curUser = (typeof currentAuthUser !== 'undefined' && currentAuthUser) || (typeof currentUserProfile !== 'undefined' && currentUserProfile) || null;
+          operatorEmail = curUser?.email || 'jaru072@gmail.com';
+          operatorName = curUser?.displayName || 'Thamma Srithong';
+        }
+
         html += `
           <tr>
             <td class="ps-3 fs-7 text-secondary">
@@ -8153,6 +8396,15 @@
                   <i class="bi bi-chat-left-text me-1 text-secondary"></i>${escapeHtml(tx.note)}
                 </div>
               ` : ''}
+            </td>
+            <td class="fs-8 text-secondary text-truncate" style="max-width: 220px; min-width: 160px;">
+              ${operatorEmail ? `
+                <div class="d-flex align-items-center gap-1.5 text-truncate" title="${escapeHtml(operatorEmail)}${operatorName ? ' (' + escapeHtml(operatorName) + ')' : ''}">
+                  <i class="bi bi-envelope-at text-secondary fs-8 flex-shrink-0"></i>
+                  <span class="text-dark fw-semibold font-monospace text-truncate">${escapeHtml(operatorEmail)}</span>
+                </div>
+                ${operatorName ? `<div class="text-muted fs-9 text-truncate ps-3.5">${escapeHtml(operatorName)}</div>` : ''}
+              ` : '<span class="text-muted fs-9">-</span>'}
             </td>
             <td class="text-end pe-3">
               <div class="d-flex align-items-center justify-content-end gap-1">
@@ -8272,21 +8524,58 @@
         const dateStr = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
         const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
         const fullTimestamp = `${dateStr} ${timeStr}`;
-        const logId = 'audit-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        const strRecordId = String(recordId || '');
+        const currentMs = Date.now();
+
+        if (!Array.isArray(auditLogs)) auditLogs = [];
+
+        // ป้องกันการบันทึกซ้ำซ้อน: ตรวจสอบรายการล่าสุดที่มีการทำรายการเดียวกันในเวลาใกล้เคียงกัน (ภายใน 30 วินาที)
+        const recentDuplicate = auditLogs.find((l, idx) => {
+          if (idx > 5) return false;
+          const diffMs = currentMs - (Number(l.rawTimestamp) || 0);
+          if (diffMs < 0 || diffMs > 30000) return false;
+          const sameUser = (l.userEmail === userEmail);
+          const sameModule = (l.module === moduleName);
+          const sameAction = (l.action === actionType);
+          const sameRecord = strRecordId ? (String(l.recordId || '') === strRecordId) : (l.details === detailsText);
+          return sameUser && sameModule && sameAction && sameRecord;
+        });
+
+        if (recentDuplicate) {
+          // หากเป็นการทำรายการเดิมในเวลาใกล้เคียงกัน ให้อัปเดตวันและเวลาล่าสุดแทนการสร้างแถวใหม่
+          recentDuplicate.timestamp = fullTimestamp;
+          recentDuplicate.rawTimestamp = currentMs;
+          recentDuplicate.details = detailsText;
+          if (strRecordId) recentDuplicate.recordId = strRecordId;
+
+          if (typeof window.renderAuditLogsTable === 'function') {
+            window.renderAuditLogsTable();
+          }
+
+          if (isFirebaseReady && db && recentDuplicate.id) {
+            try {
+              await setDoc(doc(db, "audit_logs", recentDuplicate.id), recentDuplicate, { merge: true });
+            } catch (e) {
+              console.warn("Firestore audit_log update error:", e);
+            }
+          }
+          return;
+        }
+
+        const logId = 'audit-' + currentMs + '-' + Math.floor(Math.random() * 1000);
 
         const logEntry = {
           id: logId,
           timestamp: fullTimestamp,
-          rawTimestamp: Date.now(),
+          rawTimestamp: currentMs,
           userEmail: userEmail,
           userName: userName,
           module: moduleName, // 'บุคลากร', 'อุปกรณ์', 'หมวดหมู่', 'แผนก/สวน', 'ระบบ'
           action: actionType, // 'เพิ่ม', 'แก้ไข', 'ลบ'
           details: detailsText,
-          recordId: String(recordId || '')
+          recordId: strRecordId
         };
 
-        if (!Array.isArray(auditLogs)) auditLogs = [];
         auditLogs.unshift(logEntry);
 
         if (typeof window.renderAuditLogsTable === 'function') {
@@ -12513,66 +12802,149 @@
 
     window.handleRestockInboundSubmit = async function(e) {
       e.preventDefault();
-      const equipId = document.getElementById('restockEquipSelect').value;
-      const qty = parseInt(document.getElementById('restockQtyInput').value) || 0;
-      const empId = document.getElementById('restockEmpSelect').value;
-      const note = document.getElementById('restockNoteInput').value.trim();
 
-      if (!equipId || qty <= 0 || !empId) {
-        alert("กรุณาเลือกอุปกรณ์ ระบุจำนวนขาเข้า และเลือกพนักงานผู้ตรวจรับให้ถูกต้อง");
-        return;
+      if (window._isRestockSubmitInProgress) return;
+      window._isRestockSubmitInProgress = true;
+
+      const submitBtn = document.getElementById('btnSubmitRestockInbound');
+      const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> กำลังบันทึกรับเข้าสต๊อก...';
       }
 
-      const item = equipmentList.find(x => x.id === equipId);
-      const emp = employeeList.find(x => x.id === empId);
-
-      if (!item || !emp) return;
-
-      // Increment stock
-      item.quantity += qty;
-      saveToLocalStorage();
-
-      if (isFirebaseReady && db) {
-        try {
-          await setDoc(doc(db, "equipment", item.id), item, { merge: true });
-        } catch(err){
-          console.warn("Restock equipment firestore error:", err);
+      const unlockSubmit = () => {
+        window._isRestockSubmitInProgress = false;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnHtml;
         }
-      }
-
-      // Log transaction
-      const newTx = {
-        id: 'tx-' + String(Date.now()).slice(-6),
-        type: 'รับเข้าสต๊อก (ขาเข้า)',
-        employeeId: emp.id,
-        employeeName: `${emp.name} (${emp.department})`,
-        equipmentId: item.id,
-        equipmentName: `${item.name} [${item.code}]`,
-        quantity: qty,
-        unit: item.unit,
-        location: item.location || 'คลังกลาง',
-        note: note ? `รับเข้าขาเข้า: ${note}` : 'รับสินค้าเข้าสต๊อก/สั่งซื้อเพิ่ม',
-        rawTimestamp: Date.now(),
-        timestamp: new Date().toLocaleString('th-TH')
       };
 
-      transactionHistory.unshift(newTx);
-      saveToLocalStorage();
+      try {
+        const equipId = document.getElementById('restockEquipSelect')?.value;
+        const qty = parseInt(document.getElementById('restockQtyInput')?.value) || 0;
+        const empId = document.getElementById('restockEmpSelect')?.value;
+        const note = document.getElementById('restockNoteInput')?.value.trim();
 
-      if (isFirebaseReady && db) {
-        addDoc(collection(db, "transactions"), newTx).catch(()=>{});
+        if (!equipId) {
+          unlockSubmit();
+          alert("กรุณาเลือกอุปกรณ์ที่ต้องการรับเข้าสต๊อก");
+          return;
+        }
+
+        if (qty <= 0) {
+          unlockSubmit();
+          alert("กรุณาระบุจำนวนรับเข้าสต๊อกให้มากกว่า 0");
+          return;
+        }
+
+        if (!empId) {
+          unlockSubmit();
+          alert("กรุณาเลือกพนักงานผู้ตรวจรับ/บันทึกขาเข้า");
+          return;
+        }
+
+        const item = (equipmentList || []).find(x => x && (String(x.id) === String(equipId) || String(x.code) === String(equipId)));
+        if (!item) {
+          unlockSubmit();
+          alert(`ไม่พบข้อมูลอุปกรณ์รหัส "${equipId}" ในระบบ กรุณาตรวจสอบอีกครั้ง`);
+          return;
+        }
+
+        const emp = (employeeList || []).find(x => x && (String(x.id) === String(empId) || String(x.empCode) === String(empId) || x.name === empId));
+        if (!emp) {
+          unlockSubmit();
+          alert(`ไม่พบข้อมูลพนักงานผู้ตรวจรับในระบบ กรุณาตรวจสอบอีกครั้ง`);
+          return;
+        }
+
+        // เพิ่มสต๊อกอุปกรณ์
+        item.quantity = (Number(item.quantity) || 0) + qty;
+        saveToLocalStorage();
+
+        // บันทึกลง Firestore (ข้อมูลอุปกรณ์)
+        if (isFirebaseReady && db && item.id) {
+          try {
+            await setDoc(doc(db, "equipment", item.id), item, { merge: true });
+          } catch(err) {
+            console.warn("Restock equipment firestore error:", err);
+          }
+        }
+
+        // ผู้ทำรายการ / อีเมลผู้ทำรายการ
+        const curUser = (typeof currentAuthUser !== 'undefined' && currentAuthUser) || (typeof currentUserProfile !== 'undefined' && currentUserProfile) || null;
+        const operatorEmail = curUser?.email || 'jaru072@gmail.com';
+        const operatorName = curUser?.displayName || 'Thamma Srithong';
+
+        const now = new Date();
+        const txId = 'tx-' + String(now.getTime()).slice(-6);
+        const docNo = 'DOC-' + String(now.getTime()).slice(-6);
+
+        // สร้างประวัติการทำรายการ (Transaction)
+        const newTx = {
+          id: txId,
+          docNo: docNo,
+          type: 'รับเข้าสต๊อก (ขาเข้า)',
+          employeeId: emp.id,
+          employeeName: `${emp.name} (${emp.department || 'แผนกทั่วไป'})`,
+          employeeCode: emp.code || emp.id,
+          employeeDepartment: emp.department || 'แผนกทั่วไป',
+          operatorEmail: operatorEmail,
+          operatorName: operatorName,
+          equipmentId: item.id,
+          equipmentName: `${item.name} [${item.code || item.id}]`,
+          equipmentCode: item.code || item.id,
+          quantity: qty,
+          unit: item.unit || 'ชิ้น',
+          location: item.location || 'คลังกลาง',
+          note: note ? `รับเข้าขาเข้า: ${note}` : 'รับสินค้าเข้าสต๊อก/สั่งซื้อเพิ่ม',
+          rawTimestamp: now.getTime(),
+          timestamp: now.toLocaleString('th-TH')
+        };
+
+        if (!Array.isArray(transactionHistory)) transactionHistory = [];
+        transactionHistory.unshift(newTx);
+        saveToLocalStorage();
+
+        // บันทึกประวัติลง Firestore แบบระบุ ID ตรงกัน
+        if (isFirebaseReady && db) {
+          try {
+            await setDoc(doc(db, "transactions", newTx.id), newTx, { merge: true });
+          } catch (err) {
+            console.warn("Restock transaction firestore error:", err);
+            if (!navigator.onLine) {
+              window.showNetworkStatusAlert('OFFLINE');
+            } else {
+              window.showNetworkStatusAlert('UNSTABLE');
+            }
+          }
+        }
+
+        // บันทึกประวัติการตรวจสอบ Audit Log
+        if (typeof logAuditAction === 'function') {
+          logAuditAction('อุปกรณ์', 'รับเข้าสต๊อก', `รับเข้าสต๊อก "${item.name}" [${item.code || item.id}] จำนวน +${qty} ${item.unit || 'ชิ้น'} (โดย: ${emp.name})`, item.id);
+        }
+
+        const modalElem = document.getElementById('restockInboundModal');
+        if (modalElem) {
+          const modalInst = bootstrap.Modal.getInstance(modalElem);
+          if (modalInst) modalInst.hide();
+        }
+
+        showToast(`📥 บันทึกรับเข้าสต๊อก "${item.name}" จำนวน +${qty} ${item.unit || 'ชิ้น'} เรียบร้อยแล้ว (สต๊อกใหม่: ${item.quantity} ${item.unit || 'ชิ้น'})`);
+
+        renderCatalogGrid();
+        renderStaffTable();
+        renderHistoryTable();
+        updateStats();
+
+      } catch (err) {
+        console.error("Restock submit fatal error:", err);
+        alert("เกิดข้อผิดพลาดในการบันทึกรับเข้าสต๊อก: " + (err.message || err));
+      } finally {
+        unlockSubmit();
       }
-
-      const modalElem = document.getElementById('restockInboundModal');
-      const modalInst = bootstrap.Modal.getInstance(modalElem);
-      if (modalInst) modalInst.hide();
-
-      showToast(`📥 บันทึกรับเข้าสต๊อก "${item.name}" จำนวน +${qty} ${item.unit} เรียบร้อยแล้ว (สต๊อกใหม่: ${item.quantity} ${item.unit})`);
-
-      renderCatalogGrid();
-      renderStaffTable();
-      renderHistoryTable();
-      updateStats();
     };
 
     window.openEquipQrModal = function(equipId) {
@@ -13413,7 +13785,7 @@
         if (itemTxs.length === 0) {
           histTbody.innerHTML = `
             <tr>
-              <td colspan="5" class="text-center py-3 text-muted fs-8">
+              <td colspan="6" class="text-center py-4 text-muted fs-8">
                 ไม่มีประวัติการทำรายการเบิก-ยืม-คืน สำหรับอุปกรณ์ชิ้นนี้
               </td>
             </tr>
@@ -13421,10 +13793,19 @@
         } else {
           let hHtml = '';
           itemTxs.slice(0, 30).forEach(tx => {
+            const t = String(tx.type || '').trim();
             let typeBadge = '';
-            if (tx.type === 'ยืมอุปกรณ์') typeBadge = '<span class="badge bg-warning text-dark">🟡 ยืมอุปกรณ์</span>';
-            else if (tx.type === 'คืนอุปกรณ์') typeBadge = '<span class="badge bg-info text-dark">🟢 คืนอุปกรณ์</span>';
-            else typeBadge = `<span class="badge bg-secondary">${tx.type}</span>`;
+            if (t === 'ยืมอุปกรณ์') {
+              typeBadge = '<span class="badge bg-warning text-dark"><i class="bi bi-arrow-repeat me-1"></i>ยืมอุปกรณ์</span>';
+            } else if (t === 'คืนอุปกรณ์') {
+              typeBadge = '<span class="badge fw-bold shadow-2xs" style="background-color: #0dcaf0 !important; color: #000000 !important;"><i class="bi bi-box-arrow-in-down me-1"></i>คืนอุปกรณ์</span>';
+            } else if (t === 'รับเข้าสต๊อก (ขาเข้า)' || t === 'รับเข้าสต๊อก' || t === 'เติมสต๊อกด่วน') {
+              typeBadge = '<span class="badge text-white fw-bold shadow-2xs" style="background-color: #00c853 !important;"><i class="bi bi-box-arrow-in-down-left me-1"></i>รับเข้าสต๊อก</span>';
+            } else if (t === 'เบิกจ่าย') {
+              typeBadge = '<span class="badge bg-danger text-white"><i class="bi bi-box-arrow-up me-1"></i>เบิกจ่าย</span>';
+            } else {
+              typeBadge = `<span class="badge bg-secondary">${escapeHtml(t)}</span>`;
+            }
 
             let qtyVal = tx.quantity || 0;
             if (Array.isArray(tx.items)) {
@@ -13432,13 +13813,94 @@
               if (matchIt) qtyVal = matchIt.quantity;
             }
 
+            // ข้อมูลพนักงาน (รูป + ชื่อ + แผนก)
+            const emp = (employeeList || []).find(e => e && (e.id === tx.employeeId || e.name === tx.employeeName || e.empCode === tx.employeeCode));
+            const empAvatar = (emp && emp.photoUrl) ? emp.photoUrl : (tx.employeePhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80');
+            const empName = tx.employeeName || (emp ? emp.name : 'เจ้าหน้าที่');
+            const empDept = (emp && emp.department) ? emp.department : (tx.employeeDepartment || '');
+
+            // ผู้ทำรายการ / อีเมลผู้ทำรายการ
+            let operatorEmail = tx.operatorEmail || tx.userEmail || tx.createdByEmail || '';
+            let operatorName = tx.operatorName || tx.userName || tx.createdByName || '';
+            if (!operatorEmail && tx.approvedByName) {
+              const allUsersList = (typeof systemUsersList !== 'undefined' && Array.isArray(systemUsersList)) ? systemUsersList : [];
+              const matchedUser = allUsersList.find(u => u.displayName && u.displayName.trim().toLowerCase() === tx.approvedByName.trim().toLowerCase());
+              if (matchedUser && matchedUser.email) {
+                operatorEmail = matchedUser.email;
+                operatorName = matchedUser.displayName || tx.approvedByName;
+              }
+            }
+            if (!operatorEmail) {
+              const curUser = (typeof currentAuthUser !== 'undefined' && currentAuthUser) || (typeof currentUserProfile !== 'undefined' && currentUserProfile) || null;
+              operatorEmail = curUser?.email || 'jaru072@gmail.com';
+              operatorName = curUser?.displayName || 'Thamma Srithong';
+            }
+
+            const locationOrNote = tx.location || tx.note || '-';
+
             hHtml += `
-              <tr>
-                <td class="text-nowrap text-secondary">${tx.timestamp || '-'}</td>
+              <!-- แถวสำหรับแสดงบนโทรศัพท์มือถือ (ความสูงไม่เกิน 3 บรรทัด พอดีขอบหน้าจอ) -->
+              <tr class="d-md-none border-bottom">
+                <td class="p-2.5">
+                  <!-- บรรทัดที่ 1: วัน-เวลา + ประเภทรายการ + จำนวนชิ้น -->
+                  <div class="d-flex align-items-center justify-content-between gap-1 mb-1">
+                    <div class="d-flex align-items-center gap-1.5 text-truncate">
+                      <span class="fw-bold text-dark fs-8">${escapeHtml(tx.timestamp || '-')}</span>
+                      ${typeBadge}
+                    </div>
+                    <div class="flex-shrink-0 text-end">
+                      <span class="badge bg-light text-dark border fw-bold fs-7 px-2 py-0.5">${qtyVal} ${escapeHtml(item.unit || 'ชิ้น')}</span>
+                    </div>
+                  </div>
+
+                  <!-- บรรทัดที่ 2: รูปโปรไฟล์ + ชื่อพนักงาน + แผนก -->
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    <img src="${empAvatar}" loading="lazy" class="rounded-circle border shadow-2xs flex-shrink-0" style="width: 22px; height: 22px; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'" />
+                    <span class="fw-semibold text-dark fs-8 text-truncate" style="max-width: 180px;">${escapeHtml(empName)}</span>
+                    ${empDept ? `<span class="badge bg-light text-secondary border fs-9 py-0.5 text-truncate" style="max-width: 110px;">${escapeHtml(empDept)}</span>` : ''}
+                  </div>
+
+                  <!-- บรรทัดที่ 3: สถานที่ / หมายเหตุ + อีเมลผู้ทำรายการ -->
+                  <div class="d-flex align-items-center justify-content-between gap-2 text-secondary fs-9">
+                    <div class="text-truncate" style="max-width: 55%;" title="${escapeHtml(locationOrNote)}">
+                      <i class="bi bi-geo-alt-fill text-danger me-0.5"></i>${escapeHtml(locationOrNote)}
+                    </div>
+                    <div class="text-truncate text-end font-monospace text-muted" style="max-width: 45%;" title="${escapeHtml(operatorEmail)}">
+                      <i class="bi bi-envelope-at me-0.5"></i>${escapeHtml(operatorEmail)}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- แถวสำหรับแสดงบนจอคอมพิวเตอร์ (จอแท็บเล็ต/เดสก์ท็อป) -->
+              <tr class="d-none d-md-table-row">
+                <td class="ps-3 text-nowrap">
+                  <div class="fw-bold text-dark fs-8">${escapeHtml(tx.timestamp || '-')}</div>
+                  <small class="text-muted font-monospace fs-9">#${escapeHtml(tx.docNo || (tx.id ? tx.id.substring(0, 8) : '-'))}</small>
+                </td>
                 <td>${typeBadge}</td>
-                <td class="fw-semibold text-dark">${tx.employeeName || '-'}</td>
-                <td class="text-center fw-bold text-dark">${qtyVal} ${item.unit || 'ชิ้น'}</td>
-                <td class="text-muted text-truncate" style="max-width: 150px;" title="${tx.note || ''}">${tx.note || '-'}</td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <img src="${empAvatar}" loading="lazy" class="rounded-circle border shadow-2xs flex-shrink-0" style="width: 28px; height: 28px; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'" />
+                    <div>
+                      <div class="fw-semibold text-dark fs-8 text-truncate" style="max-width: 170px;">${escapeHtml(empName)}</div>
+                      ${empDept ? `<div class="badge bg-light text-secondary border fs-9 py-0.5 mt-0.5">${escapeHtml(empDept)}</div>` : ''}
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center fw-bold text-dark fs-7">${qtyVal} <span class="text-muted fs-9">${escapeHtml(item.unit || 'ชิ้น')}</span></td>
+                <td class="fs-8 text-secondary text-truncate" style="max-width: 180px;" title="${escapeHtml(locationOrNote)}">
+                  <i class="bi bi-geo-alt-fill me-1 text-danger"></i>${escapeHtml(locationOrNote)}
+                </td>
+                <td class="fs-8 text-secondary text-truncate" style="max-width: 190px;">
+                  ${operatorEmail ? `
+                    <div class="d-flex align-items-center gap-1.5 text-truncate" title="${escapeHtml(operatorEmail)}">
+                      <i class="bi bi-envelope-at text-secondary fs-8 flex-shrink-0"></i>
+                      <span class="text-dark fw-semibold font-monospace text-truncate">${escapeHtml(operatorEmail)}</span>
+                    </div>
+                    ${operatorName ? `<div class="text-muted fs-9 text-truncate ps-3.5">${escapeHtml(operatorName)}</div>` : ''}
+                  ` : '<span class="text-muted fs-9">-</span>'}
+                </td>
               </tr>
             `;
           });
@@ -21548,6 +22010,23 @@
       document.getElementById('equipManualImgUrl').value = item.imageUrl;
       document.getElementById('equipDescInput').value = item.description;
 
+      const equipSmallPreset = document.getElementById('equipCompressSmall');
+      if (equipSmallPreset) equipSmallPreset.checked = true;
+
+      const orientLandscapeRadio = document.getElementById('equipOrientLandscape');
+      if (orientLandscapeRadio) orientLandscapeRadio.checked = true;
+      const lblLandscape = document.getElementById('lblEquipOrientLandscape');
+      const lblPortrait = document.getElementById('lblEquipOrientPortrait');
+      const badge = document.getElementById('equipOrientationBadge');
+      if (lblLandscape) lblLandscape.className = 'btn btn-outline-success fw-bold fs-8 py-1';
+      if (lblPortrait) lblPortrait.className = 'btn btn-outline-secondary fs-8 py-1';
+      if (badge) {
+        badge.className = 'badge bg-success text-white';
+        badge.innerHTML = '<i class="bi bi-check-circle me-1"></i> แนวนอนพร้อมบันทึก';
+      }
+      window.equipRawSourceBlob = item.imageUrl || null;
+      window.equipCurrentRotation = 0;
+
       const img = document.getElementById('equipImgPreview');
       const box = document.getElementById('equipImgPreviewBox');
       if (img && box && item.imageUrl) {
@@ -21609,6 +22088,23 @@
 
       const cameraInput = document.getElementById('equipImageCameraInput');
       if (cameraInput) cameraInput.value = '';
+
+      const equipSmallPreset = document.getElementById('equipCompressSmall');
+      if (equipSmallPreset) equipSmallPreset.checked = true;
+
+      const orientLandscapeRadio = document.getElementById('equipOrientLandscape');
+      if (orientLandscapeRadio) orientLandscapeRadio.checked = true;
+      const lblLandscape = document.getElementById('lblEquipOrientLandscape');
+      const lblPortrait = document.getElementById('lblEquipOrientPortrait');
+      const badge = document.getElementById('equipOrientationBadge');
+      if (lblLandscape) lblLandscape.className = 'btn btn-outline-success fw-bold fs-8 py-1';
+      if (lblPortrait) lblPortrait.className = 'btn btn-outline-secondary fs-8 py-1';
+      if (badge) {
+        badge.className = 'badge bg-success text-white';
+        badge.innerHTML = '<i class="bi bi-check-circle me-1"></i> แนวนอนพร้อมบันทึก';
+      }
+      window.equipRawSourceBlob = null;
+      window.equipCurrentRotation = 0;
 
       document.getElementById('equipModalTitle').innerHTML = '<i class="bi bi-plus-circle me-2"></i>เพิ่มรายการอุปกรณ์การเกษตรใหม่';
       document.getElementById('autoSearchLoadingOverlay').classList.add('d-none');
@@ -24256,6 +24752,90 @@
         alert(`🎉 บีบอัดรูปภาพในระบบเรียบร้อยแล้ว!\n\n- ประมวลผลสำเร็จ: ${totalProcessed} รูปภาพ\n- ประหยัดพื้นที่ Storage รวม: ${totalSavedMb} MB`);
         showToast(`🎉 ย่อและบีบอัดรูปภาพสำเร็จ! ประหยัดพื้นที่รวม ${totalSavedMb} MB`);
       };
+    }
+
+    let _netStatusTimer = null;
+
+    window.showNetworkStatusAlert = function(statusType) {
+      const alertEl = document.getElementById('networkStatusFloatingAlert');
+      if (!alertEl) return;
+
+      const iconWrap = document.getElementById('netStatusIconWrapper');
+      const icon = document.getElementById('netStatusIcon');
+      const title = document.getElementById('netStatusTitle');
+      const closeBtn = alertEl.querySelector('.btn-close');
+
+      if (_netStatusTimer) {
+        clearTimeout(_netStatusTimer);
+        _netStatusTimer = null;
+      }
+
+      if (statusType === 'OFFLINE') {
+        alertEl.style.backgroundColor = 'rgba(220, 53, 69, 0.95)';
+        alertEl.style.color = '#ffffff';
+        alertEl.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+        if (iconWrap) {
+          iconWrap.className = 'rounded-circle p-1 d-flex align-items-center justify-content-center flex-shrink-0 bg-white text-danger';
+        }
+        if (icon) icon.className = 'bi bi-wifi-off fs-7';
+        if (title) title.textContent = 'ไม่มีสัญญาณอินเทอร์เน็ต';
+        if (closeBtn) closeBtn.className = 'btn-close btn-close-white fs-9 ms-1 p-1';
+        alertEl.classList.remove('d-none');
+      } else if (statusType === 'UNSTABLE') {
+        alertEl.style.backgroundColor = 'rgba(253, 126, 20, 0.95)';
+        alertEl.style.color = '#ffffff';
+        alertEl.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+        if (iconWrap) {
+          iconWrap.className = 'rounded-circle p-1 d-flex align-items-center justify-content-center flex-shrink-0 bg-white text-warning';
+        }
+        if (icon) icon.className = 'bi bi-reception-1 fs-7';
+        if (title) title.textContent = 'สัญญาณเน็ตไม่เสถียร';
+        if (closeBtn) closeBtn.className = 'btn-close btn-close-white fs-9 ms-1 p-1';
+        alertEl.classList.remove('d-none');
+        _netStatusTimer = setTimeout(() => {
+          window.hideNetworkStatusAlert();
+        }, 4000);
+      } else if (statusType === 'ONLINE') {
+        alertEl.style.backgroundColor = 'rgba(25, 135, 84, 0.95)';
+        alertEl.style.color = '#ffffff';
+        alertEl.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+        if (iconWrap) {
+          iconWrap.className = 'rounded-circle p-1 d-flex align-items-center justify-content-center flex-shrink-0 bg-white text-success';
+        }
+        if (icon) icon.className = 'bi bi-wifi fs-7';
+        if (title) title.textContent = 'เชื่อมต่ออินเทอร์เน็ตแล้ว';
+        if (closeBtn) closeBtn.className = 'btn-close btn-close-white fs-9 ms-1 p-1';
+        alertEl.classList.remove('d-none');
+        _netStatusTimer = setTimeout(() => {
+          window.hideNetworkStatusAlert();
+        }, 3000);
+      }
+    };
+
+    window.hideNetworkStatusAlert = function() {
+      const alertEl = document.getElementById('networkStatusFloatingAlert');
+      if (alertEl) alertEl.classList.add('d-none');
+      if (_netStatusTimer) {
+        clearTimeout(_netStatusTimer);
+        _netStatusTimer = null;
+      }
+    };
+
+    // Auto-listen to network connectivity events
+    window.addEventListener('offline', () => {
+      window.showNetworkStatusAlert('OFFLINE');
+    });
+
+    window.addEventListener('online', () => {
+      window.showNetworkStatusAlert('ONLINE');
+      if (typeof window.validateFirestoreHistorySync === 'function') {
+        window.validateFirestoreHistorySync(false);
+      }
+    });
+
+    // Check initial network state
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      window.showNetworkStatusAlert('OFFLINE');
     }
 
     let feedbackTimer = null;

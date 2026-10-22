@@ -11,6 +11,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@google/genai": "^2.30.0",
     "esbuild": "^0.25.0",
     "express": "^4.21.2",
     "jszip": "^3.10.1",

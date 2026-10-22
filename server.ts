@@ -3,9 +3,22 @@ import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import JSZip from 'jszip';
+import { GoogleGenAI } from '@google/genai';
 
 const app = express();
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+  httpOptions: {
+    headers: {
+      'User-Agent': 'aistudio-build',
+    }
+  }
+});
 
 function getStorageBucketName(): string {
   try {
@@ -500,6 +513,76 @@ app.get('/api/list-storage-files', async (req, res) => {
   }
 });
 
+// Endpoint 4: AI Visual Equipment Recognition
+app.post('/api/identify-equipment', async (req, res) => {
+  try {
+    const { imageBase64, mimeType, inventoryItems } = req.body;
+    if (!imageBase64) {
+      return res.status(400).json({ error: 'Missing imageBase64 data' });
+    }
+
+    const cleanBase64 = String(imageBase64).replace(/^data:image\/[a-zA-Z0-9.+]+;base64,/, '');
+
+    const inventorySummary = Array.isArray(inventoryItems) && inventoryItems.length > 0
+      ? inventoryItems.slice(0, 200).map((i: any) => `- ID: ${i.id} | ชื่อ: ${i.name || ''} | รหัส: ${i.code || '-'} | หมวดหมู่: ${i.category || '-'}`).join('\n')
+      : 'ไม่มีรายการอ้างอิงในคลัง';
+
+    const prompt = `คุณคือระบบปัญญาประดิษฐ์ผู้เชี่ยวชาญด้านเครื่องมือและอุปกรณ์การเกษตรในสวนดอกไม้และแปลงเกษตร (Flora Garden)
+หน้าที่ของคุณคือ:
+1. วิเคราะห์รูปภาพอุปกรณ์ที่ส่งมานี้ และระบุว่าเป็นอุปกรณ์เครื่องมือการเกษตรชนิดใด
+2. ระบุชื่อภาษาไทยที่แม่นยำและเป็นทางการ (เช่น "จอบขุดดิน", "เสียม", "กรรไกรตัดแต่งกิ่ง", "บัวรดน้ำ", "สายยางรดน้ำ", "เลื่อยตัดกิ่งไม้", "พลั่วตักดิน", "คราดพรวนดิน", "เครื่องพ่นยา", "มีดตอนกิ่ง", "ถุงมือผ้าเคลือบยาง")
+3. เทียบเคียงกับรายการอุปกรณ์ในคลังพัสดุของสวนต่อไปนี้:
+${inventorySummary}
+
+กรุณาตอบกลับเป็นรูปแบบ JSON เท่านั้น โดยมีโครงสร้างดังนี้:
+{
+  "identifiedName": "ชื่ออุปกรณ์ภาษาไทยที่ตรวจพบ",
+  "category": "หมวดหมู่อุปกรณ์ (เช่น เครื่องมือตัดแต่ง, ระบบรดน้ำ, อุปกรณ์เตรียมดิน, อุปกรณ์เซฟตี้และทั่วไป)",
+  "description": "คำอธิบายลักษณะสั้นๆ ของอุปกรณ์ที่เห็นในภาพ",
+  "keywords": ["คำค้นหา1", "คำค้นหา2", "คำค้นหา3"],
+  "matchedItemIds": ["ID ของอุปกรณ์ในคลังที่ตรงกันหรือใกล้เคียงที่สุด เรียงตามความน่าจะเป็น"],
+  "confidence": "HIGH" | "MEDIUM" | "LOW"
+}`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              data: cleanBase64,
+              mimeType: mimeType || 'image/jpeg',
+            },
+          },
+          {
+            text: prompt,
+          },
+        ],
+      },
+      config: {
+        responseMimeType: 'application/json',
+      },
+    });
+
+    const text = response.text || '{}';
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(text);
+    } catch (pe) {
+      const clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      parsed = JSON.parse(clean);
+    }
+
+    res.json({
+      success: true,
+      result: parsed
+    });
+  } catch (err: any) {
+    console.error('Visual identify equipment error:', err);
+    res.status(500).json({ error: err.message || 'Failed to identify equipment' });
+  }
+});
+
 // ----------------------------------------------------
 // VITE / STATIC FILE SERVING
 // ----------------------------------------------------
@@ -572,13 +655,24 @@ async function main() {
     });
 
     app.get('*', async (req, res, next) => {
-      if (req.path.startsWith('/@') || req.path.startsWith('/node_modules') || req.url.includes('html-proxy')) {
-        return next();
+      if (req.url.includes('html-proxy')) {
+        return res.status(200).set({ 'Content-Type': 'application/javascript; charset=utf-8' }).end('/* safe html-proxy fallback */');
+      }
+      if (req.path.startsWith('/@') || req.path.startsWith('/node_modules')) {
+        return res.status(404).set({ 'Content-Type': 'application/javascript; charset=utf-8' }).end('// Module not found');
       }
       const ext = path.extname(req.path).toLowerCase();
+      const acceptHeader = req.headers.accept || '';
+      const isScriptOrAsset = acceptHeader.includes('text/javascript') ||
+                              acceptHeader.includes('application/javascript') ||
+                              req.query['import'] !== undefined ||
+                              req.url.includes('?import') ||
+                              req.url.includes('.js') ||
+                              ['.js', '.mjs', '.ts', '.css', '.json', '.png', '.jpg', '.jpeg', '.svg', '.gif', '.ico', '.map', '.woff', '.woff2', '.ttf'].includes(ext);
+
       // Never return index.html for missing JavaScript, CSS, JSON, or media assets
-      if (['.js', '.mjs', '.ts', '.css', '.json', '.png', '.jpg', '.jpeg', '.svg', '.gif', '.ico', '.map', '.woff', '.woff2', '.ttf'].includes(ext)) {
-        return res.status(404).set({ 'Content-Type': 'text/plain' }).end('Not found');
+      if (isScriptOrAsset) {
+        return res.status(404).set({ 'Content-Type': 'application/javascript; charset=utf-8' }).end('// Asset not found');
       }
       try {
         const filePath = path.resolve(process.cwd(), 'index.html');
@@ -609,12 +703,23 @@ async function main() {
       res.sendFile(path.join(distPath, 'procurement.html'));
     });
     app.get('*', (req, res) => {
+      if (req.url.includes('html-proxy')) {
+        return res.status(200).set({ 'Content-Type': 'application/javascript; charset=utf-8' }).end('/* safe html-proxy fallback */');
+      }
       if (req.path.startsWith('/@') || req.path.startsWith('/node_modules')) {
-        return res.status(404).set({ 'Content-Type': 'text/plain' }).end('Not found');
+        return res.status(404).set({ 'Content-Type': 'application/javascript; charset=utf-8' }).end('// Not found');
       }
       const ext = path.extname(req.path).toLowerCase();
-      if (['.js', '.mjs', '.ts', '.css', '.json', '.png', '.jpg', '.jpeg', '.svg', '.gif', '.ico', '.map', '.woff', '.woff2', '.ttf'].includes(ext)) {
-        return res.status(404).set({ 'Content-Type': 'text/plain' }).end('Not found');
+      const acceptHeader = req.headers.accept || '';
+      const isScriptOrAsset = acceptHeader.includes('text/javascript') ||
+                              acceptHeader.includes('application/javascript') ||
+                              req.query['import'] !== undefined ||
+                              req.url.includes('?import') ||
+                              req.url.includes('.js') ||
+                              ['.js', '.mjs', '.ts', '.css', '.json', '.png', '.jpg', '.jpeg', '.svg', '.gif', '.ico', '.map', '.woff', '.woff2', '.ttf'].includes(ext);
+
+      if (isScriptOrAsset) {
+        return res.status(404).set({ 'Content-Type': 'application/javascript; charset=utf-8' }).end('// Asset not found');
       }
       res.sendFile(path.join(distPath, 'index.html'));
     });

@@ -797,21 +797,6 @@
   <!-- Bootstrap Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Toast Helper -->
-  <script>
-    window.showToast = function(msg) {
-      const toastEl = document.getElementById('procToast');
-      const textEl = document.getElementById('procToastText');
-      if (toastEl && textEl) {
-        textEl.textContent = msg;
-        const toast = bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 3500 });
-        toast.show();
-      } else {
-        alert(msg);
-      }
-    };
-  </script>
-
   <!-- Firebase Initializer -->
   <script type="module" src="/procurement_init.js"></script>
 
@@ -821,21 +806,6 @@
   <script type="module" src="/chat_hub.js"></script>
 
   <!-- Service Worker Cleanup -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (const registration of registrations) {
-          registration.unregister();
-        }
-      }).catch(() => {});
-    }
-    if ('caches' in window) {
-      caches.keys().then((names) => {
-        for (const name of names) {
-          caches.delete(name);
-        }
-      }).catch(() => {});
-    }
-  </script>
+  <script type="module" src="/sw_cleanup.js"></script>
 </body>
 </html>

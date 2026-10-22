@@ -66,6 +66,20 @@
     return "โครงการรัตนบุปผา และผลิตดอกไม้ธรรมยาตรา";
   }
 
+  if (!window.showToast) {
+    window.showToast = function(msg) {
+      const toastEl = document.getElementById('procToast');
+      const textEl = document.getElementById('procToastText');
+      if (toastEl && textEl && typeof bootstrap !== 'undefined') {
+        textEl.textContent = msg;
+        const toast = bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 3500 });
+        toast.show();
+      } else {
+        alert(msg);
+      }
+    };
+  }
+
   function showToast(msg) {
     if (typeof window.showToast === 'function') {
       window.showToast(msg);

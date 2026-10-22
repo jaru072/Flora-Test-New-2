@@ -635,57 +635,7 @@
   <script type="module" src="/job_application.js"></script>
   <script type="module" src="/chat_hub.js"></script>
 
-  <script>
-    // QR Code & Share modal helpers
-    window.openShareLinkModal = function() {
-      const url = window.location.href.split('#')[0];
-      const input = document.getElementById("shareFormUrlInput");
-      if (input) input.value = url;
-
-      const qrContainer = document.getElementById("shareQrCodeContainer");
-      if (qrContainer) {
-        qrContainer.innerHTML = "";
-        if (typeof QRCode !== "undefined") {
-          new QRCode(qrContainer, {
-            text: url,
-            width: 180,
-            height: 180,
-            colorDark : "#0d2258",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
-          });
-        }
-      }
-
-      const modal = new bootstrap.Modal(document.getElementById("shareLinkModal"));
-      modal.show();
-    };
-
-    window.copyShareFormUrl = function() {
-      const input = document.getElementById("shareFormUrlInput");
-      if (input) {
-        input.select();
-        navigator.clipboard.writeText(input.value);
-        alert("คัดลอกลิงก์ใบสมัครงานแล้ว สามารถนำไปแชร์ให้ผู้สมัครได้ทันที");
-      }
-    };
-  </script>
   <!-- Service Worker Cleanup -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (const registration of registrations) {
-          registration.unregister();
-        }
-      }).catch(() => {});
-    }
-    if ('caches' in window) {
-      caches.keys().then((names) => {
-        for (const name of names) {
-          caches.delete(name);
-        }
-      }).catch(() => {});
-    }
-  </script>
+  <script type="module" src="/sw_cleanup.js"></script>
 </body>
 </html>
