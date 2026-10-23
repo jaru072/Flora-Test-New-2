@@ -8224,6 +8224,44 @@
         }
       });
 
+      // ฟังก์ชันดึงอีเมลและชื่อผู้ทำรายการจริงจากบันทึกการตรวจสอบของระบบ (auditLogs) เหมือนหน้าประวัติคลังอุปกรณ์
+      function resolveHistoryOperator(tx) {
+        let opEmail = tx.operatorEmail || tx.userEmail || tx.createdByEmail || '';
+        let opName = tx.operatorName || tx.userName || tx.createdByName || '';
+
+        if (Array.isArray(auditLogs) && auditLogs.length > 0) {
+          const matchLog = auditLogs.find(a => 
+            (tx.id && a.recordId === tx.id) || 
+            (tx.docNo && a.recordId === tx.docNo) ||
+            (tx.docNo && typeof a.details === 'string' && a.details.includes(tx.docNo)) ||
+            (tx.id && typeof a.details === 'string' && a.details.includes(tx.id))
+          );
+          if (matchLog && matchLog.userEmail) {
+            opEmail = matchLog.userEmail;
+            opName = matchLog.userName || opName;
+          }
+        }
+
+        if (!opEmail && tx.approvedByName) {
+          const users = (typeof allUsersList !== 'undefined' && Array.isArray(allUsersList) && allUsersList.length > 0)
+            ? allUsersList
+            : ((typeof systemUsersList !== 'undefined' && Array.isArray(systemUsersList)) ? systemUsersList : []);
+          const matchedUser = users.find(u => u.displayName && u.displayName.trim().toLowerCase() === tx.approvedByName.trim().toLowerCase());
+          if (matchedUser && matchedUser.email) {
+            opEmail = matchedUser.email;
+            opName = matchedUser.displayName || tx.approvedByName;
+          }
+        }
+
+        if (!opEmail) {
+          const curUser = (typeof currentAuthUser !== 'undefined' && currentAuthUser) || (typeof currentUserProfile !== 'undefined' && currentUserProfile) || null;
+          opEmail = curUser?.email || 'jaru072@gmail.com';
+          opName = curUser?.displayName || 'Thamma Srithong';
+        }
+
+        return { email: opEmail, name: opName };
+      }
+
       let filtered = transactionHistory.filter(tx => {
         if (!tx) return false;
 
@@ -8242,6 +8280,7 @@
         if (!searchQuery) return true;
 
         // Collect all searchable strings from this transaction
+        const opInfo = resolveHistoryOperator(tx);
         const fieldsToSearch = [
           tx.id,
           tx.docNo,
@@ -8257,10 +8296,8 @@
           tx.timestamp,
           tx.unit,
           tx.quantity !== undefined ? String(tx.quantity) : '',
-          tx.operatorEmail,
-          tx.operatorName,
-          tx.userEmail,
-          tx.createdByEmail
+          opInfo.email,
+          opInfo.name
         ];
 
         if (Array.isArray(tx.items)) {
@@ -8302,8 +8339,10 @@
           const locB = (b.location || '') + ' ' + (b.note || '');
           return dir * locA.localeCompare(locB, 'th');
         } else if (historySortColumn === 'operatorEmail') {
-          const emailA = (a.operatorEmail || a.userEmail || a.createdByEmail || a.operatorName || '').toLowerCase();
-          const emailB = (b.operatorEmail || b.userEmail || b.createdByEmail || b.operatorName || '').toLowerCase();
+          const opA = resolveHistoryOperator(a);
+          const opB = resolveHistoryOperator(b);
+          const emailA = (opA.email || opA.name || '').toLowerCase();
+          const emailB = (opB.email || opB.name || '').toLowerCase();
           return dir * emailA.localeCompare(emailB, 'th');
         }
         return 0;
@@ -8361,23 +8400,7 @@
         }
 
         // ผู้ทำรายการ / อีเมลผู้ทำรายการ
-        let operatorEmail = tx.operatorEmail || tx.userEmail || tx.createdByEmail || '';
-        let operatorName = tx.operatorName || tx.userName || tx.createdByName || '';
-        if (!operatorEmail && tx.approvedByName) {
-          const allUsersList = (typeof systemUsersList !== 'undefined' && Array.isArray(systemUsersList)) ? systemUsersList : [];
-          const matchedUser = allUsersList.length > 0
-            ? allUsersList.find(u => u.displayName && u.displayName.trim().toLowerCase() === tx.approvedByName.trim().toLowerCase())
-            : null;
-          if (matchedUser && matchedUser.email) {
-            operatorEmail = matchedUser.email;
-            operatorName = matchedUser.displayName || tx.approvedByName;
-          }
-        }
-        if (!operatorEmail) {
-          const curUser = (typeof currentAuthUser !== 'undefined' && currentAuthUser) || (typeof currentUserProfile !== 'undefined' && currentUserProfile) || null;
-          operatorEmail = curUser?.email || 'jaru072@gmail.com';
-          operatorName = curUser?.displayName || 'Thamma Srithong';
-        }
+        const { email: operatorEmail, name: operatorName } = resolveHistoryOperator(tx);
 
         html += `
           <tr>
@@ -10893,7 +10916,162 @@
     // ==========================================
     // TRANSACTION EDIT & DELETE MODULE (แก้ไขวันที่/จำนวน และลบรายการ)
     // ==========================================
-    window.editTxDatetimePicker = null;
+    window.editTxDatePicker = null;
+    window.txPickerSelectedHour = 0;
+    window.txPickerSelectedMinute = 0;
+    window.activeTxTimeTab = 'hour';
+
+    // Time Picker Popup Functions
+    window.openTxTimePicker = function() {
+      const timeVal = document.getElementById('editTxTimeInput')?.value || '';
+      const match = timeVal.match(/(\d{1,2}):(\d{1,2})/);
+      const now = new Date();
+      window.txPickerSelectedHour = match ? parseInt(match[1], 10) : now.getHours();
+      window.txPickerSelectedMinute = match ? parseInt(match[2], 10) : now.getMinutes();
+
+      if (window.txPickerSelectedHour < 0 || window.txPickerSelectedHour > 23) window.txPickerSelectedHour = 0;
+      if (window.txPickerSelectedMinute < 0 || window.txPickerSelectedMinute > 59) window.txPickerSelectedMinute = 0;
+
+      window.switchTxTimeTab('hour');
+      window.updateTxPickerDigitalDisplay();
+      window.renderTxHourGrid();
+      window.renderTxMinuteGrid();
+
+      const backdrop = document.getElementById('txTimePickerBackdrop');
+      const popup = document.getElementById('txTimePickerPopup');
+      if (backdrop) backdrop.classList.remove('d-none');
+      if (popup) popup.classList.remove('d-none');
+    };
+
+    window.closeTxTimePicker = function() {
+      const backdrop = document.getElementById('txTimePickerBackdrop');
+      const popup = document.getElementById('txTimePickerPopup');
+      if (backdrop) backdrop.classList.add('d-none');
+      if (popup) popup.classList.add('d-none');
+    };
+
+    window.switchTxTimeTab = function(tab) {
+      window.activeTxTimeTab = tab;
+      const hourPanel = document.getElementById('txPickerHourPanel');
+      const minutePanel = document.getElementById('txPickerMinutePanel');
+      const tabBtnHour = document.getElementById('txTabBtnHour');
+      const tabBtnMinute = document.getElementById('txTabBtnMinute');
+      const hourDisplayBtn = document.getElementById('txPickerHourDisplayBtn');
+      const minuteDisplayBtn = document.getElementById('txPickerMinuteDisplayBtn');
+
+      if (tab === 'hour') {
+        if (hourPanel) hourPanel.classList.remove('d-none');
+        if (minutePanel) minutePanel.classList.add('d-none');
+        if (tabBtnHour) {
+          tabBtnHour.className = 'btn btn-sm btn-light text-primary fw-bold rounded-pill px-3 shadow-sm';
+        }
+        if (tabBtnMinute) {
+          tabBtnMinute.className = 'btn btn-sm btn-outline-light fw-bold rounded-pill px-3';
+        }
+        if (hourDisplayBtn) {
+          hourDisplayBtn.className = 'btn btn-outline-light border-0 fw-bold fs-2 font-monospace px-3 py-1 rounded-3 bg-white text-primary shadow-sm';
+        }
+        if (minuteDisplayBtn) {
+          minuteDisplayBtn.className = 'btn btn-outline-light border-0 fw-bold fs-2 font-monospace px-3 py-1 rounded-3 bg-transparent text-white';
+        }
+      } else {
+        if (hourPanel) hourPanel.classList.add('d-none');
+        if (minutePanel) minutePanel.classList.remove('d-none');
+        if (tabBtnHour) {
+          tabBtnHour.className = 'btn btn-sm btn-outline-light fw-bold rounded-pill px-3';
+        }
+        if (tabBtnMinute) {
+          tabBtnMinute.className = 'btn btn-sm btn-light text-primary fw-bold rounded-pill px-3 shadow-sm';
+        }
+        if (hourDisplayBtn) {
+          hourDisplayBtn.className = 'btn btn-outline-light border-0 fw-bold fs-2 font-monospace px-3 py-1 rounded-3 bg-transparent text-white';
+        }
+        if (minuteDisplayBtn) {
+          minuteDisplayBtn.className = 'btn btn-outline-light border-0 fw-bold fs-2 font-monospace px-3 py-1 rounded-3 bg-white text-primary shadow-sm';
+        }
+      }
+    };
+
+    window.updateTxPickerDigitalDisplay = function() {
+      const hDisplay = document.getElementById('txPickerHourDisplay');
+      const mDisplay = document.getElementById('txPickerMinuteDisplay');
+      if (hDisplay) hDisplay.textContent = String(window.txPickerSelectedHour).padStart(2, '0');
+      if (mDisplay) mDisplay.textContent = String(window.txPickerSelectedMinute).padStart(2, '0');
+    };
+
+    window.renderTxHourGrid = function() {
+      const grid = document.getElementById('txPickerHourGrid');
+      if (!grid) return;
+      let html = '';
+      for (let h = 0; h <= 23; h++) {
+        const isSelected = h === window.txPickerSelectedHour;
+        const btnClass = isSelected
+          ? 'btn btn-primary fw-bold shadow-sm py-2 fs-7 rounded-3'
+          : 'btn btn-outline-secondary py-2 fs-7 fw-semibold rounded-3 bg-light border-light-subtle';
+        html += `<button type="button" class="${btnClass}" onclick="selectTxHour(${h})">${String(h).padStart(2, '0')}</button>`;
+      }
+      grid.innerHTML = html;
+    };
+
+    window.selectTxHour = function(h) {
+      window.txPickerSelectedHour = Number(h);
+      window.updateTxPickerDigitalDisplay();
+      window.renderTxHourGrid();
+      // Smoothly switch to minute tab after selecting hour
+      setTimeout(() => {
+        window.switchTxTimeTab('minute');
+      }, 150);
+    };
+
+    window.renderTxMinuteGrid = function() {
+      const grid = document.getElementById('txPickerMinuteGrid');
+      if (!grid) return;
+      let html = '';
+      for (let m = 0; m <= 59; m++) {
+        const isSelected = m === window.txPickerSelectedMinute;
+        const btnClass = isSelected
+          ? 'btn btn-primary fw-bold shadow-sm py-1.5 fs-8 rounded-3'
+          : 'btn btn-outline-secondary py-1.5 fs-8 fw-semibold rounded-3 bg-light border-light-subtle';
+        html += `<button type="button" class="${btnClass}" onclick="selectTxMinute(${m})">${String(m).padStart(2, '0')}</button>`;
+      }
+      grid.innerHTML = html;
+    };
+
+    window.selectTxMinute = function(m) {
+      window.txPickerSelectedMinute = Number(m);
+      window.updateTxPickerDigitalDisplay();
+      window.renderTxMinuteGrid();
+    };
+
+    window.setTxPickerToCurrentTime = function() {
+      const now = new Date();
+      window.txPickerSelectedHour = now.getHours();
+      window.txPickerSelectedMinute = now.getMinutes();
+      window.updateTxPickerDigitalDisplay();
+      window.renderTxHourGrid();
+      window.renderTxMinuteGrid();
+    };
+
+    window.confirmTxTimePicker = function() {
+      const hh = String(window.txPickerSelectedHour).padStart(2, '0');
+      const mm = String(window.txPickerSelectedMinute).padStart(2, '0');
+      const timeElem = document.getElementById('editTxTimeInput');
+      if (timeElem) timeElem.value = `${hh}:${mm} น.`;
+      window.closeTxTimePicker();
+    };
+
+    window.setEditTxToNow = function() {
+      const now = new Date();
+      if (window.editTxDatePicker) {
+        window.editTxDatePicker.setDate(now, true);
+        if (typeof applyThaiBuddhistYearOnlyDate === 'function') applyThaiBuddhistYearOnlyDate(window.editTxDatePicker);
+        else if (typeof applyThaiBuddhistYear === 'function') applyThaiBuddhistYear(window.editTxDatePicker);
+      }
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const timeElem = document.getElementById('editTxTimeInput');
+      if (timeElem) timeElem.value = `${hh}:${mm} น.`;
+    };
 
     window.openEditTransactionModal = function(txId) {
       if (!txId) return;
@@ -10958,47 +11136,60 @@
       const noteInput = document.getElementById('editTxNoteInput');
       if (noteInput) noteInput.value = tx.note || '';
 
-      // Initialize or set Flatpickr for Date & Time
-      const dateElem = document.getElementById('editTxDatetimeInput');
-      if (dateElem) {
-        let targetDate = new Date();
-        if (typeof getRecordTimestampMs === 'function') {
-          const ms = getRecordTimestampMs(tx);
-          if (ms > 0) targetDate = new Date(ms);
-        }
+      // Initialize target date object
+      let targetDate = new Date();
+      if (typeof getRecordTimestampMs === 'function') {
+        const ms = getRecordTimestampMs(tx);
+        if (ms > 0) targetDate = new Date(ms);
+      }
 
-        if (!window.editTxDatetimePicker && typeof flatpickr !== 'undefined') {
+      // 1. Initialize or set Flatpickr for Date (วัน เดือน ปี พ.ศ.)
+      const dateElem = document.getElementById('editTxDateInput');
+      if (dateElem) {
+        if (!window.editTxDatePicker && typeof flatpickr !== 'undefined') {
           const thLocale = (flatpickr.l10ns && flatpickr.l10ns.th) ? flatpickr.l10ns.th : 'default';
-          window.editTxDatetimePicker = flatpickr(dateElem, {
-            enableTime: true,
-            time_24hr: true,
-            dateFormat: 'Y-m-d H:i',
+          window.editTxDatePicker = flatpickr(dateElem, {
+            enableTime: false,
+            dateFormat: 'Y-m-d',
             altInput: true,
             altInputClass: 'form-control form-control-sm rounded-3 bg-white cursor-pointer shadow-2xs fw-bold',
-            altFormat: 'd/m/Y H:i น.',
+            altFormat: 'd/m/Y',
             locale: thLocale,
             disableMobile: true,
             onReady: function(selectedDates, dateStr, instance) {
-              if (typeof applyThaiBuddhistYear === 'function') applyThaiBuddhistYear(instance);
+              if (typeof applyThaiBuddhistYearOnlyDate === 'function') applyThaiBuddhistYearOnlyDate(instance);
+              else if (typeof applyThaiBuddhistYear === 'function') applyThaiBuddhistYear(instance);
             },
             onValueUpdate: function(selectedDates, dateStr, instance) {
-              if (typeof applyThaiBuddhistYear === 'function') applyThaiBuddhistYear(instance);
+              if (typeof applyThaiBuddhistYearOnlyDate === 'function') applyThaiBuddhistYearOnlyDate(instance);
+              else if (typeof applyThaiBuddhistYear === 'function') applyThaiBuddhistYear(instance);
             },
             onMonthChange: function(selectedDates, dateStr, instance) {
-              if (typeof applyThaiBuddhistYear === 'function') applyThaiBuddhistYear(instance);
+              if (typeof applyThaiBuddhistYearOnlyDate === 'function') applyThaiBuddhistYearOnlyDate(instance);
+              else if (typeof applyThaiBuddhistYear === 'function') applyThaiBuddhistYear(instance);
             },
             onYearChange: function(selectedDates, dateStr, instance) {
-              if (typeof applyThaiBuddhistYear === 'function') applyThaiBuddhistYear(instance);
+              if (typeof applyThaiBuddhistYearOnlyDate === 'function') applyThaiBuddhistYearOnlyDate(instance);
+              else if (typeof applyThaiBuddhistYear === 'function') applyThaiBuddhistYear(instance);
             }
           });
         }
 
-        if (window.editTxDatetimePicker) {
-          window.editTxDatetimePicker.setDate(targetDate, true);
-          if (typeof applyThaiBuddhistYear === 'function') applyThaiBuddhistYear(window.editTxDatetimePicker);
+        if (window.editTxDatePicker) {
+          window.editTxDatePicker.setDate(targetDate, true);
+          if (typeof applyThaiBuddhistYearOnlyDate === 'function') applyThaiBuddhistYearOnlyDate(window.editTxDatePicker);
+          else if (typeof applyThaiBuddhistYear === 'function') applyThaiBuddhistYear(window.editTxDatePicker);
         } else {
-          dateElem.value = tx.timestamp || targetDate.toLocaleString('th-TH');
+          dateElem.value = targetDate.toLocaleDateString('th-TH');
         }
+      }
+
+      // 2. Initialize Time Input (เวลาทำการ 24 ชม.)
+      const timeElem = document.getElementById('editTxTimeInput');
+      if (timeElem) {
+        const hh = String(targetDate.getHours()).padStart(2, '0');
+        const mm = String(targetDate.getMinutes()).padStart(2, '0');
+        timeElem.value = `${hh}:${mm} น.`;
       }
 
       const modalElem = document.getElementById('editTransactionModal');
@@ -11034,16 +11225,26 @@
 
       const diff = newQty - oldQty;
 
-      let newTimestampStr = tx.timestamp;
-      let newRawTimestamp = tx.rawTimestamp || Date.now();
-      if (window.editTxDatetimePicker && window.editTxDatetimePicker.selectedDates && window.editTxDatetimePicker.selectedDates[0]) {
-        const selDate = window.editTxDatetimePicker.selectedDates[0];
-        newRawTimestamp = selDate.getTime();
-        newTimestampStr = selDate.toLocaleString('th-TH');
-      } else {
-        const manualVal = document.getElementById('editTxDatetimeInput')?.value?.trim();
-        if (manualVal) newTimestampStr = manualVal;
+      // Extract Date from Flatpickr
+      let selDate = new Date();
+      if (window.editTxDatePicker && window.editTxDatePicker.selectedDates && window.editTxDatePicker.selectedDates[0]) {
+        selDate = new Date(window.editTxDatePicker.selectedDates[0].getTime());
+      } else if (tx.rawTimestamp) {
+        selDate = new Date(tx.rawTimestamp);
       }
+
+      // Extract Time from Time Input
+      const timeVal = document.getElementById('editTxTimeInput')?.value || '';
+      const timeMatch = timeVal.match(/(\d{1,2}):(\d{1,2})/);
+      const h = timeMatch ? parseInt(timeMatch[1], 10) : selDate.getHours();
+      const m = timeMatch ? parseInt(timeMatch[2], 10) : selDate.getMinutes();
+      selDate.setHours(h, m, 0, 0);
+
+      const newRawTimestamp = selDate.getTime();
+      const newTimestampStr = selDate.toLocaleString('th-TH');
+
+      const hiddenDatetimeInput = document.getElementById('editTxDatetimeInput');
+      if (hiddenDatetimeInput) hiddenDatetimeInput.value = newTimestampStr;
 
       const newLocation = (document.getElementById('editTxLocationInput')?.value || '').trim();
       const newNote = (document.getElementById('editTxNoteInput')?.value || '').trim();

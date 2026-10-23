@@ -2674,11 +2674,31 @@
 
             <!-- Date and Time Picker -->
             <div class="mb-3">
-              <label class="form-label fw-bold text-dark fs-7 mb-1" for="editTxDatetimeInput">
-                <i class="bi bi-calendar-event me-1 text-primary"></i> วันที่และเวลาทำรายการ <span class="text-danger">*</span>
+              <label class="form-label fw-bold text-dark fs-7 mb-1">
+                <i class="bi bi-calendar-event me-1 text-primary"></i> วันที่และเวลาทำการ <span class="text-danger">*</span>
               </label>
-              <input type="text" id="editTxDatetimeInput" class="form-control form-control-sm rounded-3 shadow-2xs bg-white" placeholder="เช่น 05/10/2569 14:30 น." required />
-              <div class="form-text fs-8 text-muted">ระบุวัน เดือน ปี พ.ศ. และเวลาที่ต้องการบันทึกประวัติย้อนหลังหรือแก้ไข</div>
+              <div class="row g-2">
+                <!-- Date Picker (Flatpickr with Thai Buddhist Era) -->
+                <div class="col-7">
+                  <label class="form-label fs-8 text-secondary mb-1 fw-semibold" for="editTxDateInput">
+                    <i class="bi bi-calendar3 me-1 text-primary"></i> วันที่ทำการ (พ.ศ.)
+                  </label>
+                  <input type="text" id="editTxDateInput" class="form-control form-control-sm rounded-3 shadow-2xs bg-white cursor-pointer fw-bold" placeholder="เลือกวันที่..." readonly />
+                </div>
+                <!-- Time Picker (Popup Selector for 0-23 Hours and 0-59 Minutes) -->
+                <div class="col-5">
+                  <label class="form-label fs-8 text-secondary mb-1 fw-semibold" for="editTxTimeInput">
+                    <i class="bi bi-clock me-1 text-primary"></i> เวลาทำการ
+                  </label>
+                  <div class="input-group input-group-sm shadow-2xs">
+                    <input type="text" id="editTxTimeInput" class="form-control form-control-sm rounded-start-3 bg-white cursor-pointer fw-bold text-center text-primary" placeholder="00:00 น." readonly onclick="openTxTimePicker()" />
+                    <button class="btn btn-outline-primary rounded-end-3 px-2" type="button" onclick="openTxTimePicker()" title="คลิกเพื่อเลือกชั่วโมงและนาที">
+                      <i class="bi bi-pencil-square"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" id="editTxDatetimeInput" />
             </div>
 
             <!-- Quantity Input -->
@@ -2722,6 +2742,83 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== POPUP: TIME PICKER (เลือกชั่วโมง 00-23 และนาที 00-59) ==================== -->
+  <div id="txTimePickerBackdrop" class="d-none" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); z-index: 10800; transition: opacity 0.2s ease;" onclick="closeTxTimePicker()"></div>
+  <div id="txTimePickerPopup" class="d-none shadow-lg rounded-4 bg-white border border-light-subtle" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10805; width: calc(100vw - 32px); max-width: 440px; max-height: 90vh; overflow-y: auto; padding: 0; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+    <!-- Header -->
+    <div class="p-3 bg-light border-bottom d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-2">
+        <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+          <i class="bi bi-clock-history fs-5"></i>
+        </div>
+        <div>
+          <h6 class="fw-bold mb-0 text-dark">เลือกเวลาทำการ</h6>
+        </div>
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; padding: 0;" onclick="closeTxTimePicker()" title="ปิดหน้าต่าง">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- Digital Clock Header Preview with Mode Tabs -->
+    <div class="p-3 bg-primary text-white text-center">
+      <div class="d-inline-flex align-items-center justify-content-center gap-2 bg-dark bg-opacity-25 rounded-4 px-4 py-2 shadow-inner">
+        <!-- Hour Display Box -->
+        <button type="button" id="txPickerHourDisplayBtn" class="btn btn-outline-light border-0 fw-bold fs-2 font-monospace px-3 py-1 rounded-3 bg-white text-primary shadow-sm" onclick="switchTxTimeTab('hour')">
+          <span id="txPickerHourDisplay">00</span>
+        </button>
+        <span class="fs-2 fw-bold text-white">:</span>
+        <!-- Minute Display Box -->
+        <button type="button" id="txPickerMinuteDisplayBtn" class="btn btn-outline-light border-0 fw-bold fs-2 font-monospace px-3 py-1 rounded-3 bg-transparent text-white" onclick="switchTxTimeTab('minute')">
+          <span id="txPickerMinuteDisplay">00</span>
+        </button>
+        <span class="fs-6 fw-semibold text-white-50 ms-1">น.</span>
+      </div>
+    </div>
+
+    <!-- Body Panels -->
+    <div class="p-3">
+      <!-- PANEL 1: HOURS (00 - 23) -->
+      <div id="txPickerHourPanel">
+        <div id="txPickerHourGrid" class="d-grid gap-1.5" style="grid-template-columns: repeat(6, 1fr);">
+          <!-- 24 Hour buttons rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- PANEL 2: MINUTES (00 - 59) -->
+      <div id="txPickerMinutePanel" class="d-none">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="fs-8 fw-bold text-secondary"><i class="bi bi-grid-3x3-gap-fill me-1 text-primary"></i> นาที (00 ถึง 59 นาที)</span>
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-8">แตะเพื่อเลือก</span>
+        </div>
+        <!-- Quick Minute Chips -->
+        <div class="d-flex align-items-center gap-1.5 mb-2.5 pb-2 border-bottom flex-wrap">
+          <span class="fs-8 text-muted me-1">ลัด:</span>
+          <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-1 fw-semibold fs-8" onclick="selectTxMinute(0)">:00</button>
+          <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-1 fw-semibold fs-8" onclick="selectTxMinute(15)">:15</button>
+          <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-1 fw-semibold fs-8" onclick="selectTxMinute(30)">:30</button>
+          <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-1 fw-semibold fs-8" onclick="selectTxMinute(45)">:45</button>
+        </div>
+        <div id="txPickerMinuteGrid" class="d-grid gap-1" style="grid-template-columns: repeat(6, 1fr); max-height: 240px; overflow-y: auto; padding-right: 2px;">
+          <!-- 60 Minute buttons rendered dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Controls -->
+    <div class="p-3 bg-light border-top d-flex align-items-center justify-content-between gap-2">
+      <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fs-8 fw-semibold" onclick="setTxPickerToCurrentTime()">
+        <i class="bi bi-clock me-1"></i>เวลาปัจจุบัน
+      </button>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-light rounded-pill px-3 fs-8" onclick="closeTxTimePicker()">ยกเลิก</button>
+        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fs-8 fw-bold shadow-sm" onclick="confirmTxTimePicker()">
+          <i class="bi bi-check-lg me-1"></i>ยืนยันเวลา
+        </button>
       </div>
     </div>
   </div>
